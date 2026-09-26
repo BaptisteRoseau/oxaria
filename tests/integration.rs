@@ -235,7 +235,7 @@ fn reports_are_written_alongside_the_usual_output() {
 
     let junit = read(&junit);
     assert!(junit.starts_with("<?xml"));
-    assert!(junit.contains(r#"name="H57""#), "{junit}");
+    assert!(junit.contains(r#"name="H57: "#), "{junit}");
 }
 
 #[test]

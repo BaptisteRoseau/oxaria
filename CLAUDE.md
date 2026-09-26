@@ -234,6 +234,11 @@ See [README.md](./README.md#architecture) for the module tree. Notes beyond what
   compares them across pipelines. They're FNV-1a (std's `DefaultHasher` isn't stable across
   Rust releases) of rule/path/page/message plus an occurrence counter, so two identical
   findings (two unlabeled checkboxes) stay two issues.
+- **Consumers silently merge issues they consider identical, each by its own key** (found by
+  running their real parsers, not from the docs): Warnings NG's equality ignores `fingerprint`,
+  so `jenkins.rs` also puts it in `additionalProperties`; GitLab's JUnit parser keys test cases by
+  suite + classname + name, so `junit.rs` names each case `<rule>: <message>` with a ` (n)`
+  suffix on repeats. Without these, three unlabeled checkboxes showed up as one issue.
 - **Fatal errors become issues** (`CheckerError::rule_id()` -> `INPUT`/`FETCH`/`RENDER`), not
   log lines, so CI gets a report explaining the failure instead of a missing artifact.
 

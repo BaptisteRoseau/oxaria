@@ -27,6 +27,10 @@ struct WarningsIssue<'a> {
     kind: &'static str,
     message: &'a str,
     fingerprint: &'a str,
+    /// Warnings NG drops issues it considers equal, and its equality ignores
+    /// `fingerprint`: two unlabeled checkboxes (same rule, file, line, and
+    /// message) would collapse into one. This free-form field does count.
+    additional_properties: &'a str,
 }
 
 impl Reporter for JenkinsReporter {
@@ -49,6 +53,7 @@ fn warnings_issue(issue: &Issue) -> WarningsIssue<'_> {
         kind: issue.rule_id,
         message: &issue.message,
         fingerprint: &issue.fingerprint,
+        additional_properties: &issue.fingerprint,
     }
 }
 
@@ -92,9 +97,19 @@ mod tests {
                     "type": "H57",
                     "message": "boom",
                     "fingerprint": report.issues[0].fingerprint,
+                    "additionalProperties": report.issues[0].fingerprint,
                 }],
                 "size": 1,
             })
+        );
+    }
+
+    #[test]
+    fn identical_findings_stay_distinct_for_warnings_ng() {
+        let output = render("a.html", &[error("H44"), error("H44")]);
+        assert_ne!(
+            output["issues"][0]["additionalProperties"],
+            output["issues"][1]["additionalProperties"]
         );
     }
 
