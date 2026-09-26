@@ -253,6 +253,7 @@ fn reset_delay(reset: u64) -> Duration {
 mod tests {
     use super::*;
     use reqwest::header::HeaderValue;
+    use rstest::rstest;
     use wiremock::matchers::{headers as header_values, method, path};
     use wiremock::{Mock, MockServer, ResponseTemplate};
 
@@ -277,25 +278,16 @@ mod tests {
         (RequestContext::new().unwrap(), base)
     }
 
-    #[test]
-    fn retry_after_zero_defaults_to_one_second() {
-        assert_eq!(
-            retry_after(&headers(&[("retry-after", "0")])),
-            DEFAULT_RETRY_DELAY
-        );
+    fn retry_after_header(value: Option<&str>) -> HeaderMap {
+        value.map_or_else(HeaderMap::new, |value| headers(&[("retry-after", value)]))
     }
 
-    #[test]
-    fn retry_after_missing_defaults_to_one_second() {
-        assert_eq!(retry_after(&HeaderMap::new()), DEFAULT_RETRY_DELAY);
-    }
-
-    #[test]
-    fn retry_after_seconds_is_honored() {
-        assert_eq!(
-            retry_after(&headers(&[("retry-after", "5")])),
-            Duration::from_secs(5)
-        );
+    #[rstest]
+    #[case(Some("0"), DEFAULT_RETRY_DELAY)]
+    #[case(None, DEFAULT_RETRY_DELAY)]
+    #[case(Some("5"), Duration::from_secs(5))]
+    fn retry_after_seconds(#[case] value: Option<&str>, #[case] expected: Duration) {
+        assert_eq!(retry_after(&retry_after_header(value)), expected);
     }
 
     #[test]
@@ -347,20 +339,19 @@ mod tests {
         assert_eq!(proactive_delay(&map), Some(DEFAULT_RETRY_DELAY));
     }
 
-    #[test]
-    fn rate_limit_statuses() {
-        assert!(is_rate_limited(
-            StatusCode::TOO_MANY_REQUESTS,
-            &HeaderMap::new()
-        ));
-        assert!(is_rate_limited(
-            StatusCode::SERVICE_UNAVAILABLE,
-            &headers(&[("retry-after", "1")])
-        ));
-        assert!(!is_rate_limited(
-            StatusCode::SERVICE_UNAVAILABLE,
-            &HeaderMap::new()
-        ));
+    #[rstest]
+    #[case(StatusCode::TOO_MANY_REQUESTS, None, true)]
+    #[case(StatusCode::SERVICE_UNAVAILABLE, Some("1"), true)]
+    #[case(StatusCode::SERVICE_UNAVAILABLE, None, false)]
+    fn rate_limit_statuses(
+        #[case] status: StatusCode,
+        #[case] retry_after: Option<&str>,
+        #[case] expected: bool,
+    ) {
+        assert_eq!(
+            is_rate_limited(status, &retry_after_header(retry_after)),
+            expected
+        );
     }
 
     #[tokio::test(start_paused = true)]

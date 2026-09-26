@@ -95,27 +95,17 @@ async fn read_file(path: &str) -> Result<LoadedHtml, CheckerError> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use rstest::rstest;
     use wiremock::matchers::{header, headers, method, path};
     use wiremock::{Mock, MockServer, ResponseTemplate};
 
-    #[test]
-    fn is_url_accepts_http() {
-        assert!(is_url("http://example.com/page.html"));
-    }
-
-    #[test]
-    fn is_url_accepts_https() {
-        assert!(is_url("https://example.com/page.html"));
-    }
-
-    #[test]
-    fn is_url_rejects_local_path() {
-        assert!(!is_url("tests/assets/clean.html"));
-    }
-
-    #[test]
-    fn is_url_rejects_windows_path_with_drive_letter() {
-        assert!(!is_url("C:\\page.html"));
+    #[rstest]
+    #[case("http://example.com/page.html", true)]
+    #[case("https://example.com/page.html", true)]
+    #[case("tests/assets/clean.html", false)]
+    #[case("C:\\page.html", false)]
+    fn is_url_accepts_only_http_and_https(#[case] path_or_url: &str, #[case] expected: bool) {
+        assert_eq!(is_url(path_or_url), expected);
     }
 
     #[tokio::test]
@@ -169,28 +159,17 @@ mod tests {
         headers
     }
 
-    #[test]
-    fn html_content_types_are_renderable() {
-        for value in [
-            "text/html",
-            "text/html; charset=utf-8",
-            "TEXT/HTML",
-            "application/xhtml+xml",
-        ] {
-            assert!(is_renderable(&content_type(value)), "{value}");
-        }
-    }
-
-    #[test]
-    fn api_and_binary_content_types_are_not_renderable() {
-        for value in [
-            "application/json",
-            "application/xml",
-            "text/xml",
-            "image/png",
-        ] {
-            assert!(!is_renderable(&content_type(value)), "{value}");
-        }
+    #[rstest]
+    #[case("text/html", true)]
+    #[case("text/html; charset=utf-8", true)]
+    #[case("TEXT/HTML", true)]
+    #[case("application/xhtml+xml", true)]
+    #[case("application/json", false)]
+    #[case("application/xml", false)]
+    #[case("text/xml", false)]
+    #[case("image/png", false)]
+    fn only_html_content_types_are_renderable(#[case] value: &str, #[case] expected: bool) {
+        assert_eq!(is_renderable(&content_type(value)), expected);
     }
 
     #[test]
