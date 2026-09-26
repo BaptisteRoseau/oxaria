@@ -5,7 +5,7 @@
 //! (JSON, XML, images, ...).
 
 use std::collections::HashSet;
-use std::sync::{Arc, RwLock};
+use std::sync::RwLock;
 use std::time::{Duration, SystemTime};
 
 use reqwest::header::{HeaderMap, LOCATION, RETRY_AFTER};
@@ -64,8 +64,8 @@ impl RedirectScope {
 /// down all of them and a path fetched by one is never fetched by another.
 pub struct RequestContext {
     client: Client,
-    next_allowed: Arc<RwLock<Instant>>,
-    fetched: Arc<RwLock<HashSet<String>>>,
+    next_allowed: RwLock<Instant>,
+    fetched: RwLock<HashSet<String>>,
 }
 
 impl RequestContext {
@@ -77,8 +77,8 @@ impl RequestContext {
             .build()?;
         Ok(RequestContext {
             client,
-            next_allowed: Arc::new(RwLock::new(Instant::now())),
-            fetched: Arc::new(RwLock::new(HashSet::new())),
+            next_allowed: RwLock::new(Instant::now()),
+            fetched: RwLock::new(HashSet::new()),
         })
     }
 
@@ -251,6 +251,8 @@ fn reset_delay(reset: u64) -> Duration {
 
 #[cfg(test)]
 mod tests {
+    use std::sync::Arc;
+
     use super::*;
     use reqwest::header::HeaderValue;
     use rstest::rstest;

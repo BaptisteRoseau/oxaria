@@ -176,7 +176,7 @@ See [README.md](./README.md#architecture) for the module tree. Notes beyond what
   github.com/marketplace answering `400` (content negotiation picked JSON) and crates.io
   answering `403` (it requires a User-Agent). Keep the `*/*;q=0.8` fallback -- without it,
   API/PDF URLs may answer `406` and be reported as errors instead of being skipped.
-- **Rate limiting is shared**: a single `Arc<RwLock<Instant>>` in `RequestContext` means a
+- **Rate limiting is shared**: a single `RwLock<Instant>` in the shared `RequestContext` means a
   `429` seen by one task pauses every task, not just the one that got it.
 - **Logging**: one `Fetching <url>` line per requested URL, then an indented
   `<from> redirects to <to>` line per hop. An earlier version logged `Fetching` per hop, which
