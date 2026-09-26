@@ -171,9 +171,8 @@ impl<'a> ElementRef<'a> {
         let page = self.page;
         self.node()
             .children
-            .clone()
-            .into_iter()
-            .map(move |index| page.get(index))
+            .iter()
+            .map(move |&index| page.get(index))
     }
 
     pub fn descendants(&self) -> impl Iterator<Item = ElementRef<'a>> {
