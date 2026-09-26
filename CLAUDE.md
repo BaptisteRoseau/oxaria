@@ -157,6 +157,44 @@ See [README.md](./README.md#architecture) for the module tree. Notes beyond what
   laid-out 0×0 interactive element would be a real finding; a not-measured one shouldn't produce
   a false positive.
 
+### Full-site scan (`src/site/`)
+
+- **Everything HTTP lives behind `request_helper::request()`** (explicitly requested): rate
+  limiting, retries, redirects, and content-type classification. The client is built with
+  `redirect::Policy::none()` and redirects are followed by hand inside `request()`, one hop at a
+  time, so the same-host check, the hop limit, and rate-limit waits between hops all live in
+  that one function instead of being split into a separate `redirect::Policy::custom` closure.
+  Off-domain redirects are skipped silently, not reported.
+- **The client sends a browser-style `Accept` header** (`ACCEPT_HTML` in `request_helper.rs`).
+  reqwest's default `Accept: */*` let content-negotiating servers pick JSON:
+  github.com/marketplace answered `400` with an empty JSON body, which showed up as a bogus
+  `HTTP 400` error. Keep the `*/*;q=0.8` fallback -- without it, API/PDF URLs may answer
+  `406` and be reported as errors instead of being skipped.
+- **Rate limiting is shared**: a single `Arc<RwLock<Instant>>` in `RequestContext` means a
+  `429` seen by one task pauses every task, not just the one that got it.
+- **Visit key is the URL path only** (no query, no fragment), since the crawl never leaves
+  one host. This is what prevents infinite crawls through pagination/facet query strings.
+  `/a` and `/a/` are deliberately distinct.
+- **Same domain = exact host match** (`www.example.com` ≠ `example.com`), port ignored.
+- **The "already fetched" cache lives in `RequestContext` and is checked by `request()`
+  itself, right before every download -- including each redirect hop** (explicitly requested:
+  a path must never be downloaded twice). The claim is a check-and-insert under one lock so
+  racing tasks can't both win. The orchestrator's `has_fetched` check before spawning is only
+  an optimisation to avoid spawning no-op tasks; it is not what guarantees uniqueness.
+- **`--full-site-scan-max-pages` counts only processed HTML pages** (explicitly requested) --
+  not API/PDF/other responses, HTTP errors, or already-fetched skips. `PageBudget` is a
+  semaphore with `max_pages` permits, reserved *before* each download: an HTML response
+  `forget()`s its permit (slot consumed), anything else drops it (slot handed back to a waiting
+  task). This keeps in-flight downloads <= remaining slots, so the budget can't cause wasted
+  downloads (an earlier reserve-after-download version fetched 12 pages to check 5 on
+  github.com). The semaphore is closed when the last slot is consumed -- that's what wakes
+  tasks still waiting in `reserve()`; without it they'd wait forever and the crawl would hang.
+  Budget is acquired before the concurrency permit, so waiting tasks don't hog concurrency.
+- HTTP/network/render failures during a crawl become `Finding`s (`HTTP`, `FETCH`, `RENDER`)
+  tagged with the page path, rather than aborting the run as they do in single-page mode.
+- Tests use `wiremock`, addressing the main server as `localhost` and a second "external"
+  server as `127.0.0.1`, so they are genuinely different hosts.
+
 ## Gotchas
 
 - **Raw string literals containing `href="#..."` fragments will silently truncate.**

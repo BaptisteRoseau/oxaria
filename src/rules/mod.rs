@@ -36,14 +36,18 @@ pub struct Finding {
     pub rule_id: &'static str,
     pub severity: Severity,
     pub message: String,
+    /// URL path of the page this finding belongs to; only set during a
+    /// full-site scan, where a single report covers many pages.
+    pub page: Option<String>,
 }
 
 impl Finding {
-    fn error(rule_id: &'static str, message: String) -> Self {
+    pub(crate) fn error(rule_id: &'static str, message: String) -> Self {
         Finding {
             rule_id,
             severity: Severity::Error,
             message,
+            page: None,
         }
     }
 
@@ -52,6 +56,14 @@ impl Finding {
             rule_id,
             severity: Severity::Warning,
             message,
+            page: None,
+        }
+    }
+
+    pub fn on_page(self, page: String) -> Self {
+        Finding {
+            page: Some(page),
+            ..self
         }
     }
 }

@@ -4,11 +4,14 @@ mod logging;
 mod page;
 mod report;
 mod rules;
+mod site;
 
 use std::process::ExitCode;
 use std::sync::Arc;
 
 use clap::Parser;
+use tracing::warn;
+use url::Url;
 
 use cli::CliConfig;
 use error::CheckerError;
@@ -32,8 +35,25 @@ async fn main() -> ExitCode {
 }
 
 async fn check(config: &CliConfig) -> Result<Vec<Finding>, CheckerError> {
-    let html = page::load_html(&config.path_or_url).await?;
-    let page = Arc::new(page::render(&html)?);
     let options = Arc::new(CheckOptions::from(config));
+    match (config.full_site_scan, page::is_url(&config.path_or_url)) {
+        (true, true) => {
+            let start = Url::parse(&config.path_or_url)?;
+            site::crawl(start, options, config.full_site_scan_max_pages).await
+        }
+        (true, false) => {
+            warn!("--full-site-scan only applies to URLs; scanning the single file");
+            check_single_page(&config.path_or_url, options).await
+        }
+        (false, _) => check_single_page(&config.path_or_url, options).await,
+    }
+}
+
+async fn check_single_page(
+    path_or_url: &str,
+    options: Arc<CheckOptions>,
+) -> Result<Vec<Finding>, CheckerError> {
+    let html = page::load_html(path_or_url).await?;
+    let page = Arc::new(page::render(&html)?);
     Ok(rules::run_all(page, options).await)
 }

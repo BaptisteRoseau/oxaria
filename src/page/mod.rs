@@ -9,6 +9,6 @@ mod render;
 #[cfg(test)]
 pub(crate) mod testutil;
 
-pub use fetch::load_html;
+pub use fetch::{is_url, load_html};
 pub use model::{ElementRef, RenderedPage, accessible_name, ids_text};
 pub use render::render;

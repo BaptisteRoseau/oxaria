@@ -1,5 +1,8 @@
 use std::process::{Command, Output};
 
+use wiremock::matchers::{method, path};
+use wiremock::{Mock, MockServer, ResponseTemplate};
+
 fn run(path: &str, extra_args: &[&str]) -> Output {
     Command::new(env!("CARGO_BIN_EXE_wcag-checker"))
         .arg(path)
@@ -90,4 +93,99 @@ fn lowering_target_size_threshold_clears_that_warning_too() {
 fn missing_file_exits_one() {
     let output = run("tests/assets/does-not-exist.html", &[]);
     assert_eq!(exit_code(&output), 1, "stdout:\n{}", stdout(&output));
+}
+
+fn fixture(name: &str) -> ResponseTemplate {
+    let body = std::fs::read_to_string(format!("tests/assets/{name}")).unwrap();
+    ResponseTemplate::new(200).set_body_raw(body, "text/html; charset=utf-8")
+}
+
+async fn serve(server: &MockServer, route: &str, response: ResponseTemplate) {
+    Mock::given(method("GET"))
+        .and(path(route))
+        .respond_with(response)
+        .mount(server)
+        .await;
+}
+
+/// `/` (clean) links to `/products` (warnings only), `/contact` (errors),
+/// and a PDF. Every other path -- e.g. `/privacy-policy`, `/products/1` --
+/// is unmatched and gets wiremock's default `404`.
+async fn fixture_site() -> MockServer {
+    let server = MockServer::start().await;
+    serve(&server, "/", fixture("clean.html")).await;
+    serve(&server, "/products", fixture("warnings_only.html")).await;
+    serve(&server, "/contact", fixture("errors.html")).await;
+    let pdf = ResponseTemplate::new(200).set_body_raw("%PDF-1.7", "application/pdf");
+    serve(&server, "/annual-report-2026.pdf", pdf).await;
+    server
+}
+
+/// The binary blocks while the mock server needs the runtime to answer it.
+async fn run_async(url: String, extra_args: &[&str]) -> Output {
+    let extra_args: Vec<String> = extra_args.iter().map(|arg| arg.to_string()).collect();
+    tokio::task::spawn_blocking(move || {
+        let extra_args: Vec<&str> = extra_args.iter().map(String::as_str).collect();
+        run(&url, &extra_args)
+    })
+    .await
+    .unwrap()
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn full_site_scan_reports_findings_and_http_errors_per_page() {
+    let server = fixture_site().await;
+    let output = run_async(format!("{}/", server.uri()), &["--full-site-scan"]).await;
+    let report = stdout(&output);
+
+    assert_eq!(exit_code(&output), 1, "stdout:\n{report}");
+    for expected in [
+        "G18 /products:",
+        "H57 /contact:",
+        "HTTP /privacy-policy: HTTP 404",
+        "HTTP /products/1: HTTP 404",
+    ] {
+        assert!(
+            report.contains(expected),
+            "expected {expected} in:\n{report}"
+        );
+    }
+    assert!(
+        !report.contains("annual-report"),
+        "PDF was reported:\n{report}"
+    );
+    assert!(
+        !report.contains(" /: "),
+        "clean home page was reported:\n{report}"
+    );
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn full_site_scan_max_pages_stops_the_crawl() {
+    let server = fixture_site().await;
+    let output = run_async(
+        format!("{}/", server.uri()),
+        &["--full-site-scan", "--full-site-scan-max-pages", "1"],
+    )
+    .await;
+
+    assert_eq!(exit_code(&output), 0, "stdout:\n{}", stdout(&output));
+    assert!(stdout(&output).contains("0 error(s), 0 warning(s)"));
+}
+
+#[test]
+fn full_site_scan_on_a_local_file_scans_just_that_file() {
+    let output = run("tests/assets/clean.html", &["--full-site-scan"]);
+    assert_eq!(exit_code(&output), 0, "stdout:\n{}", stdout(&output));
+    assert!(stdout(&output).contains("0 error(s), 0 warning(s)"));
+}
+
+#[test]
+fn max_pages_requires_full_site_scan() {
+    let output = run(
+        "tests/assets/clean.html",
+        &["--full-site-scan-max-pages", "3"],
+    );
+    assert_ne!(exit_code(&output), 0);
+    assert!(String::from_utf8_lossy(&output.stderr).contains("--full-site-scan"));
 }

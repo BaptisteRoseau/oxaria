@@ -44,6 +44,10 @@ Options:
           Minimum contrast ratio for large-scale text (WCAG 1.4.3 default: 3.0) [default: 3]
       --target-size-threshold <TARGET_SIZE_THRESHOLD>
           Minimum pointer target size in CSS pixels (WCAG 2.5.8 default: 24.0) [default: 24]
+      --full-site-scan
+          When given a URL, also scan every same-domain page reachable through its links
+      --full-site-scan-max-pages <FULL_SITE_SCAN_MAX_PAGES>
+          Maximum number of HTML pages checked during a full-site scan (default: no limit)
   -h, --help
           Print help
   -V, --version
@@ -64,7 +68,20 @@ wcag-checker page.html --contrast-threshold 3.0
 
 # Tighten the target size to the enhanced (AAA) 44px guidance
 wcag-checker page.html --target-size-threshold 44
+
+# Crawl and check every page of a site, capped at 200 checked HTML pages
+wcag-checker https://example.com --full-site-scan --full-site-scan-max-pages 200
 ```
+
+**Full-site scan** (`--full-site-scan`, URLs only -- ignored for local files):
+
+- Follows every `<a href>` / `<area href>` on the same host (relative or absolute), in parallel. Each path is downloaded at most once, redirect targets included; query strings and fragments are ignored when deciding whether a path was already fetched.
+- `--full-site-scan-max-pages` counts only HTML pages that are actually rendered and checked; JSON/XML/PDF responses, HTTP errors, and already-fetched paths don't use up the budget.
+- Redirects are followed only while they stay on the same host; a redirect to another host is skipped.
+- Responses that aren't HTML (JSON, XML, PDF, images, ...) are skipped silently.
+- `4XX`/`5XX` responses are reported as `HTTP` errors, and network failures as `FETCH` errors.
+- Rate limits are respected: `429` (and `503` with `Retry-After`) are retried up to 3 times after the `Retry-After` delay (1s when it is `0` or missing), and `RateLimit-*`/`X-RateLimit-*` headers pause all requests once the quota runs out.
+- Each report line includes the URL path of the page it belongs to, e.g. `[ERROR] H57 /about: ...`.
 
 **Exit codes:**
 
@@ -83,6 +100,11 @@ src/
 ├── error.rs                 # CheckerError
 ├── logging.rs                # tracing subscriber setup
 ├── report.rs                 # stdout rendering + exit code derivation
+│
+├── site/                    # --full-site-scan
+│   ├── crawler.rs             # parallel crawl: visited set, page budget, per-page checks
+│   ├── links.rs               # href extraction, same-domain check, path-only visit key
+│   └── request_helper.rs      # request(): rate limits, retries, same-host redirects, content type
 │
 ├── page/                    # everything that turns a URL/file into a RenderedPage
 │   ├── fetch.rs               # URL fetch (reqwest) vs local file read

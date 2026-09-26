@@ -6,14 +6,17 @@ use crate::rules::{Finding, Severity};
 
 pub fn print_findings(findings: &[Finding]) {
     for finding in findings {
-        println!(
-            "{} {}: {}",
-            severity_label(finding.severity),
-            finding.rule_id,
-            finding.message
-        );
+        println!("{}", finding_line(finding));
     }
     println!("{}", summary_line(findings));
+}
+
+fn finding_line(finding: &Finding) -> String {
+    let label = severity_label(finding.severity);
+    match &finding.page {
+        Some(page) => format!("{label} {} {page}: {}", finding.rule_id, finding.message),
+        None => format!("{label} {}: {}", finding.rule_id, finding.message),
+    }
 }
 
 fn severity_label(severity: Severity) -> &'static str {
@@ -60,6 +63,7 @@ mod tests {
             rule_id,
             severity: Severity::Error,
             message: "boom".to_string(),
+            page: None,
         }
     }
 
@@ -68,6 +72,7 @@ mod tests {
             rule_id,
             severity: Severity::Warning,
             message: "meh".to_string(),
+            page: None,
         }
     }
 
@@ -87,6 +92,17 @@ mod tests {
             exit_code(&[warning("TGT001"), error("H57")]),
             ExitCode::from(1)
         );
+    }
+
+    #[test]
+    fn finding_line_without_page_is_unchanged() {
+        assert_eq!(finding_line(&error("H57")), "[ERROR] H57: boom");
+    }
+
+    #[test]
+    fn finding_line_includes_page_path() {
+        let finding = error("H57").on_page("/about".to_string());
+        assert_eq!(finding_line(&finding), "[ERROR] H57 /about: boom");
     }
 
     #[test]

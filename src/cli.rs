@@ -1,3 +1,5 @@
+use std::num::NonZeroUsize;
+
 use clap::Parser;
 
 /// Check a web page against a subset of WCAG 2.2 rules.
@@ -22,4 +24,12 @@ pub struct CliConfig {
     /// Minimum pointer target size in CSS pixels (WCAG 2.5.8 default: 24.0)
     #[arg(long, default_value_t = 24.0)]
     pub target_size_threshold: f64,
+
+    /// When given a URL, also scan every same-domain page reachable through its links
+    #[arg(long, default_value_t = false)]
+    pub full_site_scan: bool,
+
+    /// Maximum number of HTML pages checked during a full-site scan (default: no limit)
+    #[arg(long, requires = "full_site_scan")]
+    pub full_site_scan_max_pages: Option<NonZeroUsize>,
 }
