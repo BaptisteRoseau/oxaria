@@ -77,9 +77,11 @@ wcag-checker https://example.com --full-site-scan --full-site-scan-max-pages 200
 
 - Follows every `<a href>` / `<area href>` on the same host (relative or absolute), in parallel. Each path is downloaded at most once, redirect targets included; query strings and fragments are ignored when deciding whether a path was already fetched.
 - `--full-site-scan-max-pages` counts only HTML pages that are actually rendered and checked; JSON/XML/PDF responses, HTTP errors, and already-fetched paths don't use up the budget.
-- Redirects are followed only while they stay on the same host; a redirect to another host is skipped.
+- Redirects are followed only while they stay on the same host; a redirect to another host is skipped. The one exception is the start URL: it may redirect anywhere (e.g. `example.com` → `www.example.com`), and the crawl then continues on the host it landed on.
+- Pages are crawled breadth-first, level by level, so with `--full-site-scan-max-pages` the same site always yields the same set of checked pages.
 - Responses that aren't HTML (JSON, XML, PDF, images, ...) are skipped silently.
-- `4XX`/`5XX` responses are reported as `HTTP` errors, and network failures as `FETCH` errors.
+- `4XX`/`5XX` responses are reported as `HTTP` errors, and network failures as `FETCH` errors. A scan that couldn't check any HTML page (e.g. the start URL returns JSON) reports a `SCAN` error rather than a clean pass.
+- Requests identify themselves as `wcag-checker/<version>` and ask for HTML (`Accept: text/html,…`), in both single-page and full-site mode.
 - Rate limits are respected: `429` (and `503` with `Retry-After`) are retried up to 3 times after the `Retry-After` delay (1s when it is `0` or missing), and `RateLimit-*`/`X-RateLimit-*` headers pause all requests once the quota runs out.
 - Each report line includes the URL path of the page it belongs to, e.g. `[ERROR] H57 /about: ...`.
 

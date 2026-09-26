@@ -31,8 +31,10 @@ fn has_label(page: &RenderedPage, control: ElementRef) -> bool {
 
 fn missing_label_message(control: ElementRef) -> String {
     let name = control.tag();
-    let type_attr = control.attr("type").unwrap_or("");
-    format!("<{name} type=\"{type_attr}\"> has no associated label")
+    match control.attr("type") {
+        Some(type_attr) => format!("<{name} type=\"{type_attr}\"> has no associated label"),
+        None => format!("<{name}> has no associated label"),
+    }
 }
 
 /// F68: interactive controls (buttons, custom `role=button` widgets, image/submit buttons) must
@@ -110,6 +112,15 @@ mod tests {
             large_text_contrast_threshold: 3.0,
             target_size_threshold: 24.0,
         }
+    }
+
+    #[test]
+    fn missing_label_message_omits_absent_type_attribute() {
+        // debian.org's search box, `<input name="P">`, was reported as `<input type="">`.
+        let p = page_from_html(r#"<input name="P" value="" size="14">"#);
+        let findings = check_missing_label(&p, &options());
+        assert_eq!(findings.len(), 1);
+        assert_eq!(findings[0].message, "<input> has no associated label");
     }
 
     #[test]
