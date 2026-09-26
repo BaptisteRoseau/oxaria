@@ -259,7 +259,7 @@ fn to_rgb(color: Color) -> (u8, u8, u8) {
 }
 
 pub(crate) fn extract_stylesheets(html: &str) -> Vec<String> {
-    let lower = html.to_lowercase();
+    let lower = html.to_ascii_lowercase();
     let mut stylesheets = Vec::new();
     let mut search_from = 0usize;
     while let Some(open_start) = lower[search_from..].find("<style") {
@@ -348,6 +348,13 @@ mod tests {
             sheets,
             vec!["a{color:red}".to_string(), "b{color:blue}".to_string()]
         );
+    }
+
+    #[test]
+    fn extract_stylesheets_is_not_shifted_by_non_ascii_text() {
+        let html = "<p>İstanbul İzmir</p><STYLE>a:focus{outline:none}</STYLE>";
+        let sheets = extract_stylesheets(html);
+        assert_eq!(sheets, vec!["a:focus{outline:none}".to_string()]);
     }
 
     #[test]
