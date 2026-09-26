@@ -1,6 +1,6 @@
 //! WCAG 2.4.4 / 2.4.9 checks for link text.
 
-use std::collections::HashMap;
+use std::collections::BTreeMap;
 
 use url::Url;
 
@@ -115,8 +115,8 @@ pub fn check_ambiguous_duplicate_link_text(
         .collect()
 }
 
-fn group_links_by_text(page: &RenderedPage) -> HashMap<String, Vec<String>> {
-    let mut groups: HashMap<String, Vec<String>> = HashMap::new();
+fn group_links_by_text(page: &RenderedPage) -> BTreeMap<String, Vec<String>> {
+    let mut groups: BTreeMap<String, Vec<String>> = BTreeMap::new();
     for link in page.select(is_link) {
         let name = page::accessible_name(page, link).trim().to_lowercase();
         if name.len() < 3 {
@@ -195,6 +195,16 @@ mod tests {
         let findings = check_ambiguous_duplicate_link_text(&p, &options());
         assert_eq!(findings.len(), 1);
         assert_eq!(findings[0].rule_id, "F84");
+    }
+
+    #[test]
+    fn ambiguous_link_texts_are_reported_in_a_stable_order() {
+        let p = page_from_html(
+            r#"<a href="/1">Pricing</a><a href="/2">Pricing</a><a href="/3">About us</a><a href="/4">About us</a>"#,
+        );
+        let findings = check_ambiguous_duplicate_link_text(&p, &options());
+        assert!(findings[0].message.contains("\"about us\""), "{findings:?}");
+        assert!(findings[1].message.contains("\"pricing\""), "{findings:?}");
     }
 
     #[test]

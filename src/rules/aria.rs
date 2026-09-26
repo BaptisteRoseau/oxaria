@@ -1,6 +1,6 @@
 //! WCAG 4.1.1 / 4.1.2 checks for `id` uniqueness and ARIA references.
 
-use std::collections::HashMap;
+use std::collections::BTreeMap;
 
 use crate::page::RenderedPage;
 
@@ -18,8 +18,8 @@ pub fn check_duplicate_ids(page: &RenderedPage, _options: &CheckOptions) -> Vec<
         .collect()
 }
 
-fn id_counts(page: &RenderedPage) -> HashMap<String, usize> {
-    let mut counts = HashMap::new();
+fn id_counts(page: &RenderedPage) -> BTreeMap<String, usize> {
+    let mut counts = BTreeMap::new();
     for element in page.select(|el| el.has_attr("id")) {
         if let Some(id) = element.attr("id") {
             *counts.entry(id.to_string()).or_insert(0) += 1;
@@ -80,6 +80,20 @@ mod tests {
         let findings = check_duplicate_ids(&p, &options());
         assert_eq!(findings.len(), 1);
         assert_eq!(findings[0].rule_id, "F77");
+    }
+
+    #[test]
+    fn duplicate_ids_are_reported_in_a_stable_order() {
+        let p = page_from_html(
+            r#"<i id="c"></i><i id="c"></i><i id="a"></i><i id="a"></i><i id="b"></i><i id="b"></i>"#,
+        );
+        let messages: Vec<_> = check_duplicate_ids(&p, &options())
+            .into_iter()
+            .map(|f| f.message)
+            .collect();
+        assert!(messages[0].contains("\"a\""), "{messages:?}");
+        assert!(messages[1].contains("\"b\""), "{messages:?}");
+        assert!(messages[2].contains("\"c\""), "{messages:?}");
     }
 
     #[test]
