@@ -16,26 +16,29 @@ pub enum CheckerError {
 
     #[error("Failed to render HTML")]
     Render,
+}
 
+#[derive(Debug, Error)]
+pub enum ReportError {
     #[error("{first} and {second} both write to {destination}")]
-    ReportConflict {
+    Conflict {
         first: &'static str,
         second: &'static str,
         destination: String,
     },
 
     #[error("{flag} would overwrite the checked file {path}")]
-    ReportOverwritesInput { flag: &'static str, path: String },
+    OverwritesInput { flag: &'static str, path: String },
 
     #[error("{flag}: failed to write {destination}: {source}")]
-    ReportWrite {
+    Write {
         flag: &'static str,
         destination: String,
         source: std::io::Error,
     },
 
     #[error("Report writer failed: {0}")]
-    ReportTask(#[from] tokio::task::JoinError),
+    Task(#[from] tokio::task::JoinError),
 }
 
 impl CheckerError {
@@ -46,10 +49,6 @@ impl CheckerError {
             CheckerError::HttpFetch(_) | CheckerError::NotHtml(_) => "FETCH",
             CheckerError::InvalidUrl(_) | CheckerError::FileRead(_) => "INPUT",
             CheckerError::Render => "RENDER",
-            CheckerError::ReportConflict { .. }
-            | CheckerError::ReportOverwritesInput { .. }
-            | CheckerError::ReportWrite { .. }
-            | CheckerError::ReportTask(_) => "REPORT",
         }
     }
 }

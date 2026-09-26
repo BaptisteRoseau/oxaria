@@ -10,7 +10,7 @@ use tokio::io::AsyncWriteExt;
 
 use super::{GithubReporter, GitlabReporter, JenkinsReporter, JunitReporter, Report, Reporter};
 use crate::cli::CliConfig;
-use crate::error::CheckerError;
+use crate::error::ReportError;
 use crate::page;
 
 const STDOUT_ARG: &str = "-";
@@ -54,7 +54,7 @@ pub struct ReportTarget {
 
 /// Builds one target per `--report-*` flag, failing on any destination
 /// conflict so the caller can abort before spending time on the check.
-pub fn targets_from(config: &CliConfig) -> Result<Vec<ReportTarget>, CheckerError> {
+pub fn targets_from(config: &CliConfig) -> Result<Vec<ReportTarget>, ReportError> {
     let requested: [(&'static str, &Option<String>, Arc<dyn Reporter>); 4] = [
         (
             "--report-gitlab",
@@ -95,18 +95,18 @@ pub fn targets_from(config: &CliConfig) -> Result<Vec<ReportTarget>, CheckerErro
     Ok(targets)
 }
 
-fn check_conflicts(targets: &[ReportTarget], path_or_url: &str) -> Result<(), CheckerError> {
+fn check_conflicts(targets: &[ReportTarget], path_or_url: &str) -> Result<(), ReportError> {
     let identities: Vec<_> = targets.iter().map(|t| t.destination.identity()).collect();
     for (index, target) in targets.iter().enumerate() {
         if let Some(earlier) = (0..index).find(|&e| identities[e] == identities[index]) {
-            return Err(CheckerError::ReportConflict {
+            return Err(ReportError::Conflict {
                 first: targets[earlier].flag,
                 second: target.flag,
                 destination: target.destination.describe(),
             });
         }
         if overwrites_input(identities[index].as_deref(), path_or_url) {
-            return Err(CheckerError::ReportOverwritesInput {
+            return Err(ReportError::OverwritesInput {
                 flag: target.flag,
                 path: path_or_url.to_string(),
             });
@@ -159,7 +159,7 @@ fn lexically_normalized(path: &Path) -> PathBuf {
 pub async fn write_all(
     report: Arc<Report>,
     targets: Vec<ReportTarget>,
-) -> Result<(), Vec<CheckerError>> {
+) -> Result<(), Vec<ReportError>> {
     let tasks: Vec<_> = targets
         .into_iter()
         .map(|target| tokio::spawn(write_one(Arc::clone(&report), target)))
@@ -170,7 +170,7 @@ pub async fn write_all(
         match task.await {
             Ok(Ok(())) => {}
             Ok(Err(err)) => errors.push(err),
-            Err(join_error) => errors.push(CheckerError::ReportTask(join_error)),
+            Err(join_error) => errors.push(ReportError::Task(join_error)),
         }
     }
     match errors.is_empty() {
@@ -179,13 +179,13 @@ pub async fn write_all(
     }
 }
 
-async fn write_one(report: Arc<Report>, target: ReportTarget) -> Result<(), CheckerError> {
+async fn write_one(report: Arc<Report>, target: ReportTarget) -> Result<(), ReportError> {
     let content = target.reporter.render(&report);
     let result = match &target.destination {
         Destination::Stdout => write_stdout(&content),
         Destination::File(path) => write_file(path, &content, target.reporter.appends()).await,
     };
-    result.map_err(|source| CheckerError::ReportWrite {
+    result.map_err(|source| ReportError::Write {
         flag: target.flag,
         destination: target.destination.describe(),
         source,
@@ -304,7 +304,7 @@ mod tests {
         assert!(
             matches!(
                 result,
-                Err(CheckerError::ReportConflict {
+                Err(ReportError::Conflict {
                     first: "--report-gitlab",
                     second: "--report-junit",
                     ..
@@ -329,7 +329,7 @@ mod tests {
             "--report-junit",
             link.join("r.json").to_str().unwrap(),
         ]));
-        assert!(matches!(result, Err(CheckerError::ReportConflict { .. })));
+        assert!(matches!(result, Err(ReportError::Conflict { .. })));
     }
 
     #[test]
@@ -337,7 +337,7 @@ mod tests {
         let result = targets_from(&config(&["./page.html", "--report-junit", "page.html"]));
         assert!(matches!(
             result,
-            Err(CheckerError::ReportOverwritesInput {
+            Err(ReportError::OverwritesInput {
                 flag: "--report-junit",
                 ..
             })
