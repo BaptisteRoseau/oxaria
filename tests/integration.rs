@@ -38,7 +38,10 @@ fn page_with_violations_exits_one() {
         "H57", "G1", "H42", "G141", "F30", "H44", "F68", "ARIA16", "F84", "H30", "F91", "G87",
         "G152", "F77", "G195",
     ] {
-        assert!(report.contains(rule_id), "expected {rule_id} in:\n{report}");
+        assert!(
+            report.contains(&format!("[ERROR] {rule_id}: ")),
+            "expected {rule_id} in:\n{report}"
+        );
     }
 }
 
