@@ -14,7 +14,9 @@ pub fn check_duplicate_ids(page: &RenderedPage, _options: &CheckOptions) -> Vec<
     id_counts(page)
         .into_iter()
         .filter(|(_, count)| *count > 1)
-        .map(|(id, count)| Finding::error("F77", duplicate_id_message(id, count)))
+        .map(|(id, count)| {
+            Finding::error("F77", duplicate_id_message(id, count)).help(duplicate_id_help(id))
+        })
         .collect()
 }
 
@@ -24,6 +26,13 @@ fn id_counts(page: &RenderedPage) -> BTreeMap<&str, usize> {
         *counts.entry(id).or_insert(0) += 1;
     }
     counts
+}
+
+fn duplicate_id_help(id: &str) -> String {
+    format!(
+        "give each element its own id (e.g. \"{id}-1\", \"{id}-2\"), and update the for=, \
+         aria-labelledby/aria-describedby and \"#{id}\" references to match"
+    )
 }
 
 fn duplicate_id_message(id: &str, count: usize) -> String {
@@ -49,10 +58,19 @@ fn dangling_references(page: &RenderedPage, attribute: &str) -> Vec<Finding> {
                 .split_whitespace()
                 .filter(|id| page.element_by_id(id).is_none())
                 .map(move |id| {
-                    Finding::error("ARIA16", dangling_reference_message(attribute, id)).at(element)
+                    Finding::error("ARIA16", dangling_reference_message(attribute, id))
+                        .at(element)
+                        .help(dangling_reference_help(attribute, id))
                 })
         })
         .collect()
+}
+
+fn dangling_reference_help(attribute: &str, id: &str) -> String {
+    format!(
+        "add id=\"{id}\" to the element holding the text, or fix or remove the reference in \
+         {attribute}"
+    )
 }
 
 fn dangling_reference_message(attribute: &str, id: &str) -> String {
@@ -63,6 +81,19 @@ fn dangling_reference_message(attribute: &str, id: &str) -> String {
 mod tests {
     use super::*;
     use crate::page::testutil::page_from_html;
+
+    #[test]
+    fn dangling_reference_help_names_the_missing_id() {
+        let p = page_from_html(r#"<button aria-describedby="hint">Go</button>"#);
+        let findings = check_dangling_aria_reference(&p, &CheckOptions::default());
+        assert!(
+            findings[0]
+                .help
+                .as_deref()
+                .unwrap()
+                .starts_with(r#"add id="hint" to"#)
+        );
+    }
 
     #[test]
     fn duplicate_ids_are_flagged() {

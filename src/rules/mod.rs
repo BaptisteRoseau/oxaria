@@ -12,6 +12,7 @@ mod language;
 mod links;
 mod multimedia;
 mod navigation;
+mod reference;
 mod tables;
 mod target_size;
 
@@ -22,6 +23,8 @@ use url::Url;
 
 use crate::cli::CliConfig;
 use crate::page::{ElementRef, RenderedPage};
+
+pub use reference::reference_url;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Severity {
@@ -37,6 +40,8 @@ pub struct Finding {
     /// Selector-like path of the element the finding is about, for rules
     /// that point at one element (not page-level or stylesheet rules).
     pub element: Option<String>,
+    /// How to fix the issue, rustc-style.
+    pub help: Option<String>,
     /// URL of the page this finding belongs to, as it was actually served
     /// (after redirects); only set during a full-site scan, where a single
     /// report covers many pages.
@@ -50,6 +55,7 @@ impl Finding {
             severity: Severity::Error,
             message,
             element: None,
+            help: None,
             page: None,
         }
     }
@@ -64,6 +70,13 @@ impl Finding {
     fn at(self, element: ElementRef) -> Self {
         Finding {
             element: Some(element.selector()),
+            ..self
+        }
+    }
+
+    fn help(self, help: impl Into<String>) -> Self {
+        Finding {
+            help: Some(help.into()),
             ..self
         }
     }
@@ -183,6 +196,25 @@ mod tests {
         let findings = run_all(empty, options()).await;
         assert!(findings.iter().any(|f| f.rule_id == "H57"));
         assert!(findings.iter().any(|f| f.rule_id == "H42"));
+    }
+
+    #[tokio::test]
+    async fn every_finding_has_help() {
+        let page = Arc::new(page_from_html(
+            r##"<style>a:focus { outline: none }</style>
+               <a href="#nowhere">Skip</a><h2>A</h2><h4>B</h4>
+               <img src="a.png"><img src="b.png" alt="image"><input required>
+               <button aria-describedby="gone"></button><div role="button"></div>
+               <a href="/a">read more</a><a href="/b">read more</a><a href="/c"></a>
+               <p style="color: #999999">low</p><button style="width: 10px; height: 10px">x</button>
+               <table><tr><td>1</td></tr></table><table><tr><th>H</th></tr></table>
+               <i id="d"></i><i id="d"></i><video autoplay></video>"##,
+        ));
+        let findings = run_all(page, options()).await;
+        let rule_ids: std::collections::BTreeSet<_> = findings.iter().map(|f| f.rule_id).collect();
+        assert_eq!(rule_ids.len(), 20, "not every rule fired: {rule_ids:?}");
+        let without_help: Vec<_> = findings.iter().filter(|f| f.help.is_none()).collect();
+        assert!(without_help.is_empty(), "{without_help:?}");
     }
 
     #[tokio::test]

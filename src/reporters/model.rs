@@ -10,7 +10,7 @@ use std::process::ExitCode;
 use url::Url;
 
 use crate::page;
-use crate::rules::{Finding, Severity};
+use crate::rules::{self, Finding, Severity};
 
 /// Every CI format requires a line number, but litehtml exposes no source
 /// positions, so every issue points at the first line of its document.
@@ -33,8 +33,27 @@ pub struct Issue {
     /// no CI format has a field for it, and without it identical findings
     /// (a page's many 19px buttons) can't be told apart.
     pub message: String,
+    /// Kept out of `message`, which the fingerprint and JUnit test names are
+    /// built from: rewording a hint must not turn every issue into a new one.
+    pub help: Option<String>,
+    /// The W3C page documenting the rule.
+    pub reference: Option<String>,
     pub location: Location,
     pub fingerprint: String,
+}
+
+impl Issue {
+    /// The message followed by the help and reference lines, for formats
+    /// with a single free-text field.
+    pub fn full_text(&self) -> String {
+        let help = self.help.iter().map(|help| format!("help: {help}"));
+        let reference = self.reference.iter().map(|url| format!("see: {url}"));
+        std::iter::once(self.message.clone())
+            .chain(help)
+            .chain(reference)
+            .collect::<Vec<_>>()
+            .join("\n")
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -57,6 +76,8 @@ impl Report {
                     rule_id: finding.rule_id,
                     severity: finding.severity,
                     message,
+                    help: finding.help.clone(),
+                    reference: rules::reference_url(finding.rule_id),
                     location,
                     fingerprint: fingerprint(&format!("{key}\u{1f}{occurrence}")),
                 }
@@ -233,6 +254,46 @@ pub(crate) mod tests {
         let before = Report::new("a.html", &[at("body > a"), at("body > b")]);
         let after = Report::new("a.html", &[at("body > b")]);
         assert_eq!(before.issues[1].fingerprint, after.issues[0].fingerprint);
+    }
+
+    #[test]
+    fn help_does_not_change_the_message_or_fingerprint() {
+        let with_help = Finding {
+            help: Some("add an alt attribute".to_string()),
+            ..error("F65")
+        };
+        let plain = Report::new("a.html", &[error("F65")]);
+        let helped = Report::new("a.html", &[with_help]);
+        assert_eq!(helped.issues[0].message, plain.issues[0].message);
+        assert_eq!(helped.issues[0].fingerprint, plain.issues[0].fingerprint);
+        assert_eq!(
+            helped.issues[0].help.as_deref(),
+            Some("add an alt attribute")
+        );
+    }
+
+    #[test]
+    fn issues_link_to_their_rule() {
+        let report = Report::new("a.html", &[error("H57"), error("FETCH")]);
+        assert_eq!(
+            report.issues[0].reference.as_deref(),
+            Some("https://www.w3.org/WAI/WCAG22/Techniques/html/H57")
+        );
+        assert_eq!(report.issues[1].reference, None);
+    }
+
+    #[test]
+    fn full_text_appends_help_and_reference() {
+        let finding = Finding {
+            help: Some("add lang".to_string()),
+            ..error("H57")
+        };
+        let report = Report::new("a.html", &[finding, error("FETCH")]);
+        assert_eq!(
+            report.issues[0].full_text(),
+            "boom\nhelp: add lang\nsee: https://www.w3.org/WAI/WCAG22/Techniques/html/H57"
+        );
+        assert_eq!(report.issues[1].full_text(), "boom");
     }
 
     #[test]

@@ -70,12 +70,26 @@ fn rows_within_limit(report: &Report, heading_len: usize) -> String {
 
 fn row(issue: &Issue) -> String {
     format!(
-        "| {} | `{}` | {} | {} |\n",
+        "| {} | {} | {} | {} |\n",
         severity_label(issue.severity),
-        issue.rule_id,
+        rule_cell(issue),
         escape(&issue.location.path),
-        escape(&issue.message),
+        message_cell(issue),
     )
+}
+
+fn rule_cell(issue: &Issue) -> String {
+    match &issue.reference {
+        Some(url) => format!("[`{}`]({url})", issue.rule_id),
+        None => format!("`{}`", issue.rule_id),
+    }
+}
+
+fn message_cell(issue: &Issue) -> String {
+    match &issue.help {
+        Some(help) => format!("{}<br>💡 {}", escape(&issue.message), escape(help)),
+        None => escape(&issue.message),
+    }
 }
 
 fn severity_label(severity: Severity) -> &'static str {
@@ -126,8 +140,25 @@ mod tests {
             "## ❌ WCAG 2.2: 1 error(s), 1 warning(s)\n\n\
              | Severity | Rule | Location | Message |\n\
              | --- | --- | --- | --- |\n\
-             | ❌ Error | `H57` | a.html | boom |\n\
-             | ⚠️ Warning | `G18` | a.html | meh |\n"
+             | ❌ Error | [`H57`](https://www.w3.org/WAI/WCAG22/Techniques/html/H57) | a.html | boom |\n\
+             | ⚠️ Warning | [`G18`](https://www.w3.org/WAI/WCAG22/Techniques/general/G18) | a.html | meh |\n"
+        );
+    }
+
+    #[test]
+    fn rules_without_a_reference_are_not_linked() {
+        assert!(render("a.html", &[error("FETCH")]).contains("| ❌ Error | `FETCH` |"));
+    }
+
+    #[test]
+    fn help_follows_the_message_in_its_cell() {
+        let finding = Finding {
+            help: Some("add <track>".to_string()),
+            ..error("G87")
+        };
+        assert!(
+            render("a.html", &[finding]).contains("| boom<br>💡 add \\<track\\> |"),
+            "help missing"
         );
     }
 

@@ -7,10 +7,12 @@ use super::{CheckOptions, Finding};
 /// H42/G141: the page should have a top-level heading to anchor its outline.
 pub fn check_missing_h1(page: &RenderedPage, _options: &CheckOptions) -> Vec<Finding> {
     match page.by_tag("h1").next().is_none() {
-        true => vec![Finding::error(
-            "H42",
-            "page has no <h1> element".to_string(),
-        )],
+        true => vec![
+            Finding::error("H42", "page has no <h1> element".to_string()).help(
+                "mark the page's main title up as an <h1>, e.g. <h1>Order summary</h1>, \
+                 instead of styling a <div> or <p> to look like one",
+            ),
+        ],
         false => Vec::new(),
     }
 }
@@ -23,7 +25,9 @@ pub fn check_skipped_heading_level(page: &RenderedPage, _options: &CheckOptions)
     for (heading, level) in headings(page) {
         if previous_level > 0 && level > previous_level + 1 {
             findings.push(
-                Finding::error("G141", skipped_level_message(previous_level, level)).at(heading),
+                Finding::error("G141", skipped_level_message(previous_level, level))
+                    .at(heading)
+                    .help(skipped_level_help(previous_level)),
             );
         }
         previous_level = level;
@@ -41,6 +45,11 @@ fn heading_level(tag_name: &str) -> Option<u8> {
     tag_name.strip_prefix('h')?.parse().ok()
 }
 
+fn skipped_level_help(previous_level: u8) -> String {
+    let expected = previous_level + 1;
+    format!("make this an <h{expected}>; to only make it smaller, change its font-size in CSS")
+}
+
 fn skipped_level_message(previous_level: u8, level: u8) -> String {
     format!("heading level jumps from h{previous_level} to h{level}, skipping a level")
 }
@@ -49,6 +58,19 @@ fn skipped_level_message(previous_level: u8, level: u8) -> String {
 mod tests {
     use super::*;
     use crate::page::testutil::page_from_html;
+
+    #[test]
+    fn skipped_level_help_names_the_expected_level() {
+        let p = page_from_html("<h1>A</h1><h3>B</h3>");
+        let findings = check_skipped_heading_level(&p, &CheckOptions::default());
+        assert!(
+            findings[0]
+                .help
+                .as_deref()
+                .unwrap()
+                .starts_with("make this an <h2>")
+        );
+    }
 
     #[test]
     fn missing_h1_is_flagged() {

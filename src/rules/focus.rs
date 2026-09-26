@@ -17,12 +17,22 @@ pub fn check_outline_removed_without_alternative(
         .into_iter()
         .filter(|(selector, _)| selector.to_lowercase().contains(":focus"))
         .filter(|(_, body)| removes_outline_without_alternative(body))
-        .map(|(selector, _)| Finding::error("G195", outline_removed_message(&selector)))
+        .map(|(selector, _)| {
+            Finding::error("G195", outline_removed_message(&selector))
+                .help(outline_removed_help(&selector))
+        })
         .collect()
 }
 
 fn outline_removed_message(selector: &str) -> String {
     format!("\"{selector}\" removes the focus outline without another visible focus indicator")
+}
+
+fn outline_removed_help(selector: &str) -> String {
+    format!(
+        "remove \"outline: none\" from \"{selector}\", or replace it with another visible \
+         indicator, e.g. box-shadow: 0 0 0 3px #1a73e8"
+    )
 }
 
 fn removes_outline_without_alternative(body: &str) -> bool {

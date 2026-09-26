@@ -1,4 +1,5 @@
-//! The human-readable stdout output: one line per issue, then a summary.
+//! The human-readable stdout output: one line per issue, followed by
+//! rustc-style `= help:`/`= note:` lines, then a summary.
 
 use super::{Issue, Report, Reporter};
 use crate::rules::Severity;
@@ -10,11 +11,23 @@ impl Reporter for TextReporter {
         report
             .issues
             .iter()
-            .map(issue_line)
+            .flat_map(issue_lines)
             .chain(std::iter::once(summary_line(report)))
             .map(|line| line + "\n")
             .collect()
     }
+}
+
+fn issue_lines(issue: &Issue) -> Vec<String> {
+    let help = issue.help.iter().map(|help| format!("  = help: {help}"));
+    let note = issue
+        .reference
+        .iter()
+        .map(|url| format!("  = note: see {url}"));
+    std::iter::once(issue_line(issue))
+        .chain(help)
+        .chain(note)
+        .collect()
 }
 
 fn issue_line(issue: &Issue) -> String {
@@ -44,16 +57,32 @@ fn summary_line(report: &Report) -> String {
 mod tests {
     use super::*;
     use crate::reporters::model::tests::{error, on_page, warning};
+    use crate::rules::Finding;
 
-    fn render(source: &str, findings: &[crate::rules::Finding]) -> String {
+    fn render(source: &str, findings: &[Finding]) -> String {
         TextReporter.render(&Report::new(source, findings))
     }
 
     #[test]
     fn issue_line_without_page_is_unchanged() {
         assert_eq!(
-            render("a.html", &[error("H57")]),
-            "[ERROR] H57: boom\n1 error(s), 0 warning(s)\n"
+            render("a.html", &[error("FETCH")]),
+            "[ERROR] FETCH: boom\n1 error(s), 0 warning(s)\n"
+        );
+    }
+
+    #[test]
+    fn help_and_note_follow_the_issue_line() {
+        let finding = Finding {
+            help: Some("add lang=\"en\"".to_string()),
+            ..error("H57")
+        };
+        assert_eq!(
+            render("a.html", &[finding]),
+            "[ERROR] H57: boom\n  \
+             = help: add lang=\"en\"\n  \
+             = note: see https://www.w3.org/WAI/WCAG22/Techniques/html/H57\n\
+             1 error(s), 0 warning(s)\n"
         );
     }
 

@@ -11,7 +11,7 @@ pub struct GitlabReporter;
 
 #[derive(Serialize)]
 struct CodeQualityIssue<'a> {
-    description: &'a str,
+    description: String,
     check_name: &'a str,
     fingerprint: &'a str,
     severity: &'static str,
@@ -38,7 +38,7 @@ impl Reporter for GitlabReporter {
 
 fn code_quality_issue(issue: &Issue) -> CodeQualityIssue<'_> {
     CodeQualityIssue {
-        description: &issue.message,
+        description: issue.full_text(),
         check_name: issue.rule_id,
         fingerprint: &issue.fingerprint,
         severity: severity(issue.severity),
@@ -81,12 +81,24 @@ mod tests {
         assert_eq!(
             output,
             json!([{
-                "description": "boom",
+                "description": "boom\nsee: https://www.w3.org/WAI/WCAG22/Techniques/html/H57",
                 "check_name": "H57",
                 "fingerprint": report.issues[0].fingerprint,
                 "severity": "major",
                 "location": { "path": "a.html", "lines": { "begin": 1 } },
             }])
+        );
+    }
+
+    #[test]
+    fn help_is_part_of_the_description() {
+        let finding = Finding {
+            help: Some("add lang".to_string()),
+            ..error("FETCH")
+        };
+        assert_eq!(
+            render("a.html", &[finding])[0]["description"],
+            "boom\nhelp: add lang"
         );
     }
 

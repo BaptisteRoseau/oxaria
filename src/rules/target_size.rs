@@ -67,13 +67,55 @@ fn target_size_finding(element: ElementRef, options: &CheckOptions) -> Option<Fi
             ),
         )
         .at(element)
+        .help(target_size_help(
+            element,
+            smallest_dimension,
+            options.target_size_threshold,
+        ))
     })
+}
+
+fn target_size_help(element: ElementRef, size: f64, threshold: f64) -> String {
+    let padding = ((threshold - size) / 2.0).ceil();
+    let fix = format!(
+        "make it at least {threshold:.0}x{threshold:.0}px, e.g. min-width: {threshold:.0}px; \
+         min-height: {threshold:.0}px, or padding: {padding:.0}px"
+    );
+    match element.tag() {
+        "a" => format!("{fix} (a link inside a sentence is exempt)"),
+        _ => fix,
+    }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
     use crate::page::testutil::page_from_html;
+
+    #[test]
+    fn help_gives_the_missing_padding() {
+        let p = page_from_html(r#"<button style="width: 19px; height: 19px">X</button>"#);
+        let findings = check_target_size(&p, &CheckOptions::default());
+        assert_eq!(
+            findings[0].help.as_deref(),
+            Some(
+                "make it at least 24x24px, e.g. min-width: 24px; min-height: 24px, or padding: 3px"
+            )
+        );
+    }
+
+    #[test]
+    fn link_help_mentions_the_inline_exception() {
+        let p = page_from_html(r#"<a href="/" style="width: 16px; height: 16px">X</a>"#);
+        let findings = check_target_size(&p, &CheckOptions::default());
+        assert!(
+            findings[0]
+                .help
+                .as_deref()
+                .unwrap()
+                .ends_with("(a link inside a sentence is exempt)")
+        );
+    }
 
     #[test]
     fn small_target_is_flagged_as_warning() {

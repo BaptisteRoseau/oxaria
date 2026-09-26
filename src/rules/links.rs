@@ -40,7 +40,9 @@ fn non_descriptive_finding(link: ElementRef) -> Option<Finding> {
     let href = href_of(link);
     if name.trim().is_empty() {
         return Some(
-            Finding::error("H30", format!("link to \"{href}\" has no link text")).at(link),
+            Finding::error("H30", format!("link to \"{href}\" has no link text"))
+                .at(link)
+                .help(empty_link_help(link)),
         );
     }
     is_generic_phrase(&name).then(|| {
@@ -49,7 +51,21 @@ fn non_descriptive_finding(link: ElementRef) -> Option<Finding> {
             format!("link to \"{href}\" uses non-descriptive text \"{name}\""),
         )
         .at(link)
+        .help(format!(
+            "replace \"{}\" with text saying where the link goes, so it makes sense on its own \
+             (screen readers list a page's links out of context)",
+            name.trim()
+        ))
     })
+}
+
+fn empty_link_help(link: ElementRef) -> &'static str {
+    match link.descendants().any(|el| el.tag() == "img") {
+        true => "give the image an alt saying where the link goes, e.g. alt=\"Acme home page\"",
+        false => {
+            "add text saying where the link goes, or an aria-label=\"...\" if it only shows an icon"
+        }
+    }
 }
 
 fn is_generic_phrase(name: &str) -> bool {
@@ -142,6 +158,10 @@ fn duplicate_text_finding(text: &str, mut distinct_hrefs: Vec<String>) -> Option
                 distinct_hrefs.join(", ")
             ),
         )
+        .help(format!(
+            "make each link's text unique, e.g. \"{text} about <topic>\", \
+             or link them all to the same URL if they are the same page"
+        ))
     })
 }
 
@@ -149,6 +169,28 @@ fn duplicate_text_finding(text: &str, mut distinct_hrefs: Vec<String>) -> Option
 mod tests {
     use super::*;
     use crate::page::testutil::page_from_html;
+
+    #[test]
+    fn empty_image_link_help_points_at_the_images_alt() {
+        let p = page_from_html(r#"<a href="/"><img src="logo.png"></a><a href="/x"></a>"#);
+        let findings = check_non_descriptive_link_text(&p, &CheckOptions::default());
+        let help = |index: usize| findings[index].help.as_deref().unwrap();
+        assert!(help(0).starts_with("give the image an alt"), "{}", help(0));
+        assert!(help(1).starts_with("add text"), "{}", help(1));
+    }
+
+    #[test]
+    fn generic_link_help_quotes_the_text() {
+        let p = page_from_html(r#"<a href="/report.pdf">Click here</a>"#);
+        let findings = check_non_descriptive_link_text(&p, &CheckOptions::default());
+        assert!(
+            findings[0]
+                .help
+                .as_deref()
+                .unwrap()
+                .starts_with(r#"replace "Click here" with"#)
+        );
+    }
 
     #[test]
     fn empty_link_text_is_flagged() {

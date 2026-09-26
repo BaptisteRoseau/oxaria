@@ -259,6 +259,17 @@ See [README.md](./README.md#architecture) for the module tree. Notes beyond what
   Reporters append it to the message (`(at ...)`), since no CI format has a field for it, and
   that makes fingerprints independent of finding order. Rules about several elements (F77,
   F84), the page (H42, H57, G1 without a link) or a stylesheet (G195) leave it `None`.
+- **Findings carry a rustc-style `help`** (`Finding::help`), set by the rule itself rather than
+  looked up by rule ID: H30 and G1 each report two different problems under one ID, and the
+  most useful hints need the finding's context (G18's nearest passing color, TGT001's missing
+  padding, G141's expected level). `every_finding_has_help` in `rules/mod.rs` fails if a rule
+  ships without one. The `note: see <url>` link is derived from the rule ID's prefix
+  (`rules::reference_url`, URL shapes taken from the w3c/wcag repo's own cross-links).
+- **Help stays out of `Issue.message`**, which the fingerprint and JUnit test names are built
+  from: rewording a hint must not make GitLab see every issue as fixed-and-new. Formats with a
+  single text field get `Issue::full_text()`; GitHub puts help in the message cell and links the
+  rule ID; Warnings NG gets it as HTML in `description`. GitLab's and Warnings NG's rendering of
+  these fields has not yet been checked in a real instance.
 - **`Finding.page` is the page's final URL, not its path** (query and fragment dropped), so a
   start URL that redirects to another host (`www.openai.com` -> `openai.com`) locates findings
   on the host that actually served them. The text output still shows only the path.

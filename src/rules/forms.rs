@@ -9,7 +9,11 @@ pub fn check_missing_label(page: &RenderedPage, _options: &CheckOptions) -> Vec<
     page.all()
         .filter(|el| is_labelable_control(*el))
         .filter(|control| control.accessible_name().is_empty())
-        .map(|control| Finding::error("H44", missing_label_message(control)).at(control))
+        .map(|control| {
+            Finding::error("H44", missing_label_message(control))
+                .at(control)
+                .help(missing_label_help(page, control))
+        })
         .collect()
 }
 
@@ -33,13 +37,30 @@ fn missing_label_message(control: ElementRef) -> String {
     }
 }
 
+fn missing_label_help(page: &RenderedPage, control: ElementRef) -> String {
+    let label = match control.attr("id").filter(|id| is_unique_id(page, id)) {
+        Some(id) => format!("add <label for=\"{id}\">...</label>"),
+        None => "wrap it in <label>...</label>".to_string(),
+    };
+    format!("{label}, or give it an aria-label (a placeholder is not a label)")
+}
+
+/// A `for=` pointing at a duplicate id would label the first element with it, not this one.
+fn is_unique_id(page: &RenderedPage, id: &str) -> bool {
+    page.all().filter(|el| el.attr("id") == Some(id)).count() == 1
+}
+
 /// F68: interactive controls (buttons, custom `role=button` widgets, image/submit buttons) must
 /// expose an accessible name.
 pub fn check_unnamed_control(page: &RenderedPage, _options: &CheckOptions) -> Vec<Finding> {
     page.all()
         .filter(|el| is_unnamed_control_candidate(*el))
         .filter(|control| control.accessible_name().is_empty())
-        .map(|control| Finding::error("F68", unnamed_control_message(control)).at(control))
+        .map(|control| {
+            Finding::error("F68", unnamed_control_message(control))
+                .at(control)
+                .help(unnamed_control_help(control))
+        })
         .collect()
 }
 
@@ -56,15 +77,33 @@ fn unnamed_control_message(control: ElementRef) -> String {
     )
 }
 
+fn unnamed_control_help(control: ElementRef) -> &'static str {
+    match control.tag() {
+        "button" => {
+            "give it visible text, or aria-label=\"...\" if it only shows an icon \
+             (and mark the icon aria-hidden=\"true\")"
+        }
+        "input" => "give it a value=\"...\" (or alt=\"...\" for type=\"image\") naming its action",
+        _ => "use a native <button> with visible text, or add aria-label=\"...\"",
+    }
+}
+
 /// H90: a `required` control's accessible name or description must tell assistive technology
 /// users the field is required, not rely on visual styling alone.
 pub fn check_required_not_indicated(page: &RenderedPage, _options: &CheckOptions) -> Vec<Finding> {
     page.all()
         .filter(|el| el.has_attr("required"))
         .filter(|control| !required_is_indicated(page, *control))
-        .map(|control| Finding::error("H90", required_not_indicated_message(control)).at(control))
+        .map(|control| {
+            Finding::error("H90", required_not_indicated_message(control))
+                .at(control)
+                .help(REQUIRED_NOT_INDICATED_HELP)
+        })
         .collect()
 }
+
+const REQUIRED_NOT_INDICATED_HELP: &str = "say it in the label, e.g. \
+    <label for=\"...\">Last name (required)</label>, or add aria-required=\"true\"";
 
 fn required_is_indicated(page: &RenderedPage, control: ElementRef) -> bool {
     if control.attr("aria-required") == Some("true") {
@@ -105,6 +144,42 @@ mod tests {
         let findings = check_missing_label(&p, &CheckOptions::default());
         assert_eq!(findings.len(), 1);
         assert_eq!(findings[0].message, "<input> has no associated label");
+    }
+
+    #[test]
+    fn missing_label_help_uses_the_controls_id() {
+        let p = page_from_html(r#"<input id="email" type="email"><textarea></textarea>"#);
+        let findings = check_missing_label(&p, &CheckOptions::default());
+        let help = |index: usize| findings[index].help.clone().unwrap();
+        assert!(
+            help(0).starts_with(r#"add <label for="email">"#),
+            "{}",
+            help(0)
+        );
+        assert!(help(1).starts_with("wrap it in <label>"), "{}", help(1));
+    }
+
+    #[test]
+    fn missing_label_help_avoids_a_duplicate_id() {
+        let p = page_from_html(r#"<input type="checkbox" id="a"><input type="checkbox" id="a">"#);
+        let findings = check_missing_label(&p, &CheckOptions::default());
+        assert!(
+            findings[0]
+                .help
+                .as_deref()
+                .unwrap()
+                .starts_with("wrap it in <label>")
+        );
+    }
+
+    #[test]
+    fn unnamed_custom_button_help_suggests_a_native_button() {
+        let p = page_from_html(r#"<div role="button"></div>"#);
+        let help = check_unnamed_control(&p, &CheckOptions::default())[0]
+            .help
+            .clone()
+            .unwrap();
+        assert!(help.starts_with("use a native <button>"), "{help}");
     }
 
     #[test]

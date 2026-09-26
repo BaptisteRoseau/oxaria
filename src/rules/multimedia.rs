@@ -15,6 +15,10 @@ pub fn check_video_missing_captions(page: &RenderedPage, _options: &CheckOptions
                 "<video> has no captions or subtitles track".to_string(),
             )
             .at(video)
+            .help(
+                "add <track kind=\"captions\" src=\"captions.vtt\" srclang=\"en\" \
+                 label=\"English\"> inside it; a video without audio needs none",
+            )
         })
         .collect()
 }
@@ -41,6 +45,7 @@ pub fn check_autoplay_without_controls(
                 "<video autoplay> has no controls to pause it".to_string(),
             )
             .at(video)
+            .help("add the controls attribute, or remove autoplay (muted is not enough)")
         })
         .collect()
 }

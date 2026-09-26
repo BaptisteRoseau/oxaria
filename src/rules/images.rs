@@ -18,13 +18,25 @@ const PLACEHOLDER_ALT_VALUES: &[&str] = &[
 pub fn check_missing_alt(page: &RenderedPage, _options: &CheckOptions) -> Vec<Finding> {
     page.by_tag("img")
         .filter(|img| img.attr("alt").is_none())
-        .map(|img| Finding::error("F65", missing_alt_message(img)).at(img))
+        .map(|img| {
+            Finding::error("F65", missing_alt_message(img))
+                .at(img)
+                .help(missing_alt_help(img))
+        })
         .collect()
 }
 
 fn missing_alt_message(img: ElementRef) -> String {
     let src = img.attr("src").unwrap_or("(no src)");
     format!("<img src=\"{src}\"> has no alt attribute")
+}
+
+fn missing_alt_help(img: ElementRef) -> String {
+    let src = img.attr("src").unwrap_or("...");
+    format!(
+        "describe what the image shows, e.g. <img src=\"{src}\" alt=\"...\">, \
+         or use alt=\"\" if it is purely decorative"
+    )
 }
 
 /// F30: an `alt` value that is a filename or a generic placeholder ("image", "spacer", …) is not
@@ -37,8 +49,11 @@ pub fn check_non_alternative_alt(page: &RenderedPage, _options: &CheckOptions) -
 
 fn non_alternative_finding(img: ElementRef) -> Option<Finding> {
     let alt = img.attr("alt")?.trim();
-    is_non_alternative_alt(alt)
-        .then(|| Finding::error("F30", non_alternative_message(img, alt)).at(img))
+    is_non_alternative_alt(alt).then(|| {
+        Finding::error("F30", non_alternative_message(img, alt))
+            .at(img)
+            .help(non_alternative_help(alt))
+    })
 }
 
 fn is_non_alternative_alt(alt: &str) -> bool {
@@ -60,6 +75,13 @@ fn looks_like_filename(alt: &str) -> bool {
     has_image_extension && !alt.contains(' ')
 }
 
+fn non_alternative_help(alt: &str) -> String {
+    format!(
+        "replace \"{alt}\" with the information the image conveys (for a chart, its key \
+         figures), or use alt=\"\" if it is purely decorative"
+    )
+}
+
 fn non_alternative_message(img: ElementRef, alt: &str) -> String {
     let src = img.attr("src").unwrap_or("(no src)");
     format!("<img src=\"{src}\"> has a non-alternative alt text: \"{alt}\"")
@@ -76,6 +98,29 @@ mod tests {
         let findings = check_missing_alt(&p, &CheckOptions::default());
         assert_eq!(findings.len(), 1);
         assert_eq!(findings[0].rule_id, "F65");
+    }
+
+    #[test]
+    fn missing_alt_help_reuses_the_src() {
+        let p = page_from_html(r#"<img src="photo.jpg">"#);
+        let help = check_missing_alt(&p, &CheckOptions::default())[0]
+            .help
+            .clone()
+            .unwrap();
+        assert!(
+            help.contains(r#"<img src="photo.jpg" alt="...">"#),
+            "{help}"
+        );
+    }
+
+    #[test]
+    fn non_alternative_help_quotes_the_alt() {
+        let p = page_from_html(r#"<img src="a.jpg" alt="chart.jpg">"#);
+        let help = check_non_alternative_alt(&p, &CheckOptions::default())[0]
+            .help
+            .clone()
+            .unwrap();
+        assert!(help.starts_with(r#"replace "chart.jpg" with"#), "{help}");
     }
 
     #[test]

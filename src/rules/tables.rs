@@ -18,6 +18,10 @@ pub fn check_table_missing_headers(page: &RenderedPage, _options: &CheckOptions)
                 "table has data rows but no <th> header cells".to_string(),
             )
             .at(table)
+            .help(
+                "mark the header cells up as <th scope=\"col\"> (or scope=\"row\"); \
+                 if the table is only for layout, add role=\"presentation\"",
+            )
         })
         .collect()
 }
@@ -41,8 +45,27 @@ pub fn check_header_missing_scope(page: &RenderedPage, _options: &CheckOptions) 
     page.by_tag("th")
         .filter(|th| th.attr("scope").is_none())
         .filter(|th| !is_referenced(*th, &referenced_ids))
-        .map(|th| Finding::error("H63", "<th> has no scope attribute".to_string()).at(th))
+        .map(|th| {
+            Finding::error("H63", "<th> has no scope attribute".to_string())
+                .at(th)
+                .help(format!(
+                    "add scope=\"{}\" to say which cells this header describes",
+                    likely_scope(th)
+                ))
+        })
         .collect()
+}
+
+/// A header in a row of only headers heads a column; one next to data cells heads its row.
+fn likely_scope(th: ElementRef) -> &'static str {
+    let row_has_data = th
+        .ancestors()
+        .find(|el| el.tag() == "tr")
+        .is_some_and(|row| row.children().any(|cell| cell.tag() == "td"));
+    match row_has_data {
+        true => "row",
+        false => "col",
+    }
 }
 
 fn referenced_header_ids(page: &RenderedPage) -> HashSet<&str> {
@@ -60,6 +83,22 @@ fn is_referenced(th: ElementRef, referenced_ids: &HashSet<&str>) -> bool {
 mod tests {
     use super::*;
     use crate::page::testutil::page_from_html;
+
+    #[test]
+    fn scope_help_guesses_col_for_header_rows_and_row_beside_data() {
+        let p = page_from_html(
+            "<table><tr><th>Name</th><th>Score</th></tr><tr><th>Alex</th><td>92</td></tr></table>",
+        );
+        let helps: Vec<_> = check_header_missing_scope(&p, &CheckOptions::default())
+            .into_iter()
+            .map(|finding| finding.help.unwrap())
+            .collect();
+        let scopes: Vec<_> = helps
+            .iter()
+            .map(|help| help.split('"').nth(1).unwrap())
+            .collect();
+        assert_eq!(scopes, ["col", "col", "row"]);
+    }
 
     #[test]
     fn table_without_th_is_flagged() {

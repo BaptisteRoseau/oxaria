@@ -9,7 +9,11 @@ use crate::page::{ElementRef, RenderedPage};
 
 use super::{CheckOptions, Finding};
 
-const DEFAULT_CANVAS_BACKGROUND: (u8, u8, u8) = (255, 255, 255);
+type Rgb = (u8, u8, u8);
+
+const DEFAULT_CANVAS_BACKGROUND: Rgb = (255, 255, 255);
+const BLACK: Rgb = (0, 0, 0);
+const WHITE: Rgb = (255, 255, 255);
 
 pub fn check_text_contrast(page: &RenderedPage, options: &CheckOptions) -> Vec<Finding> {
     page.all()
@@ -26,10 +30,7 @@ fn renders_own_text(el: ElementRef) -> bool {
 fn contrast_finding(el: ElementRef, options: &CheckOptions) -> Option<Finding> {
     let foreground = el.color();
     let background = el.background_color().unwrap_or(DEFAULT_CANVAS_BACKGROUND);
-    let ratio = contrast_ratio(
-        relative_luminance(foreground),
-        relative_luminance(background),
-    );
+    let ratio = color_contrast(foreground, background);
     let threshold = required_threshold(el, options);
     (ratio < threshold).then(|| {
         Finding::warning(
@@ -40,7 +41,74 @@ fn contrast_finding(el: ElementRef, options: &CheckOptions) -> Option<Finding> {
             ),
         )
         .at(el)
+        .help(contrast_help(el, (foreground, background), ratio, options))
     })
+}
+
+fn contrast_help(
+    el: ElementRef,
+    (foreground, background): (Rgb, Rgb),
+    ratio: f64,
+    options: &CheckOptions,
+) -> String {
+    let threshold = required_threshold(el, options);
+    let fix = match passing_color(foreground, background, threshold) {
+        Some((verb, color)) => format!(
+            "{verb} the text to {} ({:.2}:1 on {})",
+            hex(color),
+            color_contrast(color, background),
+            hex(background)
+        ),
+        None => format!(
+            "change the background: no text color reaches {threshold:.2}:1 on {}",
+            hex(background)
+        ),
+    };
+    let large_threshold = options.large_text_contrast_threshold;
+    match !is_large_text(el) && ratio >= large_threshold {
+        true => format!(
+            "{fix}, or enlarge it to 24px (18.66px bold), which needs only {large_threshold:.2}:1"
+        ),
+        false => fix,
+    }
+}
+
+/// The color closest to `foreground`, on the way to black or white (whichever contrasts more
+/// with `background`), that reaches `threshold`.
+fn passing_color(foreground: Rgb, background: Rgb, threshold: f64) -> Option<(&'static str, Rgb)> {
+    let (verb, extreme) =
+        match color_contrast(BLACK, background) >= color_contrast(WHITE, background) {
+            true => ("darken", BLACK),
+            false => ("lighten", WHITE),
+        };
+    let passes =
+        |amount: f64| color_contrast(mix(foreground, extreme, amount), background) >= threshold;
+    if !passes(1.0) {
+        return None;
+    }
+    let (mut failing, mut passing) = (0.0, 1.0);
+    for _ in 0..32 {
+        let middle = (failing + passing) / 2.0;
+        match passes(middle) {
+            true => passing = middle,
+            false => failing = middle,
+        }
+    }
+    Some((verb, mix(foreground, extreme, passing)))
+}
+
+fn mix((r1, g1, b1): Rgb, (r2, g2, b2): Rgb, amount: f64) -> Rgb {
+    let channel =
+        |from: u8, to: u8| (from as f64 + (to as f64 - from as f64) * amount).round() as u8;
+    (channel(r1, r2), channel(g1, g2), channel(b1, b2))
+}
+
+fn hex((r, g, b): Rgb) -> String {
+    format!("#{r:02x}{g:02x}{b:02x}")
+}
+
+fn color_contrast(first: Rgb, second: Rgb) -> f64 {
+    contrast_ratio(relative_luminance(first), relative_luminance(second))
 }
 
 fn required_threshold(el: ElementRef, options: &CheckOptions) -> f64 {
@@ -56,7 +124,7 @@ fn is_large_text(el: ElementRef) -> bool {
     size >= 24.0 || (el.font_weight() >= 700 && size >= 18.66)
 }
 
-fn relative_luminance((r, g, b): (u8, u8, u8)) -> f64 {
+fn relative_luminance((r, g, b): Rgb) -> f64 {
     let channel = |value: u8| -> f64 {
         let normalized = value as f64 / 255.0;
         match normalized <= 0.04045 {
@@ -107,6 +175,69 @@ mod tests {
         assert_eq!(findings.len(), 1);
         assert_eq!(findings[0].rule_id, "G18");
         assert_eq!(findings[0].severity, crate::rules::Severity::Warning);
+    }
+
+    #[test]
+    fn help_suggests_the_nearest_passing_color() {
+        let p =
+            page_from_html(r#"<p style="color: #999999; background-color: #ffffff">Body text</p>"#);
+        let findings = check_text_contrast(&p, &CheckOptions::default());
+        assert_eq!(
+            findings[0].help.as_deref(),
+            Some("darken the text to #767676 (4.54:1 on #ffffff)")
+        );
+    }
+
+    #[test]
+    fn help_lightens_text_on_a_dark_background() {
+        let p =
+            page_from_html(r#"<p style="color: #555555; background-color: #000000">Body text</p>"#);
+        let findings = check_text_contrast(&p, &CheckOptions::default());
+        assert!(
+            findings[0]
+                .help
+                .as_deref()
+                .unwrap()
+                .starts_with("lighten the text to #"),
+            "{:?}",
+            findings[0].help
+        );
+    }
+
+    #[test]
+    fn help_offers_large_text_when_that_would_pass() {
+        let p =
+            page_from_html(r#"<p style="color: #888888; background-color: #ffffff">Body text</p>"#);
+        let findings = check_text_contrast(&p, &CheckOptions::default());
+        assert!(
+            findings[0]
+                .help
+                .as_deref()
+                .unwrap()
+                .ends_with("or enlarge it to 24px (18.66px bold), which needs only 3.00:1"),
+            "{:?}",
+            findings[0].help
+        );
+    }
+
+    #[test]
+    fn help_asks_for_another_background_when_no_text_color_passes() {
+        let options = CheckOptions {
+            contrast_threshold: 7.0,
+            ..CheckOptions::default()
+        };
+        let p =
+            page_from_html(r#"<p style="color: #999999; background-color: #777777">Body text</p>"#);
+        let findings = check_text_contrast(&p, &options);
+        assert!(
+            findings[0]
+                .help
+                .as_deref()
+                .unwrap()
+                .starts_with("change the background"),
+            "{:?}",
+            findings[0].help
+        );
     }
 
     #[test]

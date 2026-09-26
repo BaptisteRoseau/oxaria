@@ -76,9 +76,9 @@ fn testcase(issue: &Issue, name: &str) -> String {
             "<failure type=\"{}\" message=\"{}\">{}</failure>",
             escape(issue.rule_id),
             escape(&issue.message),
-            escape(&issue.message),
+            escape(&issue.full_text()),
         ),
-        Severity::Warning => format!("<system-out>{}</system-out>", escape(&issue.message)),
+        Severity::Warning => format!("<system-out>{}</system-out>", escape(&issue.full_text())),
     };
     let path = escape(&issue.location.path);
     format!(
@@ -88,7 +88,7 @@ fn testcase(issue: &Issue, name: &str) -> String {
 }
 
 /// Escapes for both attribute values and text content.
-fn escape(value: &str) -> String {
+pub(super) fn escape(value: &str) -> String {
     value
         .replace('&', "&amp;")
         .replace('<', "&lt;")
@@ -121,14 +121,28 @@ mod tests {
         let output = render("a.html", &[error("H57")]);
         assert!(output.contains(
             "<testcase classname=\"a.html\" name=\"H57: boom\" file=\"a.html\">\
-             <failure type=\"H57\" message=\"boom\">boom</failure></testcase>"
+             <failure type=\"H57\" message=\"boom\">boom\nsee: https://www.w3.org/WAI/WCAG22/Techniques/html/H57</failure></testcase>"
         ));
+    }
+
+    #[test]
+    fn help_is_in_the_body_not_the_name() {
+        let finding = Finding {
+            help: Some("add lang".to_string()),
+            ..warning("FETCH")
+        };
+        let output = render("a.html", &[finding]);
+        assert!(output.contains("name=\"FETCH: meh\""), "{output}");
+        assert!(
+            output.contains("<system-out>meh\nhelp: add lang</system-out>"),
+            "{output}"
+        );
     }
 
     #[test]
     fn warning_is_a_passing_testcase() {
         let output = render("a.html", &[error("H57"), warning("G18")]);
-        assert!(output.contains("<system-out>meh</system-out>"));
+        assert!(output.contains("<system-out>meh\nsee: "));
         assert!(output.contains("tests=\"2\" failures=\"1\""));
     }
 

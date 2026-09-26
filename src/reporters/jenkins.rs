@@ -4,6 +4,7 @@
 
 use serde::Serialize;
 
+use super::junit::escape;
 use super::model::LINE;
 use super::{Issue, Report, Reporter};
 use crate::rules::Severity;
@@ -26,6 +27,8 @@ struct WarningsIssue<'a> {
     #[serde(rename = "type")]
     kind: &'static str,
     message: &'a str,
+    /// HTML, shown in the issue's details.
+    description: String,
     fingerprint: &'a str,
     /// Warnings NG drops issues it considers equal, and its equality ignores
     /// `fingerprint`: two unlabeled checkboxes (same rule, file, line, and
@@ -52,9 +55,22 @@ fn warnings_issue(issue: &Issue) -> WarningsIssue<'_> {
         category: "WCAG 2.2",
         kind: issue.rule_id,
         message: &issue.message,
+        description: description(issue),
         fingerprint: &issue.fingerprint,
         additional_properties: &issue.fingerprint,
     }
+}
+
+fn description(issue: &Issue) -> String {
+    let help = issue
+        .help
+        .iter()
+        .map(|help| format!("<p>help: {}</p>", escape(help)));
+    let reference = issue.reference.iter().map(|url| {
+        let url = escape(url);
+        format!("<p>see: <a href=\"{url}\">{url}</a></p>")
+    });
+    help.chain(reference).collect()
 }
 
 fn severity(severity: Severity) -> &'static str {
@@ -96,6 +112,7 @@ mod tests {
                     "category": "WCAG 2.2",
                     "type": "H57",
                     "message": "boom",
+                    "description": "<p>see: <a href=\"https://www.w3.org/WAI/WCAG22/Techniques/html/H57\">https://www.w3.org/WAI/WCAG22/Techniques/html/H57</a></p>",
                     "fingerprint": report.issues[0].fingerprint,
                     "additionalProperties": report.issues[0].fingerprint,
                 }],
@@ -110,6 +127,18 @@ mod tests {
         assert_ne!(
             output["issues"][0]["additionalProperties"],
             output["issues"][1]["additionalProperties"]
+        );
+    }
+
+    #[test]
+    fn help_is_escaped_into_the_description() {
+        let finding = Finding {
+            help: Some("add <track>".to_string()),
+            ..error("FETCH")
+        };
+        assert_eq!(
+            render("a.html", &[finding])["issues"][0]["description"],
+            "<p>help: add &lt;track&gt;</p>"
         );
     }
 
