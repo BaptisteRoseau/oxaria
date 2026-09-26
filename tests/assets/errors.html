@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="UTF-8">
+	<title>Products</title>
+	<style>
+		body {
+			font: 100% / 1.5 sans-serif;
+			background-color: #fff;
+			color: #000;
+		}
+
+		a:focus, button:focus {
+			outline: none;
+		}
+
+		table {
+			border: 1px solid;
+			border-collapse: collapse;
+		}
+
+		td {
+			border: 1px solid;
+			padding: 0.25em;
+		}
+	</style>
+</head>
+<body>
+	<nav>
+		<a href="/">Home</a>
+	</nav>
+
+	<h3>Welcome</h3>
+	<h5>Our products</h5>
+
+	<img src="quarterly-sales-chart.jpg" alt="chart.jpg">
+	<input type="email" id="signup-email" name="email">
+
+	<button aria-describedby="missing-hint"><svg></svg></button>
+
+	<p>
+		<a href="/products/1">Read more</a>
+		<a href="/products/2">Read more</a>
+	</p>
+	<p><a href="/report.pdf">Click here</a></p>
+
+	<h3>Office hours</h3>
+	<table>
+		<tr>
+			<td>Day</td>
+			<td>Hours</td>
+		</tr>
+		<tr>
+			<td>Monday</td>
+			<td>9am - 5pm</td>
+		</tr>
+	</table>
+
+	<h3>Product walkthrough</h3>
+	<video src="walkthrough.mp4" autoplay></video>
+
+	<input type="checkbox" id="newsletter" name="newsletter">
+	<input type="checkbox" id="newsletter" name="newsletter-alt">
+</body>
+</html>

@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title>Contact us</title>
+	<style>
+		body {
+			font: 100% / 1.5 sans-serif;
+			background-color: #fff;
+			color: #000;
+		}
+
+		:focus-visible {
+			outline: 3px solid #1a73e8;
+			outline-offset: 2px;
+		}
+
+		a, button {
+			display: inline-block;
+			padding: 0.75em 1em;
+			min-height: 24px;
+		}
+
+		table {
+			border: 1px solid;
+			border-collapse: collapse;
+		}
+
+		th, td {
+			border: 1px solid;
+			padding: 0.25em;
+		}
+	</style>
+</head>
+<body>
+	<a href="#main-content">Skip to main content</a>
+
+	<nav>
+		<a href="/">Home</a>
+		<a href="/products">Products</a>
+		<a href="/contact">Contact</a>
+	</nav>
+
+	<main id="main-content">
+		<h1>Contact us</h1>
+
+		<img src="team-photo.jpg" alt="The support team at their 2026 offsite">
+
+		<h2>Send us a message</h2>
+		<form>
+			<label for="email">Email address</label>
+			<input type="email" id="email" name="email" autocomplete="email">
+
+			<label for="topic">Topic (required)</label>
+			<input type="text" id="topic" name="topic" required aria-required="true">
+
+			<button type="submit">Send message</button>
+		</form>
+
+		<h2>Office hours</h2>
+		<table>
+			<tr>
+				<th scope="col">Day</th>
+				<th scope="col">Hours</th>
+			</tr>
+			<tr>
+				<td>Monday</td>
+				<td>9am - 5pm</td>
+			</tr>
+		</table>
+
+		<h2>Product walkthrough</h2>
+		<video src="walkthrough.mp4" controls>
+			<track kind="captions" src="walkthrough-en.vtt" srclang="en" label="English">
+		</video>
+
+		<p><a href="/annual-report-2026.pdf">Download the 2026 Annual Report (PDF)</a></p>
+	</main>
+</body>
+</html>

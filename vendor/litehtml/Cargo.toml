@@ -1,0 +1,94 @@
+# Vendored, patched copy of the `litehtml` crate (originally
+# https://github.com/franzos/litehtml-rs, MIT). See vendor/PATCHES.md for
+# what was changed and why.
+
+[package]
+edition = "2021"
+name = "litehtml"
+version = "0.2.6"
+authors = ["Franz Geffke <mail@gofranz.com>"]
+build = false
+exclude = [
+    "tests/",
+    "examples/",
+]
+autolib = false
+autobins = false
+autoexamples = false
+autotests = false
+autobenches = false
+description = "Safe Rust bindings for litehtml — a lightweight HTML/CSS rendering engine"
+readme = "README.md"
+keywords = [
+    "litehtml",
+    "html",
+    "css",
+    "rendering",
+    "layout",
+]
+categories = [
+    "rendering",
+    "web-programming",
+]
+license = "MIT"
+repository = "https://github.com/franzos/litehtml-rs"
+
+[features]
+default = ["vendored"]
+email = ["html"]
+html = [
+    "encoding_rs",
+    "base64",
+]
+pixbuf = [
+    "tiny-skia",
+    "cosmic-text",
+    "image",
+]
+vendored = ["litehtml-sys/vendored"]
+
+[lib]
+name = "litehtml"
+path = "src/lib.rs"
+
+[dependencies.base64]
+version = "0.22"
+optional = true
+
+[dependencies.cosmic-text]
+version = "0.14"
+optional = true
+
+[dependencies.encoding_rs]
+version = "0.8"
+optional = true
+
+[dependencies.image]
+version = "0.25"
+features = [
+    "png",
+    "jpeg",
+    "gif",
+]
+optional = true
+default-features = false
+
+[dependencies.litehtml-sys]
+path = "../litehtml-sys"
+default-features = false
+
+[dependencies.log]
+version = "0.4"
+
+[dependencies.tiny-skia]
+version = "0.11"
+optional = true
+
+[dev-dependencies.minifb]
+version = "0.28"
+
+[dev-dependencies.ureq]
+version = "3"
+
+[dev-dependencies.url]
+version = "2"

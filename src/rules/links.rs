@@ -1,0 +1,165 @@
+//! WCAG 2.4.4 / 2.4.9 checks for link text.
+
+use std::collections::HashMap;
+
+use crate::page::{self, ElementRef, RenderedPage};
+
+use super::{CheckOptions, Finding};
+
+const GENERIC_LINK_PHRASES: &[&str] = &[
+    "click here",
+    "here",
+    "more",
+    "read more",
+    "learn more",
+    "link",
+    "this link",
+    "click",
+];
+
+fn is_link(el: ElementRef) -> bool {
+    el.tag() == "a" && el.has_attr("href")
+}
+
+/// H30: a link's accessible name must not be empty, and must not be one of the generic phrases
+/// ("click here", "more", …) that reads as meaningless out of context.
+pub fn check_non_descriptive_link_text(
+    page: &RenderedPage,
+    _options: &CheckOptions,
+) -> Vec<Finding> {
+    page.select(is_link)
+        .into_iter()
+        .filter_map(|link| non_descriptive_finding(page, link))
+        .collect()
+}
+
+fn non_descriptive_finding(page: &RenderedPage, link: ElementRef) -> Option<Finding> {
+    let name = page::accessible_name(page, link);
+    let href = href_of(link);
+    if name.trim().is_empty() {
+        return Some(Finding::error(
+            "H30",
+            format!("link to \"{href}\" has no link text"),
+        ));
+    }
+    is_generic_phrase(&name).then(|| {
+        Finding::error(
+            "H30",
+            format!("link to \"{href}\" uses non-descriptive text \"{name}\""),
+        )
+    })
+}
+
+fn is_generic_phrase(name: &str) -> bool {
+    GENERIC_LINK_PHRASES.contains(&name.trim().to_lowercase().as_str())
+}
+
+fn href_of(link: ElementRef) -> String {
+    link.attr("href").unwrap_or("").to_string()
+}
+
+/// F84: the same link text pointing to different destinations is ambiguous when users navigate a
+/// page's links out of context (e.g. a screen reader's links list).
+pub fn check_ambiguous_duplicate_link_text(
+    page: &RenderedPage,
+    _options: &CheckOptions,
+) -> Vec<Finding> {
+    group_links_by_text(page)
+        .into_iter()
+        .filter_map(|(text, hrefs)| duplicate_text_finding(&text, hrefs))
+        .collect()
+}
+
+fn group_links_by_text(page: &RenderedPage) -> HashMap<String, Vec<String>> {
+    let mut groups: HashMap<String, Vec<String>> = HashMap::new();
+    for link in page.select(is_link) {
+        let name = page::accessible_name(page, link).trim().to_lowercase();
+        if name.len() < 3 {
+            continue;
+        }
+        groups.entry(name).or_default().push(href_of(link));
+    }
+    groups
+}
+
+fn duplicate_text_finding(text: &str, hrefs: Vec<String>) -> Option<Finding> {
+    let mut distinct_hrefs: Vec<String> = hrefs;
+    distinct_hrefs.sort();
+    distinct_hrefs.dedup();
+    (distinct_hrefs.len() > 1).then(|| {
+        Finding::error(
+            "F84",
+            format!(
+                "link text \"{text}\" is used for {} different destinations: {}",
+                distinct_hrefs.len(),
+                distinct_hrefs.join(", ")
+            ),
+        )
+    })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::page::testutil::page_from_html;
+
+    fn options() -> CheckOptions {
+        CheckOptions {
+            contrast_threshold: 4.5,
+            large_text_contrast_threshold: 3.0,
+            target_size_threshold: 24.0,
+        }
+    }
+
+    #[test]
+    fn empty_link_text_is_flagged() {
+        let p = page_from_html(r#"<a href="/report.pdf"></a>"#);
+        let findings = check_non_descriptive_link_text(&p, &options());
+        assert_eq!(findings.len(), 1);
+        assert_eq!(findings[0].rule_id, "H30");
+    }
+
+    #[test]
+    fn click_here_is_flagged() {
+        let p = page_from_html(r#"<a href="/report.pdf">Click here</a>"#);
+        assert_eq!(check_non_descriptive_link_text(&p, &options()).len(), 1);
+    }
+
+    #[test]
+    fn descriptive_link_text_is_not_flagged() {
+        let p = page_from_html(r#"<a href="/report.pdf">Download the 2026 Annual Report</a>"#);
+        assert!(check_non_descriptive_link_text(&p, &options()).is_empty());
+    }
+
+    #[test]
+    fn aria_label_overrides_generic_visible_text() {
+        let p = page_from_html(
+            r#"<a href="/report.pdf" aria-label="Download the 2026 report">Click here</a>"#,
+        );
+        assert!(check_non_descriptive_link_text(&p, &options()).is_empty());
+    }
+
+    #[test]
+    fn same_text_different_hrefs_is_flagged() {
+        let p = page_from_html(
+            r#"<a href="/products/1">Read more</a><a href="/products/2">Read more</a>"#,
+        );
+        let findings = check_ambiguous_duplicate_link_text(&p, &options());
+        assert_eq!(findings.len(), 1);
+        assert_eq!(findings[0].rule_id, "F84");
+    }
+
+    #[test]
+    fn same_text_same_href_is_not_flagged() {
+        let p = page_from_html(
+            r#"<a href="/products/1">Wireless Headphones</a><a href="/products/1">Wireless Headphones</a>"#,
+        );
+        assert!(check_ambiguous_duplicate_link_text(&p, &options()).is_empty());
+    }
+
+    #[test]
+    fn short_text_is_ignored_for_duplicate_check() {
+        let p = page_from_html(r#"<a href="/a">Go</a><a href="/b">Go</a>"#);
+        assert!(check_ambiguous_duplicate_link_text(&p, &options()).is_empty());
+    }
+}

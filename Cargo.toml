@@ -1,0 +1,18 @@
+[package]
+name = "wcag-checker"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+clap = { version = "4.6.7", features = ["derive"] }
+litehtml = { path = "vendor/litehtml", default-features = false, features = ["vendored"] }
+reqwest = "0.13.5"
+thiserror = "2.0.20"
+tokio = { version = "1.53.1", features = ["full"] }
+tracing = "0.1.44"
+tracing-subscriber = { version = "0.3.23", features = ["env-filter"] }
+
+[dev-dependencies]
+rstest = "0.27.0"
+scraper = "0.27.0"
+tempfile = "3.27.0"
