@@ -31,9 +31,7 @@ fn measured_size(element: ElementRef) -> Option<f32> {
         // Not laid out (e.g. `display: none`), or -- in hand-built test fixtures -- no size was
         // ever declared. Either way there is nothing to measure.
         true => None,
-        // A 0 on one axis means "not measured", not 0px: google.com's submit
-        // buttons (CSS height only) and gitlab.com's logo links (CSS width,
-        // wrapping an `<img>`) were reported as 0px targets.
+        // A 0 on one axis means "not measured", not 0px.
         false if has_unsized_content(element) => [bbox.width, bbox.height]
             .into_iter()
             .filter(|dimension| *dimension > 0.0)
