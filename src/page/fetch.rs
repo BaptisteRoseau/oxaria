@@ -42,16 +42,15 @@ pub fn is_renderable(headers: &HeaderMap) -> bool {
         .get(CONTENT_TYPE)
         .and_then(|value| value.to_str().ok())
         .map(mime_essence)
-        .is_some_and(|essence| RENDERABLE_CONTENT_TYPES.contains(&essence.as_str()))
+        .is_some_and(|essence| {
+            RENDERABLE_CONTENT_TYPES
+                .iter()
+                .any(|renderable| essence.eq_ignore_ascii_case(renderable))
+        })
 }
 
-fn mime_essence(content_type: &str) -> String {
-    content_type
-        .split(';')
-        .next()
-        .unwrap_or_default()
-        .trim()
-        .to_ascii_lowercase()
+fn mime_essence(content_type: &str) -> &str {
+    content_type.split(';').next().unwrap_or_default().trim()
 }
 
 pub struct LoadedHtml {

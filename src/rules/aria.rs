@@ -14,16 +14,14 @@ pub fn check_duplicate_ids(page: &RenderedPage, _options: &CheckOptions) -> Vec<
     id_counts(page)
         .into_iter()
         .filter(|(_, count)| *count > 1)
-        .map(|(id, count)| Finding::error("F77", duplicate_id_message(&id, count)))
+        .map(|(id, count)| Finding::error("F77", duplicate_id_message(id, count)))
         .collect()
 }
 
-fn id_counts(page: &RenderedPage) -> BTreeMap<String, usize> {
+fn id_counts(page: &RenderedPage) -> BTreeMap<&str, usize> {
     let mut counts = BTreeMap::new();
-    for element in page.all().filter(|el| el.has_attr("id")) {
-        if let Some(id) = element.attr("id") {
-            *counts.entry(id.to_string()).or_insert(0) += 1;
-        }
+    for id in page.all().filter_map(|el| el.attr("id")) {
+        *counts.entry(id).or_insert(0) += 1;
     }
     counts
 }

@@ -37,7 +37,7 @@ fn removes_outline_without_alternative(body: &str) -> bool {
 fn declares_no_outline(body: &str) -> bool {
     property_value(body, "outline")
         .or_else(|| property_value(body, "outline-style"))
-        .is_some_and(|value| is_none_value(&value))
+        .is_some_and(is_none_value)
 }
 
 fn is_none_value(value: &str) -> bool {
@@ -50,10 +50,10 @@ fn declares_alternative_indicator(body: &str) -> bool {
         .any(|property| property_value(body, property).is_some())
 }
 
-fn property_value(body: &str, property: &str) -> Option<String> {
+fn property_value<'a>(body: &'a str, property: &str) -> Option<&'a str> {
     body.split(';').find_map(|declaration| {
         let (name, value) = declaration.split_once(':')?;
-        (name.trim().eq_ignore_ascii_case(property)).then(|| value.trim().to_string())
+        (name.trim().eq_ignore_ascii_case(property)).then(|| value.trim())
     })
 }
 

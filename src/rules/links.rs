@@ -56,8 +56,8 @@ fn is_generic_phrase(name: &str) -> bool {
     GENERIC_LINK_PHRASES.contains(&name.trim().to_lowercase().as_str())
 }
 
-fn href_of(link: ElementRef) -> String {
-    link.attr("href").unwrap_or("").to_string()
+fn href_of(link: ElementRef<'_>) -> &str {
+    link.attr("href").unwrap_or("")
 }
 
 /// Reduces an href to the page it actually leads to, so hrefs that are only
@@ -125,13 +125,12 @@ fn group_links_by_text(page: &RenderedPage) -> BTreeMap<String, Vec<String>> {
         groups
             .entry(name)
             .or_default()
-            .push(destination(&href_of(link), page.url.as_ref()));
+            .push(destination(href_of(link), page.url.as_ref()));
     }
     groups
 }
 
-fn duplicate_text_finding(text: &str, hrefs: Vec<String>) -> Option<Finding> {
-    let mut distinct_hrefs: Vec<String> = hrefs;
+fn duplicate_text_finding(text: &str, mut distinct_hrefs: Vec<String>) -> Option<Finding> {
     distinct_hrefs.sort();
     distinct_hrefs.dedup();
     (distinct_hrefs.len() > 1).then(|| {

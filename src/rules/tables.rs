@@ -1,5 +1,7 @@
 //! WCAG 1.3.1 checks for data table markup.
 
+use std::collections::HashSet;
+
 use crate::page::{ElementRef, RenderedPage};
 
 use super::{CheckOptions, Finding};
@@ -43,21 +45,15 @@ pub fn check_header_missing_scope(page: &RenderedPage, _options: &CheckOptions) 
         .collect()
 }
 
-fn referenced_header_ids(page: &RenderedPage) -> Vec<String> {
+fn referenced_header_ids(page: &RenderedPage) -> HashSet<&str> {
     page.all()
-        .filter(|el| el.has_attr("headers"))
         .filter_map(|cell| cell.attr("headers"))
-        .flat_map(|ids| {
-            ids.split_whitespace()
-                .map(str::to_string)
-                .collect::<Vec<_>>()
-        })
+        .flat_map(str::split_whitespace)
         .collect()
 }
 
-fn is_referenced(th: ElementRef, referenced_ids: &[String]) -> bool {
-    th.attr("id")
-        .is_some_and(|id| referenced_ids.iter().any(|referenced| referenced == id))
+fn is_referenced(th: ElementRef, referenced_ids: &HashSet<&str>) -> bool {
+    th.attr("id").is_some_and(|id| referenced_ids.contains(id))
 }
 
 #[cfg(test)]
