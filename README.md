@@ -13,7 +13,7 @@ Built in Rust. No headless browser process, no runtime download — the renderin
 - **Parallel by design** — every rule runs as its own `tokio::task` against a shared, immutable snapshot of the rendered page.
 - **Two exit-code tiers** — binary pass/fail rules are errors; spectrum rules (contrast, target size) fall back to warnings below a configurable threshold instead of a hard failure.
 
-See [wcag2.2-rules.md](./wcag2.2-rules.md) for the full list of rules and the WCAG 2.2 success criteria they check.
+See [standards/wcag2.2-rules.md](./standards/wcag2.2-rules.md) for the full list of rules and the WCAG 2.2 success criteria they check.
 
 ## Installation
 

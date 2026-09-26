@@ -9,9 +9,9 @@ exiting 0/1/2 for clean/error/warning-only results.
 See [README.md](./README.md) for CLI usage, exit codes, and the architecture diagram. This file
 is about *why* things are built the way they are, for whoever touches this code next.
 
-## Where wcag2.2-rules.md comes from
+## Where standards/wcag2.2-rules.md comes from
 
-`wcag2.2-rules.md`  was written by grounding every rule ID, title, and DO/DON'T example in the actual WCAG 2.2
+`standards/wcag2.2-rules.md`  was written by grounding every rule ID, title, and DO/DON'T example in the actual WCAG 2.2
 Techniques/Failures/Guidelines HTML under the <https://github.com/w3c/wcag> repo (`techniques/html`, `techniques/aria`,
 `techniques/general`, `techniques/failures`, `guidelines/sc/22` for the six success criteria new
 in 2.2).
@@ -100,7 +100,7 @@ code semantics (`0` clean / `1` any error / `2` warnings only).
 
 ## Rule scope: what's implemented and why the rest isn't
 
-`wcag2.2-rules.md` lists ~48 rules across 15 categories. Only the ones genuinely verifiable from
+`standards/wcag2.2-rules.md` lists ~48 rules across 15 categories. Only the ones genuinely verifiable from
 a single static render are implemented (see `src/rules/mod.rs`'s `all_rule_checks()` for the
 exact list). Categories deliberately **not** implemented, and why:
 
@@ -114,7 +114,7 @@ exact list). Categories deliberately **not** implemented, and why:
 - **Inline event handlers are the only script the rules see** (F42, F54, F55, F59, AUT001):
   they read `on*="..."` attributes, never `addEventListener` calls, which would need JS
   execution. Each handler name must be in `ATTRIBUTES_OF_INTEREST` to be visible at all.
-- **Failures that need interaction are listed in `wcag2.2-rules.md` but not implemented**:
+- **Failures that need interaction are listed in `standards/wcag2.2-rules.md` but not implemented**:
   F95 (hover content), F97 (orientation), F99 (single-key shortcuts), F101 (down-event),
   F103 (status messages), F105 (path gestures), F108 (dragging), F109 (split code fields),
   F110 (focus obscured). F94 (viewport-unit font sizes) is also left out: litehtml resolves
@@ -127,7 +127,7 @@ exact list). Categories deliberately **not** implemented, and why:
   alternative indicator. This is the one rule that does *not* use `RenderedPage`'s computed
   style, because there is nothing to compute -- litehtml never enters a focused state.
 
-If you're asked to add a new rule, check `wcag2.2-rules.md` first for its ID/wording, then check
+If you're asked to add a new rule, check `standards/wcag2.2-rules.md` first for its ID/wording, then check
 whether it's actually derivable from `RenderedPage` (DOM structure/attributes + computed
 color/background/font metrics + layout box) before starting -- if it needs JS, multi-page state,
 or focus/hover simulation, it belongs in the "not implemented" list above, not a half-working

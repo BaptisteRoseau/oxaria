@@ -255,6 +255,8 @@ Every text input, textarea, select, checkbox, and radio button needs a programma
 
 When a form control genuinely cannot have a visible `label` (e.g. a single search box with no room for text), fall back to a `title` attribute to give it an accessible name. (SC 1.3.1, 4.1.2)
 
+Prevailing rule: ARIA-USAGE003 in wai-aria-1.2-rules.md (see C9 in [overlap.md](./overlap.md#conflicts)). `title` still meets the criterion and is never reported as an error, but `aria-label` is the recommended fix when no visible label is possible.
+
 #### DON'T
 
 ```html
@@ -299,6 +301,8 @@ When several controls form one logical question (e.g. a set of radio buttons), w
 
 Required fields must be identified in a way that is exposed to assistive technology, not by color or an asterisk in the visual layout alone. (SC 1.3.1, 3.3.2)
 
+Prevailing rule: HTMLARIA014 in html-aria-rules.md (see C1 in [overlap.md](./overlap.md#conflicts)). `required` alone indicates the field is required; the DO example should not add `aria-required="true"`.
+
 #### DON'T
 
 ```html
@@ -338,6 +342,8 @@ Custom widgets (buttons, toggles, comboboxes built from `div`/`span`) must expos
 ### F96 - Include the visible label text in the accessible name
 
 Speech input users activate a control by speaking the label they see. If `aria-label` or `aria-labelledby` gives the control an accessible name that doesn't contain the visible label text, they cannot reliably activate it. Capitalization and punctuation don't matter, and symbolic text (an "X" for close, a "B" for bold) doesn't count as a label. (SC 2.5.3)
+
+Prevailing rule: ARIA-USAGE003 in wai-aria-1.2-rules.md (see C8 in [overlap.md](./overlap.md#conflicts)). When the label text is visible, name the control from it; extra context such as "search this site" belongs in `aria-describedby`, not in an `aria-label`.
 
 #### DON'T
 
@@ -402,6 +408,8 @@ An `autocomplete` value that isn't one of the input purposes listed in WCAG 2.2 
 ### G83 - Identify errors and describe how to fix them in text
 
 When a submitted value is missing, invalid, or outside the allowed range, provide a text description of the error and what is expected — not just a red border or icon. (SC 3.3.1, 3.3.3)
+
+Prevailing rule: ARIA-LIVE001 in wai-aria-1.2-rules.md (see C12 in [overlap.md](./overlap.md#conflicts)). `role="alert"` in the DO example is not the default for a validation message; `aria-errormessage` or `role="status"` fits unless the interruption is imperative (AI review, not reported).
 
 #### DON'T
 
