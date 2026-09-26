@@ -67,6 +67,7 @@ fn target_size_finding(element: ElementRef, options: &CheckOptions) -> Option<Fi
                 options.target_size_threshold
             ),
         )
+        .at(element)
     })
 }
 

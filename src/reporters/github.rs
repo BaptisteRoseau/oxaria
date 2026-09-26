@@ -105,7 +105,7 @@ fn escape(text: &str) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::reporters::model::tests::{error, warning};
+    use crate::reporters::model::tests::{error, on_page, warning};
     use crate::rules::Finding;
 
     fn render(source: &str, findings: &[Finding]) -> String {
@@ -149,7 +149,7 @@ mod tests {
     fn crawled_pages_are_located_by_url() {
         let output = render(
             "https://example.com",
-            &[error("H57").on_page("/about".to_string())],
+            &[on_page(error("H57"), "https://example.com/about")],
         );
         assert!(output.contains("| https://example.com/about |"), "{output}");
     }

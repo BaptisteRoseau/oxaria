@@ -1,6 +1,6 @@
 //! WCAG 1.3.1 / 2.4.6 checks for heading structure.
 
-use crate::page::RenderedPage;
+use crate::page::{ElementRef, RenderedPage};
 
 use super::{CheckOptions, Finding};
 
@@ -18,25 +18,22 @@ pub fn check_missing_h1(page: &RenderedPage, _options: &CheckOptions) -> Vec<Fin
 /// G141: heading levels should nest sequentially; jumping forward more than one level (e.g. h2
 /// straight to h4) breaks the document outline for assistive technology.
 pub fn check_skipped_heading_level(page: &RenderedPage, _options: &CheckOptions) -> Vec<Finding> {
-    let levels = heading_levels(page);
     let mut findings = Vec::new();
     let mut previous_level = 0u8;
-    for level in levels {
+    for (heading, level) in headings(page) {
         if previous_level > 0 && level > previous_level + 1 {
-            findings.push(Finding::error(
-                "G141",
-                skipped_level_message(previous_level, level),
-            ));
+            findings.push(
+                Finding::error("G141", skipped_level_message(previous_level, level)).at(heading),
+            );
         }
         previous_level = level;
     }
     findings
 }
 
-fn heading_levels(page: &RenderedPage) -> Vec<u8> {
-    page.select(|el| heading_level(el.tag()).is_some())
-        .into_iter()
-        .filter_map(|heading| heading_level(heading.tag()))
+fn headings(page: &RenderedPage) -> Vec<(ElementRef<'_>, u8)> {
+    page.all()
+        .filter_map(|el| heading_level(el.tag()).map(|level| (el, level)))
         .collect()
 }
 

@@ -13,7 +13,7 @@ pub fn check_missing_skip_link(page: &RenderedPage, _options: &CheckOptions) -> 
             "no skip link found (an <a href=\"#...\"> whose text mentions \"skip\")".to_string(),
         )],
         Some(link) if !target_exists(page, link) => {
-            vec![Finding::error("G1", dangling_skip_link_message(link))]
+            vec![Finding::error("G1", dangling_skip_link_message(link)).at(link)]
         }
         Some(_) => Vec::new(),
     }

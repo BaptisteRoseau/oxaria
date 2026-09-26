@@ -61,7 +61,7 @@ mod tests {
     use serde_json::{Value, json};
 
     use super::*;
-    use crate::reporters::model::tests::{error, warning};
+    use crate::reporters::model::tests::{error, on_page, warning};
     use crate::rules::Finding;
 
     fn render(source: &str, findings: &[Finding]) -> Value {
@@ -105,7 +105,7 @@ mod tests {
     fn crawled_page_is_located_by_its_url() {
         let output = render(
             "https://example.com",
-            &[error("H57").on_page("/about".to_string())],
+            &[on_page(error("H57"), "https://example.com/about")],
         );
         assert_eq!(output[0]["location"]["path"], "https://example.com/about");
     }

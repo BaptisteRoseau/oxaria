@@ -39,6 +39,7 @@ fn contrast_finding(el: ElementRef, options: &CheckOptions) -> Option<Finding> {
                 el.tag()
             ),
         )
+        .at(el)
     })
 }
 

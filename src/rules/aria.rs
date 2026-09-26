@@ -44,14 +44,16 @@ pub fn check_dangling_aria_reference(page: &RenderedPage, _options: &CheckOption
 fn dangling_references(page: &RenderedPage, attribute: &str) -> Vec<Finding> {
     page.select(|el| el.has_attr(attribute))
         .into_iter()
-        .filter_map(|element| element.attr(attribute))
-        .flat_map(|ids| {
-            ids.split_whitespace()
-                .map(str::to_string)
-                .collect::<Vec<_>>()
+        .flat_map(|element| {
+            element
+                .attr(attribute)
+                .unwrap_or_default()
+                .split_whitespace()
+                .filter(|id| page.element_by_id(id).is_none())
+                .map(move |id| {
+                    Finding::error("ARIA16", dangling_reference_message(attribute, id)).at(element)
+                })
         })
-        .filter(|id| page.element_by_id(id).is_none())
-        .map(|id| Finding::error("ARIA16", dangling_reference_message(attribute, &id)))
         .collect()
 }
 

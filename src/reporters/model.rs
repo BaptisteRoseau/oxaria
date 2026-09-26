@@ -29,6 +29,9 @@ pub struct Location {
 pub struct Issue {
     pub rule_id: &'static str,
     pub severity: Severity,
+    /// The finding's message, followed by the element it is about (if any):
+    /// no CI format has a field for it, and without it identical findings
+    /// (a page's many 19px buttons) can't be told apart.
     pub message: String,
     pub location: Location,
     pub fingerprint: String,
@@ -45,14 +48,15 @@ impl Report {
         let issues = findings
             .iter()
             .map(|finding| {
-                let location = location(source, finding.page.as_deref());
-                let key = fingerprint_key(finding, &location);
+                let location = location(source, finding.page.as_ref());
+                let message = message(finding);
+                let key = fingerprint_key(finding.rule_id, &location, &message);
                 let occurrence = occurrences.entry(key.clone()).or_insert(0usize);
                 *occurrence += 1;
                 Issue {
                     rule_id: finding.rule_id,
                     severity: finding.severity,
-                    message: finding.message.clone(),
+                    message,
                     location,
                     fingerprint: fingerprint(&format!("{key}\u{1f}{occurrence}")),
                 }
@@ -85,30 +89,24 @@ impl Report {
     }
 }
 
-fn location(source: &str, page: Option<&str>) -> Location {
-    let path = match (page::is_url(source), page) {
-        (true, Some(page)) => page_url(source, page),
-        (true, None) => source.to_string(),
-        (false, _) => strip_current_dir(source).to_string(),
+/// A crawled page is located by the URL it was served from, which may be on
+/// another host than the source when the start URL redirects.
+fn location(source: &str, page: Option<&Url>) -> Location {
+    let path = match (page, page::is_url(source)) {
+        (Some(page), _) => page.to_string(),
+        (None, true) => source.to_string(),
+        (None, false) => strip_current_dir(source).to_string(),
     };
     Location {
         path,
-        page: page.map(str::to_string),
+        page: page.map(|page| page.path().to_string()),
     }
 }
 
-/// The crawl only records the page's path, so it is grafted onto the source
-/// URL's origin (a start URL redirecting to another host keeps the origin
-/// it was given on the command line).
-fn page_url(source: &str, page: &str) -> String {
-    match Url::parse(source) {
-        Ok(mut url) => {
-            url.set_path(page);
-            url.set_query(None);
-            url.set_fragment(None);
-            url.to_string()
-        }
-        Err(_) => format!("{}{page}", source.trim_end_matches('/')),
+fn message(finding: &Finding) -> String {
+    match &finding.element {
+        Some(element) => format!("{} (at {element})", finding.message),
+        None => finding.message.clone(),
     }
 }
 
@@ -119,12 +117,12 @@ fn strip_current_dir(mut path: &str) -> &str {
     path
 }
 
-fn fingerprint_key(finding: &Finding, location: &Location) -> String {
+fn fingerprint_key(rule_id: &str, location: &Location, message: &str) -> String {
     [
-        finding.rule_id,
+        rule_id,
         &location.path,
         location.page.as_deref().unwrap_or(""),
-        &finding.message,
+        message,
     ]
     .join("\u{1f}")
 }
@@ -149,6 +147,10 @@ pub(crate) mod tests {
 
     pub(crate) fn error(rule_id: &'static str) -> Finding {
         Finding::error(rule_id, "boom".to_string())
+    }
+
+    pub(crate) fn on_page(finding: Finding, url: &str) -> Finding {
+        finding.on_page(&Url::parse(url).unwrap())
     }
 
     pub(crate) fn warning(rule_id: &'static str) -> Finding {
@@ -189,19 +191,55 @@ pub(crate) mod tests {
     #[case("/abs/page.html", None, "/abs/page.html")]
     #[case("https://example.com/start", None, "https://example.com/start")]
     #[case(
-        "https://example.com/start?q=1#top",
-        Some("/about"),
+        "https://example.com/start",
+        Some("https://example.com/about"),
+        "https://example.com/about"
+    )]
+    #[case(
+        "https://www.example.com/",
+        Some("https://example.com/about"),
         "https://example.com/about"
     )]
     fn location_path(#[case] source: &str, #[case] page: Option<&str>, #[case] expected: &str) {
-        assert_eq!(location(source, page).path, expected);
+        let page = page.map(|page| Url::parse(page).unwrap());
+        assert_eq!(location(source, page.as_ref()).path, expected);
+    }
+
+    #[test]
+    fn page_query_and_fragment_are_dropped() {
+        let report = Report::new(
+            "https://example.com",
+            &[on_page(error("H57"), "https://example.com/list?page=2#top")],
+        );
+        assert_eq!(report.issues[0].location.path, "https://example.com/list");
+    }
+
+    #[test]
+    fn element_is_appended_to_the_message() {
+        let finding = Finding {
+            element: Some("body > button".to_string()),
+            ..error("F68")
+        };
+        let report = Report::new("a.html", &[finding]);
+        assert_eq!(report.issues[0].message, "boom (at body > button)");
+    }
+
+    #[test]
+    fn same_message_on_different_elements_gets_order_independent_fingerprints() {
+        let at = |element: &str| Finding {
+            element: Some(element.to_string()),
+            ..warning("TGT001")
+        };
+        let before = Report::new("a.html", &[at("body > a"), at("body > b")]);
+        let after = Report::new("a.html", &[at("body > b")]);
+        assert_eq!(before.issues[1].fingerprint, after.issues[0].fingerprint);
     }
 
     #[test]
     fn location_keeps_the_page() {
         let report = Report::new(
             "https://example.com",
-            &[error("H57").on_page("/about".to_string())],
+            &[on_page(error("H57"), "https://example.com/about")],
         );
         assert_eq!(report.issues[0].location.page.as_deref(), Some("/about"));
     }
@@ -225,8 +263,8 @@ pub(crate) mod tests {
         let report = Report::new(
             "https://example.com",
             &[
-                error("H57").on_page("/a".to_string()),
-                error("H57").on_page("/b".to_string()),
+                on_page(error("H57"), "https://example.com/a"),
+                on_page(error("H57"), "https://example.com/b"),
             ],
         );
         assert_ne!(report.issues[0].fingerprint, report.issues[1].fingerprint);

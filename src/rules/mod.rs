@@ -21,9 +21,10 @@ mod target_size;
 use std::sync::Arc;
 
 use tracing::error;
+use url::Url;
 
 use crate::cli::CliConfig;
-use crate::page::RenderedPage;
+use crate::page::{ElementRef, RenderedPage};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Severity {
@@ -36,9 +37,13 @@ pub struct Finding {
     pub rule_id: &'static str,
     pub severity: Severity,
     pub message: String,
-    /// URL path of the page this finding belongs to; only set during a
-    /// full-site scan, where a single report covers many pages.
-    pub page: Option<String>,
+    /// Selector-like path of the element the finding is about, for rules
+    /// that point at one element (not page-level or stylesheet rules).
+    pub element: Option<String>,
+    /// URL of the page this finding belongs to, as it was actually served
+    /// (after redirects); only set during a full-site scan, where a single
+    /// report covers many pages.
+    pub page: Option<Url>,
 }
 
 impl Finding {
@@ -47,24 +52,40 @@ impl Finding {
             rule_id,
             severity: Severity::Error,
             message,
+            element: None,
             page: None,
         }
     }
 
     fn warning(rule_id: &'static str, message: String) -> Self {
         Finding {
-            rule_id,
             severity: Severity::Warning,
-            message,
-            page: None,
+            ..Finding::error(rule_id, message)
         }
     }
 
-    pub fn on_page(self, page: String) -> Self {
+    fn at(self, element: ElementRef) -> Self {
+        Finding {
+            element: Some(element.selector()),
+            ..self
+        }
+    }
+
+    /// Query and fragment are dropped: the crawl treats URLs differing only
+    /// by them as the same page.
+    pub fn on_page(self, page: &Url) -> Self {
+        let mut page = page.clone();
+        page.set_query(None);
+        page.set_fragment(None);
         Finding {
             page: Some(page),
             ..self
         }
+    }
+
+    #[cfg(test)]
+    pub fn page_path(&self) -> Option<&str> {
+        self.page.as_ref().map(Url::path)
     }
 }
 
@@ -167,5 +188,21 @@ mod tests {
         ));
         let findings = run_all(clean, options()).await;
         assert!(findings.is_empty(), "unexpected findings: {findings:?}");
+    }
+
+    #[tokio::test]
+    async fn element_findings_point_at_their_element_page_findings_do_not() {
+        let page = Arc::new(page_from_html(
+            r#"<html lang="en"><body><h1>T</h1><div><button></button></div></body></html>"#,
+        ));
+        let findings = run_all(page, options()).await;
+        let element_of = |rule| {
+            findings
+                .iter()
+                .find(|f| f.rule_id == rule)
+                .map(|f| f.element.as_deref())
+        };
+        assert_eq!(element_of("F68"), Some(Some("body > div > button")));
+        assert_eq!(element_of("G1"), Some(None));
     }
 }

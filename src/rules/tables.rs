@@ -10,11 +10,12 @@ pub fn check_table_missing_headers(page: &RenderedPage, _options: &CheckOptions)
         .filter(|table| !is_presentation_table(*table))
         .filter(|table| has_data_rows(*table))
         .filter(|table| !has_header_cells(*table))
-        .map(|_| {
+        .map(|table| {
             Finding::error(
                 "F91",
                 "table has data rows but no <th> header cells".to_string(),
             )
+            .at(table)
         })
         .collect()
 }
@@ -38,7 +39,7 @@ pub fn check_header_missing_scope(page: &RenderedPage, _options: &CheckOptions) 
     page.by_tag("th")
         .filter(|th| th.attr("scope").is_none())
         .filter(|th| !is_referenced(*th, &referenced_ids))
-        .map(|_| Finding::error("H63", "<th> has no scope attribute".to_string()))
+        .map(|th| Finding::error("H63", "<th> has no scope attribute".to_string()).at(th))
         .collect()
 }
 

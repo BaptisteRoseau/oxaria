@@ -1,3 +1,5 @@
+use std::io::IsTerminal;
+
 use tracing::level_filters::LevelFilter;
 use tracing_subscriber::FmtSubscriber;
 
@@ -15,5 +17,8 @@ pub fn init_logger(verbose: bool, quiet: bool) {
         .without_time()
         .with_level(true)
         .with_target(false)
+        // Colour codes are noise in a CI log or a redirected file (Jenkins
+        // shows them raw without the AnsiColor plugin).
+        .with_ansi(std::io::stdout().is_terminal())
         .init();
 }

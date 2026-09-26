@@ -162,6 +162,61 @@ impl<'a> ElementRef<'a> {
         })
     }
 
+    /// A CSS-selector-like path locating this element in the document,
+    /// e.g. `body > main > div:nth-of-type(2) > button`. It stops at the
+    /// nearest element with a unique id (`button#submit`), which keeps the
+    /// path short and stable when unrelated parts of the page change.
+    pub fn selector(&self) -> String {
+        let mut segments = Vec::new();
+        for el in std::iter::once(*self).chain(self.ancestors()) {
+            if el.tag().is_empty() || el.tag() == "html" {
+                continue;
+            }
+            if let Some(id) = el.attr("id").filter(|id| self.is_unique_id(id)) {
+                segments.push(format!("{}#{id}", el.tag()));
+                break;
+            }
+            segments.push(el.selector_segment());
+        }
+        segments.reverse();
+        segments.join(" > ")
+    }
+
+    /// Only ids usable as-is in a CSS selector; others fall back to the
+    /// structural path rather than needing CSS escaping.
+    fn is_unique_id(&self, id: &str) -> bool {
+        let is_plain = id.starts_with(|c: char| c.is_ascii_alphabetic())
+            && id
+                .chars()
+                .all(|c| c.is_ascii_alphanumeric() || c == '-' || c == '_');
+        is_plain
+            && self
+                .page
+                .all()
+                .filter(|el| el.attr("id") == Some(id))
+                .take(2)
+                .count()
+                == 1
+    }
+
+    fn selector_segment(&self) -> String {
+        let same_tag_siblings: Vec<usize> = match self.parent() {
+            Some(parent) => parent
+                .children()
+                .filter(|sibling| sibling.tag() == self.tag())
+                .map(|sibling| sibling.index)
+                .collect(),
+            None => vec![self.index],
+        };
+        match same_tag_siblings.len() {
+            1 => self.tag().to_string(),
+            _ => {
+                let position = same_tag_siblings.iter().position(|&i| i == self.index);
+                format!("{}:nth-of-type({})", self.tag(), position.unwrap_or(0) + 1)
+            }
+        }
+    }
+
     /// Recursive, whitespace-normalized text content of this element and its
     /// descendants (mirroring `scraper::ElementRef::text()` + collapsing).
     pub fn text(&self) -> String {
@@ -350,5 +405,47 @@ mod tests {
             .filter(|t| *t != TEXT_TAG)
             .collect();
         assert_eq!(tags, vec!["span", "b", "em", "i"]);
+    }
+
+    fn selector_of(html: &str, tag: &str, nth: usize) -> String {
+        let page = page_from_html(html);
+        let el = page.by_tag(tag).nth(nth).unwrap();
+        el.selector()
+    }
+
+    #[test]
+    fn selector_is_a_structural_path_from_body() {
+        let html = "<body><main><div><p>a</p></div><div><button>x</button></div></main></body>";
+        assert_eq!(
+            selector_of(html, "button", 0),
+            "body > main > div:nth-of-type(2) > button"
+        );
+    }
+
+    #[test]
+    fn selector_counts_only_same_tag_siblings() {
+        let html = "<body><div><span>a</span><button>1</button><span>b</span><button>2</button></div></body>";
+        assert_eq!(
+            selector_of(html, "button", 1),
+            "body > div > button:nth-of-type(2)"
+        );
+    }
+
+    #[test]
+    fn selector_stops_at_the_nearest_unique_id() {
+        let html = r#"<body><div id="nav"><ul><li><a href="/">a</a></li></ul></div></body>"#;
+        assert_eq!(selector_of(html, "a", 0), "div#nav > ul > li > a");
+    }
+
+    #[test]
+    fn selector_uses_the_elements_own_unique_id() {
+        let html = r#"<body><div><button id="submit">x</button></div></body>"#;
+        assert_eq!(selector_of(html, "button", 0), "button#submit");
+    }
+
+    #[test]
+    fn selector_ignores_duplicate_and_unusual_ids() {
+        let html = r#"<body><div id="d"><b id="a:b">x</b></div><div id="d"></div></body>"#;
+        assert_eq!(selector_of(html, "b", 0), "body > div:nth-of-type(1) > b");
     }
 }

@@ -18,7 +18,7 @@ const PLACEHOLDER_ALT_VALUES: &[&str] = &[
 pub fn check_missing_alt(page: &RenderedPage, _options: &CheckOptions) -> Vec<Finding> {
     page.by_tag("img")
         .filter(|img| img.attr("alt").is_none())
-        .map(|img| Finding::error("F65", missing_alt_message(img)))
+        .map(|img| Finding::error("F65", missing_alt_message(img)).at(img))
         .collect()
 }
 
@@ -37,7 +37,8 @@ pub fn check_non_alternative_alt(page: &RenderedPage, _options: &CheckOptions) -
 
 fn non_alternative_finding(img: ElementRef) -> Option<Finding> {
     let alt = img.attr("alt")?.trim();
-    is_non_alternative_alt(alt).then(|| Finding::error("F30", non_alternative_message(img, alt)))
+    is_non_alternative_alt(alt)
+        .then(|| Finding::error("F30", non_alternative_message(img, alt)).at(img))
 }
 
 fn is_non_alternative_alt(alt: &str) -> bool {

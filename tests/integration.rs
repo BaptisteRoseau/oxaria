@@ -43,6 +43,25 @@ fn page_with_violations_exits_one() {
 }
 
 #[test]
+fn findings_name_the_element_they_are_about() {
+    let report = stdout(&run("tests/assets/errors.html", &[]));
+    assert!(
+        report.contains(
+            "[ERROR] H44: <input type=\"email\"> has no associated label (at input#signup-email)"
+        ),
+        "{report}"
+    );
+    assert!(
+        report.contains("[ERROR] H44: <input type=\"checkbox\"> has no associated label (at body > input:nth-of-type(3))"),
+        "{report}"
+    );
+    assert!(
+        report.contains("[ERROR] H42: page has no <h1> element\n"),
+        "{report}"
+    );
+}
+
+#[test]
 fn page_with_only_warnings_exits_two() {
     let output = run("tests/assets/warnings_only.html", &[]);
     assert_eq!(exit_code(&output), 2, "stdout:\n{}", stdout(&output));

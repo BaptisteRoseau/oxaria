@@ -188,7 +188,7 @@ fn nothing_checked(origin: &Url) -> Finding {
         "SCAN",
         format!("no HTML page could be checked starting from {origin}"),
     )
-    .on_page(visit_key(origin))
+    .on_page(origin)
 }
 
 async fn scan_page(
@@ -197,8 +197,6 @@ async fn scan_page(
     url: Url,
     scope: &RedirectScope,
 ) -> PageScan {
-    let path = visit_key(&url);
-
     match request(context, &url, scope).await {
         RequestOutcome::Html { final_url, body } => check_page(options, final_url, body).await,
         RequestOutcome::AlreadyFetched(hop) => {
@@ -214,16 +212,15 @@ async fn scan_page(
             PageScan::default()
         }
         RequestOutcome::HttpError(status) => {
-            failure(Finding::error("HTTP", format!("HTTP {status}")).on_page(path))
+            failure(Finding::error("HTTP", format!("HTTP {status}")).on_page(&url))
         }
         RequestOutcome::Transport(err) => {
-            failure(Finding::error("FETCH", err.to_string()).on_page(path))
+            failure(Finding::error("FETCH", err.to_string()).on_page(&url))
         }
     }
 }
 
 async fn check_page(options: Arc<CheckOptions>, url: Url, body: String) -> PageScan {
-    let path = visit_key(&url);
     // litehtml rendering is synchronous and CPU-bound; keep it off the async
     // worker threads that are driving the other pages' requests.
     let rendered = tokio::task::spawn_blocking(move || page::render(&body)).await;
@@ -232,9 +229,9 @@ async fn check_page(options: Arc<CheckOptions>, url: Url, body: String) -> PageS
             url: Some(url.clone()),
             ..page
         }),
-        Ok(Err(err)) => return failure(Finding::error("RENDER", err.to_string()).on_page(path)),
+        Ok(Err(err)) => return failure(Finding::error("RENDER", err.to_string()).on_page(&url)),
         Err(join_error) => {
-            return failure(Finding::error("RENDER", join_error.to_string()).on_page(path));
+            return failure(Finding::error("RENDER", join_error.to_string()).on_page(&url));
         }
     };
 
@@ -242,7 +239,7 @@ async fn check_page(options: Arc<CheckOptions>, url: Url, body: String) -> PageS
     let findings = rules::run_all(page, options)
         .await
         .into_iter()
-        .map(|finding| finding.on_page(path.clone()))
+        .map(|finding| finding.on_page(&url))
         .collect();
     PageScan {
         findings,
@@ -315,7 +312,7 @@ mod tests {
     }
 
     fn pages_with_findings(findings: &[Finding]) -> Vec<&str> {
-        let mut pages: Vec<&str> = findings.iter().filter_map(|f| f.page.as_deref()).collect();
+        let mut pages: Vec<&str> = findings.iter().filter_map(Finding::page_path).collect();
         pages.dedup();
         pages
     }
@@ -589,6 +586,6 @@ mod tests {
 
         let findings = run(&server, None).await;
         assert_eq!(findings.len(), 1, "{findings:?}");
-        assert_eq!(findings[0].page.as_deref(), Some("/"));
+        assert_eq!(findings[0].page_path(), Some("/"));
     }
 }

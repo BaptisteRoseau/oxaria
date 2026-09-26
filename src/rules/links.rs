@@ -39,16 +39,16 @@ fn non_descriptive_finding(page: &RenderedPage, link: ElementRef) -> Option<Find
     let name = page::accessible_name(page, link);
     let href = href_of(link);
     if name.trim().is_empty() {
-        return Some(Finding::error(
-            "H30",
-            format!("link to \"{href}\" has no link text"),
-        ));
+        return Some(
+            Finding::error("H30", format!("link to \"{href}\" has no link text")).at(link),
+        );
     }
     is_generic_phrase(&name).then(|| {
         Finding::error(
             "H30",
             format!("link to \"{href}\" uses non-descriptive text \"{name}\""),
         )
+        .at(link)
     })
 }
 

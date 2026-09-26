@@ -250,6 +250,20 @@ See [README.md](./README.md#architecture) for the module tree. Notes beyond what
   derives locations from Java stack traces and ignores passing/skipped tests, so warnings are
   lost and URL locations come out garbled whatever we write. `--report-jenkins` is the complete
   Warnings NG route; JUnit is complete for Jenkins' `junit` step and GitLab.
+- **Findings name their element** (`Finding::at` -> `ElementRef::selector()`), because a page
+  can have 138 identical `<button> target size is 19px` warnings. The path is structural
+  (`tag:nth-of-type(n)`, counting same-tag siblings), skips `html` and litehtml's tag-less
+  anonymous boxes, and stops at the nearest element whose id is unique *and* CSS-safe (a
+  duplicate id, which F77 reports, would select two elements). It was verified to select exactly
+  its element in an HTML5 parse (html5lib + soupsieve) of github.com pages and the fixtures.
+  Reporters append it to the message (`(at ...)`), since no CI format has a field for it, and
+  that makes fingerprints independent of finding order. Rules about several elements (F77,
+  F84), the page (H42, H57, G1 without a link) or a stylesheet (G195) leave it `None`.
+- **`Finding.page` is the page's final URL, not its path** (query and fragment dropped), so a
+  start URL that redirects to another host (`www.openai.com` -> `openai.com`) locates findings
+  on the host that actually served them. The text output still shows only the path.
+- **Logs are only coloured on a terminal** (`logging.rs`): CI logs and redirected files got
+  raw ANSI codes, which Jenkins shows as garbage without its AnsiColor plugin.
 - **Fatal errors become issues** (`CheckerError::rule_id()` -> `INPUT`/`FETCH`/`RENDER`), not
   log lines, so CI gets a report explaining the failure instead of a missing artifact.
 

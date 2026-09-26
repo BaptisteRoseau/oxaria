@@ -43,7 +43,7 @@ fn summary_line(report: &Report) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::reporters::model::tests::{error, warning};
+    use crate::reporters::model::tests::{error, on_page, warning};
 
     fn render(source: &str, findings: &[crate::rules::Finding]) -> String {
         TextReporter.render(&Report::new(source, findings))
@@ -61,7 +61,7 @@ mod tests {
     fn issue_line_includes_page_path() {
         let report = render(
             "https://example.com",
-            &[error("H57").on_page("/about".to_string())],
+            &[on_page(error("H57"), "https://example.com/about")],
         );
         assert!(report.starts_with("[ERROR] H57 /about: boom\n"), "{report}");
     }

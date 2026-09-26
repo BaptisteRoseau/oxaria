@@ -9,11 +9,12 @@ use super::{CheckOptions, Finding};
 pub fn check_video_missing_captions(page: &RenderedPage, _options: &CheckOptions) -> Vec<Finding> {
     page.by_tag("video")
         .filter(|video| !has_captions_track(*video))
-        .map(|_| {
+        .map(|video| {
             Finding::error(
                 "G87",
                 "<video> has no captions or subtitles track".to_string(),
             )
+            .at(video)
         })
         .collect()
 }
@@ -34,11 +35,12 @@ pub fn check_autoplay_without_controls(
     page.select(|el| el.tag() == "video" && el.has_attr("autoplay"))
         .into_iter()
         .filter(|video| video.attr("controls").is_none())
-        .map(|_| {
+        .map(|video| {
             Finding::error(
                 "G152",
                 "<video autoplay> has no controls to pause it".to_string(),
             )
+            .at(video)
         })
         .collect()
 }

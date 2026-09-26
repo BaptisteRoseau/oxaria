@@ -100,7 +100,7 @@ fn escape(value: &str) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::reporters::model::tests::{error, warning};
+    use crate::reporters::model::tests::{error, on_page, warning};
     use crate::rules::Finding;
 
     fn render(source: &str, findings: &[Finding]) -> String {
@@ -145,9 +145,9 @@ mod tests {
         let output = render(
             "https://example.com",
             &[
-                error("H57").on_page("/b".to_string()),
-                error("H42").on_page("/a".to_string()),
-                error("H30").on_page("/b".to_string()),
+                on_page(error("H57"), "https://example.com/b"),
+                on_page(error("H42"), "https://example.com/a"),
+                on_page(error("H30"), "https://example.com/b"),
             ],
         );
         let a = output.find("<testsuite name=\"https://example.com/a\" tests=\"1\"");
