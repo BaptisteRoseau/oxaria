@@ -166,12 +166,10 @@ fn walk(
     elements: &mut Vec<RenderedElement>,
 ) -> usize {
     let index = elements.len();
-    elements.push(RenderedElement::new(String::new(), parent));
-
-    elements[index] = match node.is_text() {
+    elements.push(match node.is_text() {
         true => text_element(&node, parent),
         false => rendered_element(&node, parent, fonts),
-    };
+    });
 
     let mut children = Vec::with_capacity(node.children_count());
     for i in 0..node.children_count() {
