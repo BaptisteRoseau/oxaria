@@ -11,6 +11,6 @@ pub(crate) mod testutil;
 
 #[cfg(test)]
 pub use fetch::{ACCEPT_HTML, CHECKER_USER_AGENT};
-pub use fetch::{is_url, load_html, request_headers};
+pub use fetch::{client_builder, is_renderable, is_url, load_html};
 pub use model::{ElementRef, RenderedPage, accessible_name, ids_text};
 pub use render::render;

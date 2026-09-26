@@ -8,7 +8,7 @@ use std::collections::HashSet;
 use std::sync::{Arc, RwLock};
 use std::time::{Duration, SystemTime};
 
-use reqwest::header::{CONTENT_TYPE, HeaderMap, LOCATION, RETRY_AFTER};
+use reqwest::header::{HeaderMap, LOCATION, RETRY_AFTER};
 use reqwest::{Client, StatusCode, redirect};
 use tokio::time::Instant;
 use tracing::info;
@@ -22,8 +22,6 @@ use super::links::visit_key;
 const DEFAULT_RETRY_DELAY: Duration = Duration::from_secs(1);
 const MAX_RETRIES: u32 = 3;
 const MAX_REDIRECTS: u32 = 10;
-const REQUEST_TIMEOUT: Duration = Duration::from_secs(30);
-const RENDERABLE_CONTENT_TYPES: &[&str] = &["text/html", "application/xhtml+xml"];
 /// `X-RateLimit-Reset` is epoch seconds on some servers (GitHub) and a
 /// delta on others; anything this large can only be an epoch timestamp.
 const EPOCH_SECONDS_THRESHOLD: u64 = 1_000_000_000;
@@ -74,10 +72,8 @@ impl RequestContext {
     pub fn new() -> Result<Self, CheckerError> {
         // Redirects are followed by hand in `request` so each hop can be
         // checked against the redirect scope before it is requested.
-        let client = Client::builder()
-            .default_headers(page::request_headers())
+        let client = page::client_builder()
             .redirect(redirect::Policy::none())
-            .timeout(REQUEST_TIMEOUT)
             .build()?;
         Ok(RequestContext {
             client,
@@ -178,7 +174,7 @@ pub async fn request(context: &RequestContext, url: &Url, scope: &RedirectScope)
             _ if status.is_client_error() || status.is_server_error() => {
                 return RequestOutcome::HttpError(status);
             }
-            _ if !is_renderable(headers) => return RequestOutcome::NotRenderable,
+            _ if !page::is_renderable(headers) => return RequestOutcome::NotRenderable,
             _ => {
                 return match response.text().await {
                     Ok(body) => RequestOutcome::Html {
@@ -205,23 +201,6 @@ fn is_rate_limited(status: StatusCode, headers: &HeaderMap) -> bool {
 fn redirect_target(current: &Url, headers: &HeaderMap) -> Option<Url> {
     let location = headers.get(LOCATION)?.to_str().ok()?;
     current.join(location).ok()
-}
-
-fn is_renderable(headers: &HeaderMap) -> bool {
-    headers
-        .get(CONTENT_TYPE)
-        .and_then(|value| value.to_str().ok())
-        .map(mime_essence)
-        .is_some_and(|essence| RENDERABLE_CONTENT_TYPES.contains(&essence.as_str()))
-}
-
-fn mime_essence(content_type: &str) -> String {
-    content_type
-        .split(';')
-        .next()
-        .unwrap_or_default()
-        .trim()
-        .to_ascii_lowercase()
 }
 
 fn retry_after(headers: &HeaderMap) -> Duration {
@@ -366,41 +345,6 @@ mod tests {
     fn proactive_delay_without_reset_defaults_to_one_second() {
         let map = headers(&[("x-ratelimit-remaining", "0")]);
         assert_eq!(proactive_delay(&map), Some(DEFAULT_RETRY_DELAY));
-    }
-
-    #[test]
-    fn html_content_types_are_renderable() {
-        for content_type in [
-            "text/html",
-            "text/html; charset=utf-8",
-            "TEXT/HTML",
-            "application/xhtml+xml",
-        ] {
-            assert!(
-                is_renderable(&headers(&[("content-type", content_type)])),
-                "{content_type}"
-            );
-        }
-    }
-
-    #[test]
-    fn api_and_binary_content_types_are_not_renderable() {
-        for content_type in [
-            "application/json",
-            "application/xml",
-            "text/xml",
-            "image/png",
-        ] {
-            assert!(
-                !is_renderable(&headers(&[("content-type", content_type)])),
-                "{content_type}"
-            );
-        }
-    }
-
-    #[test]
-    fn missing_content_type_is_not_renderable() {
-        assert!(!is_renderable(&HeaderMap::new()));
     }
 
     #[test]

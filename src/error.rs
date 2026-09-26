@@ -5,6 +5,9 @@ pub enum CheckerError {
     #[error("Failed to fetch URL: {0}")]
     HttpFetch(#[from] reqwest::Error),
 
+    #[error("Not an HTML page: {0}")]
+    NotHtml(String),
+
     #[error("Invalid URL: {0}")]
     InvalidUrl(#[from] url::ParseError),
 
@@ -40,7 +43,7 @@ impl CheckerError {
     /// a full-site scan already uses for per-page failures.
     pub fn rule_id(&self) -> &'static str {
         match self {
-            CheckerError::HttpFetch(_) => "FETCH",
+            CheckerError::HttpFetch(_) | CheckerError::NotHtml(_) => "FETCH",
             CheckerError::InvalidUrl(_) | CheckerError::FileRead(_) => "INPUT",
             CheckerError::Render => "RENDER",
             CheckerError::ReportConflict { .. }
