@@ -7,6 +7,8 @@
 //! checks without the lifetime/thread-safety constraints a live DOM handle
 //! (from litehtml or `scraper`) would carry.
 
+use url::Url;
+
 pub const TEXT_TAG: &str = "#text";
 
 #[derive(Debug, Clone, Copy, Default, PartialEq)]
@@ -52,6 +54,10 @@ pub struct RenderedPage {
     /// literal, unrendered CSS source text (litehtml has no `:focus` state
     /// simulation, so that check stays a source-level heuristic).
     pub stylesheets: Vec<String>,
+    /// Where the page was fetched from; `None` for a local file. Lets rules
+    /// tell a same-site absolute link (`https://site/pricing`) from a
+    /// relative one (`/pricing`) pointing at the same place.
+    pub url: Option<Url>,
 }
 
 impl RenderedPage {

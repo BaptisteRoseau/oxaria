@@ -76,6 +76,7 @@ pub fn render(html: &str) -> Result<RenderedPage, CheckerError> {
     Ok(RenderedPage {
         elements,
         stylesheets: extract_stylesheets(html),
+        url: None,
     })
 }
 

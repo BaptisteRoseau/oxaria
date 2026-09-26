@@ -25,6 +25,7 @@ pub fn page_from_html(html: &str) -> RenderedPage {
     RenderedPage {
         elements,
         stylesheets: extract_stylesheets(html),
+        url: None,
     }
 }
 
