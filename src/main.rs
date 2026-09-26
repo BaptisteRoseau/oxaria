@@ -2,7 +2,7 @@ mod cli;
 mod error;
 mod logging;
 mod page;
-mod report;
+mod reporters;
 mod rules;
 mod site;
 
@@ -10,27 +10,48 @@ use std::process::ExitCode;
 use std::sync::Arc;
 
 use clap::Parser;
-use tracing::warn;
+use tracing::{error, warn};
 use url::Url;
 
 use cli::CliConfig;
 use error::CheckerError;
+use reporters::{Report, Reporter, TextReporter};
 use rules::{CheckOptions, Finding};
 
 #[tokio::main]
 async fn main() -> ExitCode {
     let config = CliConfig::parse();
-    logging::init_logger(config.verbose);
+    logging::init_logger(config.verbose, config.quiet);
 
-    match check(&config).await {
-        Ok(findings) => {
-            report::print_findings(&findings);
-            report::exit_code(&findings)
-        }
+    // Validated before checking, so a destination conflict fails immediately
+    // instead of after a possibly long full-site scan.
+    let targets = match reporters::targets_from(&config) {
+        Ok(targets) => targets,
         Err(err) => {
-            tracing::error!("{err}");
+            error!("{err}");
+            return ExitCode::from(1);
+        }
+    };
+
+    let report = Arc::new(Report::new(&config.path_or_url, &findings(&config).await));
+    if !config.quiet {
+        print!("{}", TextReporter.render(&report));
+    }
+    match reporters::write_all(Arc::clone(&report), targets).await {
+        Ok(()) => report.exit_code(),
+        Err(errors) => {
+            errors.iter().for_each(|err| error!("{err}"));
             ExitCode::from(1)
         }
+    }
+}
+
+/// A fatal error becomes a finding rather than a log line, so CI gets a
+/// report file that explains the failure instead of a missing artifact.
+async fn findings(config: &CliConfig) -> Vec<Finding> {
+    match check(config).await {
+        Ok(findings) => findings,
+        Err(err) => vec![Finding::error(err.rule_id(), err.to_string())],
     }
 }
 

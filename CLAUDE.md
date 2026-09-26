@@ -212,6 +212,31 @@ See [README.md](./README.md#architecture) for the module tree. Notes beyond what
 - Tests use `wiremock`, addressing the main server as `localhost` and a second "external"
   server as `127.0.0.1`, so they are genuinely different hosts.
 
+### Reporters (`src/reporters/`)
+
+- **Every output goes through one `Report` model** (`model.rs`): findings plus a `Location` and
+  a fingerprint. Each CI format is a `Reporter` (a trait, explicitly requested, despite the
+  "fn pointers" convention below) rendering a whole `Report` to a `String`. Whole-buffer
+  rendering is what makes the parallel writes in `output.rs` safe: each report is one write, so
+  nothing interleaves mid-line on stdout.
+- **Only formats CI platforms read natively** (GitLab Code Quality, GitHub workflow commands,
+  Jenkins Warnings NG, JUnit). A custom JSON format was explicitly rejected.
+- **Stdout output is unchanged by `--report-*`**; only `-q/--quiet` removes it (findings,
+  summary, and `tracing` logs, which go to stdout). A `--report-github -` still prints under
+  `--quiet`, since GitHub only reads annotations from stdout.
+- **Destination conflicts are checked before the check runs** (explicitly requested): two
+  reports on one file (compared after lexical `..` normalization and canonicalizing the parent,
+  so different spellings collide), two reports on stdout, or a report overwriting the input
+  file all exit `1` immediately.
+- **No line numbers**: litehtml exposes no source positions, so every issue is on line `1`
+  (`model::LINE`). GitLab requires a line; don't drop the field.
+- **Fingerprints must be unique and stable**: GitLab merges issues sharing a fingerprint and
+  compares them across pipelines. They're FNV-1a (std's `DefaultHasher` isn't stable across
+  Rust releases) of rule/path/page/message plus an occurrence counter, so two identical
+  findings (two unlabeled checkboxes) stay two issues.
+- **Fatal errors become issues** (`CheckerError::rule_id()` -> `INPUT`/`FETCH`/`RENDER`), not
+  log lines, so CI gets a report explaining the failure instead of a missing artifact.
+
 ## Gotchas
 
 - **Raw string literals containing `href="#..."` fragments will silently truncate.**

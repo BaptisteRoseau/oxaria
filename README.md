@@ -38,6 +38,8 @@ Arguments:
 Options:
   -v, --verbose
           Enable stdout output
+  -q, --quiet
+          Print nothing on stdout (findings, summary, and logs); only the exit code and the --report-* files remain
       --contrast-threshold <CONTRAST_THRESHOLD>
           Minimum contrast ratio for normal-size text (WCAG 1.4.3 default: 4.5) [default: 4.5]
       --large-text-contrast-threshold <LARGE_TEXT_CONTRAST_THRESHOLD>
@@ -48,6 +50,14 @@ Options:
           When given a URL, also scan every same-domain page reachable through its links
       --full-site-scan-max-pages <FULL_SITE_SCAN_MAX_PAGES>
           Maximum number of HTML pages checked during a full-site scan (default: no limit)
+      --report-gitlab <FILE>
+          Write a GitLab Code Quality report (artifacts:reports:codequality) to FILE ('-' for stdout)
+      --report-github <FILE>
+          Write GitHub Actions annotations (workflow commands) to FILE; use '-' so GitHub reads them
+      --report-jenkins <FILE>
+          Write a Jenkins Warnings NG report (recordIssues tool: issues()) to FILE ('-' for stdout)
+      --report-junit <FILE>
+          Write a JUnit XML report (Jenkins junit step, GitLab artifacts:reports:junit) to FILE ('-' for stdout)
   -h, --help
           Print help
   -V, --version
@@ -71,6 +81,9 @@ wcag-checker page.html --target-size-threshold 44
 
 # Crawl and check every page of a site, capped at 200 checked HTML pages
 wcag-checker https://example.com --full-site-scan --full-site-scan-max-pages 200
+
+# CI: GitLab Code Quality + JUnit reports, nothing on stdout
+wcag-checker page.html -q --report-gitlab gl-code-quality.json --report-junit junit.xml
 ```
 
 **Full-site scan** (`--full-site-scan`, URLs only -- ignored for local files):
@@ -85,6 +98,44 @@ wcag-checker https://example.com --full-site-scan --full-site-scan-max-pages 200
 - Rate limits are respected: `429` (and `503` with `Retry-After`) are retried up to 3 times after the `Retry-After` delay (1s when it is `0` or missing), and `RateLimit-*`/`X-RateLimit-*` headers pause all requests once the quota runs out.
 - Each report line includes the URL path of the page it belongs to, e.g. `[ERROR] H57 /about: ...`.
 
+**CI reports** (`--report-*`):
+
+Each `--report-<kind> <FILE>` writes the findings in a format a CI platform reads natively (`-` writes to stdout). Several can be combined; they are written in parallel once the check is done. The usual stdout output is still printed unless `-q/--quiet` is given.
+
+| Flag                | Format                                                                                                    | Read by                                                        |
+| ------------------- | --------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------- |
+| `--report-gitlab`   | [Code Quality JSON](https://docs.gitlab.com/ci/testing/code_quality/)                                      | GitLab `artifacts:reports:codequality` (MR widget, diff annotations) |
+| `--report-github`   | [Workflow commands](https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-commands) (`::error file=…::…`) | GitHub Actions annotations -- must be printed to stdout: `--report-github -` |
+| `--report-jenkins`  | [Warnings NG](https://github.com/jenkinsci/warnings-ng-plugin/blob/main/doc/Documentation.md) native JSON | Jenkins `recordIssues(tool: issues(pattern: '…'))`              |
+| `--report-junit`    | JUnit XML (errors fail, warnings pass with a `system-out`)                                                 | Jenkins `junit`, GitLab `artifacts:reports:junit`               |
+
+- Errors map to GitLab `major` / Jenkins `ERROR` / GitHub `error`; warnings to `minor` / `NORMAL` / `warning`.
+- The rendering engine exposes no source positions, so every issue points at line 1 of the checked file (or, for URLs, of the page URL).
+- Two reports writing to the same file (including the same path spelled differently), two reports on stdout, or a report overwriting the checked file are rejected with exit code `1` before anything is checked.
+- A fatal error (unreadable file, unreachable URL) is reported as an `INPUT`/`FETCH`/`RENDER` issue, so CI still gets a report explaining the failure.
+
+```yaml
+# .gitlab-ci.yml
+wcag:
+  script: wcag-checker public/index.html --report-gitlab gl-code-quality.json --report-junit junit.xml
+  artifacts:
+    when: always
+    reports:
+      codequality: gl-code-quality.json
+      junit: junit.xml
+```
+
+```yaml
+# GitHub Actions step
+- run: wcag-checker public/index.html -q --report-github -
+```
+
+```groovy
+// Jenkinsfile
+sh 'wcag-checker public/index.html --report-jenkins wcag.json || true'
+recordIssues(tool: issues(pattern: 'wcag.json', id: 'wcag', name: 'WCAG'))
+```
+
 **Exit codes:**
 
 | Code | Meaning                                                    |
@@ -97,11 +148,17 @@ wcag-checker https://example.com --full-site-scan --full-site-scan-max-pages 200
 
 ```
 src/
-├── main.rs                 # fetch/read -> render -> run rules -> report -> exit code
+├── main.rs                 # validate reports -> fetch/read -> render -> run rules -> report -> exit code
 ├── cli.rs                  # CLI arguments (clap)
 ├── error.rs                 # CheckerError
 ├── logging.rs                # tracing subscriber setup
-├── report.rs                 # stdout rendering + exit code derivation
+│
+├── reporters/               # --report-* and the stdout output
+│   ├── model.rs               # Report / Issue / Location: findings + location + fingerprint, exit code
+│   ├── reporter.rs            # Reporter trait: render a Report to one format
+│   ├── text.rs                # default human-readable stdout output
+│   ├── gitlab.rs, github.rs, jenkins.rs, junit.rs   # one Reporter per CI format
+│   └── output.rs              # destinations, up-front conflict check, parallel writes
 │
 ├── site/                    # --full-site-scan
 │   ├── crawler.rs             # parallel crawl: visited set, page budget, per-page checks

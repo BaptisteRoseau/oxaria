@@ -10,8 +10,13 @@ pub struct CliConfig {
     pub path_or_url: String,
 
     /// Enable stdout output
-    #[arg(short, long, default_value_t = false)]
+    #[arg(short, long, default_value_t = false, conflicts_with = "quiet")]
     pub verbose: bool,
+
+    /// Print nothing on stdout (findings, summary, and logs); only the exit code and the
+    /// --report-* files remain
+    #[arg(short, long, default_value_t = false)]
+    pub quiet: bool,
 
     /// Minimum contrast ratio for normal-size text (WCAG 1.4.3 default: 4.5)
     #[arg(long, default_value_t = 4.5)]
@@ -32,4 +37,21 @@ pub struct CliConfig {
     /// Maximum number of HTML pages checked during a full-site scan (default: no limit)
     #[arg(long, requires = "full_site_scan")]
     pub full_site_scan_max_pages: Option<NonZeroUsize>,
+
+    /// Write a GitLab Code Quality report (artifacts:reports:codequality) to FILE ('-' for stdout)
+    #[arg(long, value_name = "FILE")]
+    pub report_gitlab: Option<String>,
+
+    /// Write GitHub Actions annotations (workflow commands) to FILE; use '-' so GitHub reads them
+    #[arg(long, value_name = "FILE")]
+    pub report_github: Option<String>,
+
+    /// Write a Jenkins Warnings NG report (recordIssues tool: issues()) to FILE ('-' for stdout)
+    #[arg(long, value_name = "FILE")]
+    pub report_jenkins: Option<String>,
+
+    /// Write a JUnit XML report (Jenkins junit step, GitLab artifacts:reports:junit) to FILE ('-'
+    /// for stdout)
+    #[arg(long, value_name = "FILE")]
+    pub report_junit: Option<String>,
 }

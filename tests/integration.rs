@@ -189,3 +189,127 @@ fn max_pages_requires_full_site_scan() {
     assert_ne!(exit_code(&output), 0);
     assert!(String::from_utf8_lossy(&output.stderr).contains("--full-site-scan"));
 }
+
+fn read(path: &std::path::Path) -> String {
+    std::fs::read_to_string(path).unwrap_or_else(|err| panic!("{}: {err}", path.display()))
+}
+
+fn json(path: &std::path::Path) -> serde_json::Value {
+    serde_json::from_str(&read(path)).expect("report is valid JSON")
+}
+
+#[test]
+fn reports_are_written_alongside_the_usual_output() {
+    let dir = tempfile::tempdir().unwrap();
+    let gitlab = dir.path().join("gl-code-quality.json");
+    let jenkins = dir.path().join("reports/warnings-ng.json");
+    let junit = dir.path().join("junit.xml");
+    let output = run(
+        "tests/assets/errors.html",
+        &[
+            "--report-gitlab",
+            gitlab.to_str().unwrap(),
+            "--report-jenkins",
+            jenkins.to_str().unwrap(),
+            "--report-junit",
+            junit.to_str().unwrap(),
+        ],
+    );
+
+    assert_eq!(exit_code(&output), 1, "stdout:\n{}", stdout(&output));
+    assert!(stdout(&output).contains("[ERROR] H57"));
+
+    let gitlab = json(&gitlab);
+    let issues = gitlab.as_array().expect("GitLab report is an array");
+    assert!(issues.iter().any(|i| i["check_name"] == "H57"));
+    assert!(
+        issues
+            .iter()
+            .all(|i| i["location"]["path"] == "tests/assets/errors.html"
+                && i["location"]["lines"]["begin"] == 1)
+    );
+
+    let jenkins = json(&jenkins);
+    assert_eq!(jenkins["size"], issues.len());
+    assert!(jenkins["issues"][0]["fileName"] == "tests/assets/errors.html");
+
+    let junit = read(&junit);
+    assert!(junit.starts_with("<?xml"));
+    assert!(junit.contains(r#"name="H57""#), "{junit}");
+}
+
+#[test]
+fn github_annotations_can_go_to_stdout() {
+    let output = run(
+        "tests/assets/warnings_only.html",
+        &["--quiet", "--report-github", "-"],
+    );
+    let report = stdout(&output);
+
+    assert_eq!(exit_code(&output), 2, "stdout:\n{report}");
+    assert!(!report.is_empty());
+    assert!(
+        report
+            .lines()
+            .all(|line| line.starts_with("::warning file=tests/assets/warnings_only.html,line=1,")),
+        "unexpected line in:\n{report}"
+    );
+}
+
+#[test]
+fn quiet_prints_nothing_but_keeps_the_exit_code() {
+    let output = run("tests/assets/errors.html", &["-q"]);
+    assert_eq!(exit_code(&output), 1);
+    assert_eq!(stdout(&output), "");
+}
+
+#[test]
+fn quiet_and_verbose_are_exclusive() {
+    let output = run("tests/assets/clean.html", &["-q", "-v"]);
+    assert_ne!(exit_code(&output), 0);
+    assert!(String::from_utf8_lossy(&output.stderr).contains("--quiet"));
+}
+
+#[test]
+fn conflicting_report_destinations_fail_before_checking() {
+    let dir = tempfile::tempdir().unwrap();
+    let report = dir.path().join("report.json");
+    let same_report = dir.path().join("sub/../report.json");
+    let output = run(
+        "tests/assets/errors.html",
+        &[
+            "--report-gitlab",
+            report.to_str().unwrap(),
+            "--report-jenkins",
+            same_report.to_str().unwrap(),
+        ],
+    );
+    let log = stdout(&output);
+
+    assert_eq!(exit_code(&output), 1, "stdout:\n{log}");
+    assert!(
+        log.contains("--report-gitlab and --report-jenkins both write to"),
+        "{log}"
+    );
+    assert!(
+        !log.contains("error(s)"),
+        "the check should not run:\n{log}"
+    );
+    assert!(!report.exists());
+}
+
+#[test]
+fn a_fatal_error_is_still_reported() {
+    let dir = tempfile::tempdir().unwrap();
+    let gitlab = dir.path().join("gl.json");
+    let output = run(
+        "tests/assets/does-not-exist.html",
+        &["--report-gitlab", gitlab.to_str().unwrap()],
+    );
+
+    assert_eq!(exit_code(&output), 1, "stdout:\n{}", stdout(&output));
+    let issues = json(&gitlab);
+    assert_eq!(issues.as_array().unwrap().len(), 1);
+    assert_eq!(issues[0]["check_name"], "INPUT");
+    assert_eq!(issues[0]["severity"], "major");
+}
