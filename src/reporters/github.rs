@@ -13,18 +13,20 @@ use crate::rules::Severity;
 /// margin leaves room for whatever else the same step appends to the file.
 const MAX_SUMMARY_BYTES: usize = 1_000_000;
 
+const TRUNCATION_NOTE_MARGIN: usize = 200;
+
 const TABLE_HEADER: &str = "| Severity | Rule | Location | Message |\n| --- | --- | --- | --- |\n";
 
 pub struct GithubReporter;
 
 impl Reporter for GithubReporter {
     fn render(&self, report: &Report) -> String {
+        let heading = heading(report);
         match report.issues.is_empty() {
-            true => format!("{}\n", heading(report)),
+            true => format!("{heading}\n"),
             false => format!(
-                "{}\n\n{TABLE_HEADER}{}",
-                heading(report),
-                rows_within_limit(report)
+                "{heading}\n\n{TABLE_HEADER}{}",
+                rows_within_limit(report, heading.len())
             ),
         }
     }
@@ -46,12 +48,12 @@ fn heading(report: &Report) -> String {
 
 /// Errors come first, so a summary cut at the size limit keeps the most
 /// important findings.
-fn rows_within_limit(report: &Report) -> String {
+fn rows_within_limit(report: &Report, heading_len: usize) -> String {
     let mut issues: Vec<&Issue> = report.issues.iter().collect();
     issues.sort_by_key(|issue| Reverse(issue.severity == Severity::Error));
 
     let mut rows = String::new();
-    let budget = MAX_SUMMARY_BYTES - TABLE_HEADER.len() - heading(report).len() - 200;
+    let budget = MAX_SUMMARY_BYTES - TABLE_HEADER.len() - heading_len - TRUNCATION_NOTE_MARGIN;
     for (shown, issue) in issues.iter().enumerate() {
         let row = row(issue);
         if rows.len() + row.len() > budget {
