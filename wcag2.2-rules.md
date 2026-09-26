@@ -4,23 +4,88 @@ This document lists automatable/semi-automatable accessibility rules derived fro
 
 Rules are grouped by category. Each entry cites the WCAG Success Criterion(s) (SC) it supports.
 
+The list was last compared against the w3c/wcag repository at commit `71c891a` (September 2026), covering every non-obsolete technique and failure under `techniques/html`, `techniques/aria`, `techniques/css`, `techniques/client-side-script`, `techniques/general` and `techniques/failures` (Flash and Silverlight techniques are obsolete, and PDF, SMIL and plain-text techniques don't apply to HTML pages). A technique or failure is listed when its test procedure has a signal in the page's markup, styles, or behavior that a checker can look for, fully or partially. Techniques that only describe one way of meeting a criterion (e.g. H40 "Using description lists", G64 "Providing a Table of Contents"), or whose test is purely a human judgement (e.g. G130 "Providing descriptive headings"), are not listed.
+
 ## Table of Contents
 
-1. [Text Alternatives (Images)](#text-alternatives-images)
-2. [Forms & Labels](#forms--labels)
-3. [Headings & Document Structure](#headings--document-structure)
-4. [Language](#language)
-5. [Links](#links)
-6. [Color & Contrast](#color--contrast)
-7. [Tables](#tables)
-8. [ARIA Usage](#aria-usage)
-9. [Multimedia](#multimedia)
-10. [Keyboard & Focus](#keyboard--focus)
-11. [Navigation](#navigation)
-12. [Timing & Motion](#timing--motion)
-13. [Pointer & Target Size (WCAG 2.2)](#pointer--target-size-wcag-22)
-14. [Cognitive & Authentication (WCAG 2.2)](#cognitive--authentication-wcag-22)
-15. [Resize & Reflow](#resize--reflow)
+1. [Page Title & Frames](#page-title--frames)
+2. [Text Alternatives (Images)](#text-alternatives-images)
+3. [Forms & Labels](#forms--labels)
+4. [Headings & Document Structure](#headings--document-structure)
+5. [Language](#language)
+6. [Links](#links)
+7. [Color & Contrast](#color--contrast)
+8. [Tables](#tables)
+9. [ARIA Usage](#aria-usage)
+10. [Multimedia](#multimedia)
+11. [Keyboard & Focus](#keyboard--focus)
+12. [Navigation](#navigation)
+13. [Timing & Motion](#timing--motion)
+14. [Pointer & Target Size (WCAG 2.2)](#pointer--target-size-wcag-22)
+15. [Cognitive & Authentication (WCAG 2.2)](#cognitive--authentication-wcag-22)
+16. [Resize & Reflow](#resize--reflow)
+
+---
+
+## Page Title & Frames
+
+### H25 - Give every page a non-empty title element
+
+Every HTML document needs a `title` element in its `head` that says in a simple phrase what the page is for, so users can orient themselves (and tell tabs and windows apart) without reading the page. The `title` element is different from the `title` attribute. (SC 2.4.2)
+
+#### DON'T
+
+```html
+<!doctype html>
+<html lang="en">
+<head></head>
+```
+
+#### DO
+
+```html
+<!doctype html>
+<html lang="en">
+<head>
+  <title>The World Wide Web Consortium</title>
+</head>
+```
+
+---
+
+### F25 - Don't use a page title that doesn't identify the page
+
+Authoring-tool defaults ("Untitled Document", "New Page 1", "Enter the title of your HTML document here"), non-descriptive filenames (`report.html`, `spk12.html`), filler text, or one template title shared by every page do not identify the page's content or purpose. (SC 2.4.2)
+
+#### DON'T
+
+```html
+<title>Untitled Document</title>
+```
+
+#### DO
+
+```html
+<title>Quarterly sales report 2026 - Acme Corp</title>
+```
+
+---
+
+### H64 - Give every iframe a title attribute
+
+The `title` attribute of an `iframe` labels the frame, so users can decide which frame to enter and explore. It is not interchangeable with `name`, which is only for scripting and window targeting and is never presented to the user. (SC 4.1.2)
+
+#### DON'T
+
+```html
+<iframe src="banner-ad.html" name="ad-iframe"></iframe>
+```
+
+#### DO
+
+```html
+<iframe src="banner-ad.html" name="ad-iframe" title="Advertisement"></iframe>
+```
 
 ---
 
@@ -140,6 +205,30 @@ Leaving off `alt` on `img`, `area`, or `input type="image"` elements causes assi
 
 ---
 
+### F89 - Don't leave an image that is a link's only content without a text alternative
+
+When a link contains only an image (or other non-text content) that assistive technology is told to ignore (`alt=""`, `role="presentation"`), and the link has no `aria-label`/`aria-labelledby`, the link has no accessible name. Screen readers then guess, e.g. announcing the image's filename. For an image link placed next to a text link to the same place, combine the two into one link (H2). (SC 2.4.4, 2.4.9, 4.1.2)
+
+#### DON'T
+
+```html
+<a href="scores.html">
+  <img src="football.gif" alt="">
+</a>
+<a href="scores.html">Football Scoreboard</a>
+```
+
+#### DO
+
+```html
+<a href="scores.html">
+  <img src="football.gif" alt="">
+  Football Scoreboard
+</a>
+```
+
+---
+
 ## Forms & Labels
 
 ### H44 - Associate a label element with every form control
@@ -246,6 +335,26 @@ Custom widgets (buttons, toggles, comboboxes built from `div`/`span`) must expos
 
 ---
 
+### F96 - Include the visible label text in the accessible name
+
+Speech input users activate a control by speaking the label they see. If `aria-label` or `aria-labelledby` gives the control an accessible name that doesn't contain the visible label text, they cannot reliably activate it. Capitalization and punctuation don't matter, and symbolic text (an "X" for close, a "B" for bold) doesn't count as a label. (SC 2.5.3)
+
+#### DON'T
+
+```html
+<button id="sitesearch" aria-label="Find in this site">Go</button>
+```
+
+#### DO
+
+```html
+<button id="sitesearch">Go</button>
+<!-- or, if more context is needed, start the name with the visible text -->
+<button id="sitesearch" aria-label="Go - search this site">Go</button>
+```
+
+---
+
 ### H98 - Use HTML autocomplete attributes to identify input purpose
 
 Common input fields (name, email, address, etc.) should declare their purpose via the `autocomplete` attribute so users can rely on browser/AT autofill. (SC 1.3.5)
@@ -262,6 +371,30 @@ Common input fields (name, email, address, etc.) should declare their purpose vi
 ```html
 <label for="email">Email</label>
 <input type="email" id="email" name="email" autocomplete="email">
+```
+
+---
+
+### F107 - Don't use incorrect autocomplete attribute values
+
+An `autocomplete` value that isn't one of the input purposes listed in WCAG 2.2 (based on HTML's autofill field names, e.g. `birthday` instead of `bday`), or that names the wrong purpose for the field (`email` on a name field), gives user agents and assistive technology wrong or no information about the input. (SC 1.3.5)
+
+#### DON'T
+
+```html
+<label for="uname">Name:</label>
+<input autocomplete="email" id="uname" type="text">
+<label for="ubirthday">Birthday:</label>
+<input autocomplete="birthday" id="ubirthday" type="text">
+```
+
+#### DO
+
+```html
+<label for="uname">Name:</label>
+<input autocomplete="name" id="uname" type="text">
+<label for="ubirthday">Birthday:</label>
+<input autocomplete="bday" id="ubirthday" type="text">
 ```
 
 ---
@@ -343,6 +476,32 @@ Headings should nest sequentially (h1 → h2 → h3) to reflect document structu
 <h1>Product page</h1>
 <h2>Specifications</h2>
 <h2>Reviews</h2>
+```
+
+---
+
+### F92 - Don't use role="presentation" on content that conveys semantic information
+
+`role="presentation"` (or `role="none"`) removes an element's semantics from the accessibility API. On a heading, a data table, or any other element whose markup conveys structure, it hides that structure from assistive technology users. For tables, see also F46. (SC 1.3.1)
+
+#### DON'T
+
+```html
+<table role="presentation">
+  <caption>Fruits and their colors</caption>
+  <tr><th>Name</th><th>Color</th></tr>
+  <tr><td>banana</td><td>yellow</td></tr>
+</table>
+```
+
+#### DO
+
+```html
+<table>
+  <caption>Fruits and their colors</caption>
+  <tr><th scope="col">Name</th><th scope="col">Color</th></tr>
+  <tr><td>banana</td><td>yellow</td></tr>
+</table>
 ```
 
 ---
@@ -546,6 +705,62 @@ Using `td` for cells that function as row/column headers means screen reader use
 
 ---
 
+### F46 - Don't use th, caption, or a non-empty summary in layout tables
+
+A table used only to lay content out must not contain data-table markup: `th` cells, a `caption`, a non-empty `summary` attribute, or `headers`/`scope` attributes. Assistive technology announces that structure as if the table held data. (If it does hold data, `role="presentation"` is the problem instead: see F92.) (SC 1.3.1)
+
+#### DON'T
+
+```html
+<table role="presentation">
+  <tr><th colspan="3">Page Title</th></tr>
+  <tr>
+    <td>navigation content</td><td>main content</td><td>right sidebar content</td>
+  </tr>
+</table>
+```
+
+#### DO
+
+```html
+<table role="presentation">
+  <tr><td colspan="3"><h1>Page Title</h1></td></tr>
+  <tr>
+    <td>navigation content</td><td>main content</td><td>right sidebar content</td>
+  </tr>
+</table>
+```
+
+---
+
+### F90 - Don't associate data cells with the wrong header cells via headers/id
+
+Each id in a cell's `headers` attribute must reference the `th` cells that actually head that cell, in the same table. A `headers` value copied without being updated, or pointing at an id that doesn't exist or isn't a header cell, announces the wrong headers (or none). (SC 1.3.1)
+
+#### DON'T
+
+```html
+<tr>
+  <th id="e1" headers="e">1</th> ... <th id="p1" headers="p">1</th>
+</tr>
+<tr>
+  <td headers="e p1">15%</td> <!-- should be "e e1" -->
+</tr>
+```
+
+#### DO
+
+```html
+<tr>
+  <th id="e1" headers="e">1</th> ... <th id="p1" headers="p">1</th>
+</tr>
+<tr>
+  <td headers="e e1">15%</td>
+</tr>
+```
+
+---
+
 ## ARIA Usage
 
 ### ARIA16 - Use aria-labelledby to name controls from visible text elsewhere on the page
@@ -660,6 +875,46 @@ function togglePanel(btn) {
 
 ---
 
+### F59 - Don't script a div or span into a control without giving it a role
+
+Attaching event handlers to generic elements like `div` and `span` makes them work as controls with no role that assistive technology can announce. Users can't tell the element is interactive, or what kind of control it is. Use a native element, or add the fitting WAI-ARIA role (plus keyboard support). (SC 4.1.2)
+
+#### DON'T
+
+```html
+<span onclick="toggleCheckbox('chkbox')">
+  <img src="unchecked.gif" id="chkbox" alt=""> Include Signature
+</span>
+```
+
+#### DO
+
+```html
+<label><input type="checkbox" id="chkbox"> Include Signature</label>
+```
+
+---
+
+### F103 - Expose status messages through a role or live region
+
+A status message (the result of an action, a waiting state, the progress of a process, or the existence of errors) that appears without taking focus must be in an `output` element, or a container with `role="status"`, `role="alert"`, `role="log"`, or `aria-live="polite"`/`"assertive"`, set *before* the message is inserted. Otherwise screen readers never announce it. (SC 4.1.3)
+
+#### DON'T
+
+```html
+<button type="submit">Search</button>
+<div id="results-summary"><!-- script inserts "0 results returned" --></div>
+```
+
+#### DO
+
+```html
+<button type="submit">Search</button>
+<div id="results-summary" role="status"><!-- script inserts "0 results returned" --></div>
+```
+
+---
+
 ## Multimedia
 
 ### G87 - Provide closed captions for prerecorded video with audio
@@ -723,6 +978,42 @@ Any content that moves, blinks, scrolls, or auto-updates for more than 5 seconds
 
 ---
 
+### F93 - Don't autoplay media with sound without a way to pause or stop it
+
+An `audio` or `video` element with an audio track that has `autoplay` but not `muted`, with no controls or commands to pause or stop it, plays sound over screen reader speech with no way to turn it off (unless it lasts 3 seconds or less). (SC 1.4.2)
+
+#### DON'T
+
+```html
+<video src="ads.cgi?kind=video" autoplay loop></video>
+```
+
+#### DO
+
+```html
+<video src="ads.cgi?kind=video" autoplay muted loop controls></video>
+```
+
+---
+
+### F16 - Don't include scrolling content that can't be paused and restarted
+
+Moving or scrolling content that is not essential to the activity, such as a news ticker, needs a mechanism to pause it and restart it from where it stopped, or low-vision users and users with cognitive disabilities can't read it. A `marquee` element scrolls with no such mechanism. (SC 2.2.2)
+
+#### DON'T
+
+```html
+<marquee>Breaking news: sale ends today!</marquee>
+```
+
+#### DO
+
+```html
+<p>Breaking news: sale ends today!</p>
+```
+
+---
+
 ## Keyboard & Focus
 
 ### G202 - Ensure all functionality is operable from the keyboard alone
@@ -748,6 +1039,82 @@ Or, if a native element truly can't be used:
      onkeydown="if(event.key==='Enter'||event.key===' '){submitForm();event.preventDefault();}">
   Submit
 </div>
+```
+
+---
+
+### F54 - Don't bind a function only to pointing-device event handlers
+
+A function reachable only through pointer-specific handlers (`onmousedown`, `onmouseup`, `ondblclick`, `ontouchstart`, `onpointerdown`, ...) can't be used from the keyboard. `click` on a native control is device-independent; mouse-only events are not. (SC 2.1.1)
+
+#### DON'T
+
+```html
+<p><img onmousedown="nextPage();" src="nextarrow.gif" alt="Go to next page"></p>
+```
+
+#### DO
+
+```html
+<p><a href="nextpage.html"><img src="nextarrow.gif" alt="Go to next page"></a></p>
+```
+
+---
+
+### F42 - Don't emulate links with script event handlers
+
+An element that navigates from a script handler (`onclick="location.href=..."`) instead of being an `a` or `area` element isn't in the links list that assistive technology generates, and usually can't be reached with the keyboard. (SC 1.3.1, 2.1.1, 4.1.2)
+
+#### DON'T
+
+```html
+<span onclick="location.href='newpage.html'">Fake link</span>
+```
+
+#### DO
+
+```html
+<a href="newpage.html">Real link</a>
+```
+
+---
+
+### F55 - Don't use script to remove focus as soon as an element receives it
+
+Calling `blur()` when an element gets focus (often to hide a focus indicator the designer finds unsightly) takes keyboard users' focus away, leaving the control operable only with a mouse. (SC 2.1.1, 2.4.7, 3.2.1)
+
+#### DON'T
+
+```html
+<a onfocus="this.blur()" href="Page.html"><img src="myImage.gif" alt="Next page"></a>
+```
+
+#### DO
+
+```html
+<a href="Page.html"><img src="myImage.gif" alt="Next page"></a>
+```
+
+---
+
+### F99 - Don't implement single-character key shortcuts that can't be turned off or remapped
+
+A shortcut made of a single letter, number, punctuation, or symbol key can be triggered by accident by speech input users and people who mistype. Provide a setting to turn it off or remap it to include a modifier key (Ctrl, Alt), or make it active only while the relevant component has focus. (SC 2.1.4)
+
+#### DON'T
+
+```js
+document.addEventListener('keydown', (e) => {
+  if (e.key === 's') openSearch(); // always active, can't be turned off
+});
+```
+
+#### DO
+
+```js
+document.addEventListener('keydown', (e) => {
+  if (e.key === 's' && settings.singleKeyShortcuts) openSearch(); // user can disable it
+});
 ```
 
 ---
@@ -798,7 +1165,7 @@ a:focus-visible, button:focus-visible, input:focus-visible {
 
 ---
 
-### FOC001 - Don't let sticky headers/footers fully hide the focused element
+### F110 - Don't let sticky headers/footers fully hide the focused element
 
 When a `user interface component` receives keyboard focus, no author-created content (e.g. a sticky header, cookie banner, or footer) may completely obscure it. (SC 2.4.11 — Focus Not Obscured (Minimum), new in WCAG 2.2)
 
@@ -869,7 +1236,7 @@ Navigation bars, search boxes, and other components that repeat across pages in 
 
 ### HLP001 - Keep help mechanisms in the same relative location across pages
 
-If a set of pages offers a help mechanism (contact link, live chat, help page link, self-help option), it must appear in the same relative order/place on every page it's provided, unless the user moves it. (SC 3.2.6 — Consistent Help, new in WCAG 2.2)
+If a set of pages offers a help mechanism (contact link, live chat, help page link, self-help option), it must appear in the same relative order/place on every page it's provided, unless the user moves it. G220 ("Provide a contact-us link in a consistent location") is the sufficient technique for the contact-link case; this rule covers every kind of help mechanism. (SC 3.2.6 — Consistent Help, new in WCAG 2.2)
 
 #### DON'T
 
@@ -913,9 +1280,29 @@ setTimeout(() => {
 
 ---
 
+### F40 / F41 - Don't redirect or reload the page with a timed meta refresh
+
+`<meta http-equiv="refresh" content="{seconds}; url=...">` with a delay (F40), or `content="{seconds}"` alone to reload the page periodically (F41), changes the page under users who haven't finished reading it and gives them no way to stop it. A delay under 1 second (an instant redirect, H76) or over 20 hours (72,000 seconds) is not a failure, but redirecting on the server is preferable. (SC 2.2.1, 2.2.4, 3.2.5)
+
+#### DON'T
+
+```html
+<meta http-equiv="refresh" content="5; url=https://www.example.com/newpage">
+<meta http-equiv="refresh" content="60">
+```
+
+#### DO
+
+```html
+<!-- redirect on the server (HTTP 301), or instantly: -->
+<meta http-equiv="refresh" content="0; url=https://www.example.com/newpage">
+```
+
+---
+
 ### ANI001 - Provide a way to disable motion triggered by interaction
 
-Animations triggered by user interaction (parallax, sliding panels, zoom transitions) must be disable-able, and should respect the OS-level "reduce motion" preference. (SC 2.3.3)
+Animations triggered by user interaction (parallax, sliding panels, zoom transitions) must be disable-able, and should respect the OS-level "reduce motion" preference, e.g. with the `prefers-reduced-motion` media query (C39 in CSS, SCR40 in script). (SC 2.3.3)
 
 #### DON'T
 
@@ -940,7 +1327,7 @@ Animations triggered by user interaction (parallax, sliding panels, zoom transit
 
 ## Pointer & Target Size (WCAG 2.2)
 
-### DRG001 - Provide a non-dragging alternative for drag-operated functionality
+### F108 - Provide a non-dragging alternative for drag-operated functionality
 
 Any function operated by a dragging gesture (reordering a list, a slider, a carousel swipe) must also be achievable with a single pointer action that doesn't require dragging (e.g. tap-to-select buttons, up/down controls). (SC 2.5.7 — Dragging Movements, new in WCAG 2.2)
 
@@ -956,6 +1343,48 @@ Any function operated by a dragging gesture (reordering a list, a slider, a caro
 ```html
 <input type="range" id="volume" min="0" max="100" value="50" aria-label="Volume">
 <!-- native range input supports drag, arrow keys, and click-to-set -->
+```
+
+---
+
+### F101 - Don't activate a control on the down-event
+
+Functionality triggered on `mousedown`, `touchstart`, or `pointerdown` runs as soon as the pointer is pressed, so users can't abort an accidental press by moving away before releasing. Use `click`, which fires on the up-event, unless the down-event is essential (e.g. a piano keyboard) or the action can be undone or is reversed on the up-event. (SC 2.5.2)
+
+#### DON'T
+
+```js
+document.getElementById('close').addEventListener('mousedown', closeDialog);
+```
+
+#### DO
+
+```js
+document.getElementById('close').addEventListener('click', closeDialog);
+```
+
+---
+
+### F105 - Provide a simple pointer alternative to path-based gestures
+
+A function operated by a path-based gesture (swiping to reveal options, drawing a shape to undo) must also be operable with single taps or clicks, e.g. visible buttons for the same actions. (SC 2.5.1)
+
+#### DON'T
+
+```html
+<li class="message" ontouchstart="startSwipe(event)" ontouchend="endSwipe(event)">
+  Meeting notes <!-- archive/delete only by swiping left or right -->
+</li>
+```
+
+#### DO
+
+```html
+<li class="message" ontouchstart="startSwipe(event)" ontouchend="endSwipe(event)">
+  Meeting notes
+  <button type="button" onclick="archive(this)">Archive</button>
+  <button type="button" onclick="remove(this)">Delete</button>
+</li>
 ```
 
 ---
@@ -983,7 +1412,7 @@ Interactive elements operated by pointer must have a target size of at least 24x
 
 ### RED001 - Don't make users re-enter information they already provided
 
-Information a user already entered earlier in the same process (e.g. shipping address reused for billing) must be auto-populated or selectable, not required to be typed again from scratch. (SC 3.3.7 — Redundant Entry, new in WCAG 2.2)
+Information a user already entered earlier in the same process (e.g. shipping address reused for billing) must be auto-populated or selectable, not required to be typed again from scratch. G221 ("Provide data from a previous step in a process") is the sufficient technique. (SC 3.3.7 — Redundant Entry, new in WCAG 2.2)
 
 #### DON'T
 
@@ -1008,7 +1437,7 @@ Information a user already entered earlier in the same process (e.g. shipping ad
 
 ### AUT001 - Don't require a cognitive function test for authentication without an alternative
 
-Login flows must not rely solely on remembering a password, solving a puzzle, or transcribing a CAPTCHA unless an alternative is offered (e.g. password managers/paste allowed, email magic link, biometric option, or object-recognition-free CAPTCHA). (SC 3.3.8 — Accessible Authentication (Minimum), new in WCAG 2.2)
+Login flows must not rely solely on remembering a password, solving a puzzle, or transcribing a CAPTCHA unless an alternative is offered (e.g. password managers/paste allowed, email magic link, biometric option, or object-recognition-free CAPTCHA). The Understanding document for 3.3.8 states that blocking paste into a password or code field fails the criterion, since it forces users to transcribe. No technique or failure covers paste blocking specifically (F109 covers codes split across fields). (SC 3.3.8 — Accessible Authentication (Minimum), new in WCAG 2.2)
 
 #### DON'T
 
@@ -1024,6 +1453,30 @@ Login flows must not rely solely on remembering a password, solving a puzzle, or
 <input id="pwd" type="password" autocomplete="current-password">
 <!-- pasting is allowed so a password manager can fill it in -->
 <p><a href="/login/magic-link">Or email me a sign-in link instead</a></p>
+```
+
+---
+
+### F109 - Don't prevent entering a password or code in the same format it was created
+
+Splitting a password or verification code across separate inputs (one per character, or "enter the 2nd, 6th and last characters"), or building it from `select` elements, prevents pasting it in one action. That rules out password managers and forces users to transcribe it: a cognitive function test. (SC 3.3.8, 3.3.9)
+
+#### DON'T
+
+```html
+<fieldset>
+  <legend>Verification code</legend>
+  <input aria-label="Digit 1" maxlength="1"> <input aria-label="Digit 2" maxlength="1">
+  <input aria-label="Digit 3" maxlength="1"> <input aria-label="Digit 4" maxlength="1">
+  <input aria-label="Digit 5" maxlength="1"> <input aria-label="Digit 6" maxlength="1">
+</fieldset>
+```
+
+#### DO
+
+```html
+<label for="code">Verification code</label>
+<input id="code" autocomplete="one-time-code" inputmode="numeric">
 ```
 
 ---
@@ -1086,4 +1539,65 @@ h1 { font-size: 24px; }
 html { font-size: 100%; } /* 1rem = 16px by default, respects user's browser font-size setting */
 body { font-size: 0.875rem; }
 h1 { font-size: 1.5rem; }
+```
+
+---
+
+### F94 - Don't size text with viewport units alone
+
+Text sized only in viewport units (`vw`, `vh`, `vmin`, `vmax`) can't be enlarged with browser zoom or text-size settings, because it depends on the viewport, not the user's preferences. Combine them with a relative unit (e.g. `calc(1rem + 1vw)`), or adjust sizes with media queries instead. (SC 1.4.4)
+
+#### DON'T
+
+```css
+.callout { font-size: 1vw; }
+```
+
+#### DO
+
+```css
+.callout { font-size: calc(1rem + 0.5vw); }
+```
+
+---
+
+### F95 - Let users move the pointer over content shown on hover
+
+Additional content that appears on pointer hover (tooltips, pop-ups, submenus) must stay visible while the pointer moves from the trigger onto it, so screen magnifier users can bring it into view and read it. (SC 1.4.13)
+
+#### DON'T
+
+```css
+.tooltip { display: none; position: absolute; top: 3em; } /* gap between trigger and tooltip */
+.trigger:hover + .tooltip { display: block; } /* disappears when the pointer leaves the trigger */
+```
+
+#### DO
+
+```css
+.tooltip { display: none; position: absolute; top: 100%; }
+.wrapper:hover .tooltip,
+.wrapper:focus-within .tooltip { display: block; } /* stays open while hovering the tooltip itself */
+```
+
+---
+
+### F97 - Don't lock content to portrait or landscape orientation
+
+Content must work in both orientations unless one is essential. Users with devices mounted in a fixed orientation (e.g. on a wheelchair arm) can't rotate them to match the orientation the author imposed. (SC 1.3.4)
+
+#### DON'T
+
+```css
+@media (orientation: portrait) {
+  body { transform: rotate(90deg); } /* forces a landscape layout on portrait screens */
+}
+```
+
+#### DO
+
+```css
+@media (orientation: portrait) {
+  .layout { flex-direction: column; } /* reflows the layout for portrait instead */
+}
 ```

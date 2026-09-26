@@ -1,4 +1,4 @@
-//! WCAG 1.3.1 checks for data table markup.
+//! WCAG 1.3.1 checks for data and layout table markup.
 
 use std::collections::HashSet;
 
@@ -79,6 +79,111 @@ fn is_referenced(th: ElementRef, referenced_ids: &HashSet<&str>) -> bool {
     th.attr("id").is_some_and(|id| referenced_ids.contains(id))
 }
 
+/// F46 (layout table carrying data-table markup) / F92 (data table hidden by
+/// `role="presentation"`): header cells, a caption, or a summary contradict the role, so
+/// either the markup or the role misrepresents the table.
+pub fn check_presentation_table_semantics(
+    page: &RenderedPage,
+    _options: &CheckOptions,
+) -> Vec<Finding> {
+    page.by_tag("table")
+        .filter(|table| is_presentation_table(*table))
+        .filter_map(|table| {
+            let markup = data_table_markup(table);
+            (!markup.is_empty()).then(|| {
+                Finding::error(
+                    "F46",
+                    format!(
+                        "table with role=\"{}\" uses data-table markup: {}",
+                        table.attr("role").unwrap_or_default(),
+                        markup.join(", ")
+                    ),
+                )
+                .at(table)
+                .help(
+                    "if the table only lays content out, use <td> cells and drop the caption \
+                     and summary; if it holds data, remove role=\"presentation\" (F92)",
+                )
+            })
+        })
+        .collect()
+}
+
+fn data_table_markup(table: ElementRef) -> Vec<&'static str> {
+    let cells = own_elements(table);
+    let has_tag = |tag| cells.iter().any(|el| el.tag() == tag);
+    let has_attr = |attr| cells.iter().any(|el| el.has_attr(attr));
+    [
+        (has_tag("th"), "<th>"),
+        (has_tag("caption"), "<caption>"),
+        (
+            table.attr("summary").is_some_and(|s| !s.trim().is_empty()),
+            "summary",
+        ),
+        (has_attr("headers"), "headers"),
+        (has_attr("scope"), "scope"),
+    ]
+    .into_iter()
+    .filter_map(|(present, markup)| present.then_some(markup))
+    .collect()
+}
+
+/// A table's elements, without those of tables nested inside it.
+fn own_elements(table: ElementRef) -> Vec<ElementRef> {
+    let mut found = Vec::new();
+    let mut stack: Vec<_> = table.children().collect();
+    while let Some(el) = stack.pop() {
+        if el.tag() != "table" {
+            stack.extend(el.children());
+        }
+        found.push(el);
+    }
+    found
+}
+
+/// F90: every id in a cell's `headers` must name a `th` of the same table, or the cell is
+/// announced with the wrong headers (or none).
+pub fn check_headers_reference(page: &RenderedPage, _options: &CheckOptions) -> Vec<Finding> {
+    page.all()
+        .filter(|el| matches!(el.tag(), "td" | "th"))
+        .filter_map(|cell| {
+            let tokens = cell.attr("headers")?;
+            let table = cell.ancestors().find(|el| el.tag() == "table")?;
+            let header_ids = header_ids(table);
+            let wrong: Vec<&str> = tokens
+                .split_whitespace()
+                .filter(|id| !header_ids.contains(id))
+                .collect();
+            (!wrong.is_empty()).then(|| {
+                Finding::error(
+                    "F90",
+                    format!(
+                        "<{}> headers=\"{tokens}\" references {} that is not a <th> of its table",
+                        cell.tag(),
+                        wrong
+                            .iter()
+                            .map(|id| format!("\"{id}\""))
+                            .collect::<Vec<_>>()
+                            .join(", ")
+                    ),
+                )
+                .at(cell)
+                .help(
+                    "point headers at the ids of the <th> cells that head this cell, in this table",
+                )
+            })
+        })
+        .collect()
+}
+
+fn header_ids(table: ElementRef<'_>) -> HashSet<&str> {
+    own_elements(table)
+        .into_iter()
+        .filter(|el| el.tag() == "th")
+        .filter_map(|th| th.attr("id"))
+        .collect()
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -149,5 +254,83 @@ mod tests {
             r#"<table><tr><th id="name-h">Name</th></tr><tr><td headers="name-h">Alex</td></tr></table>"#,
         );
         assert!(check_header_missing_scope(&p, &CheckOptions::default()).is_empty());
+    }
+
+    #[test]
+    fn layout_table_with_th_is_flagged() {
+        let p = page_from_html(
+            r#"<table role="presentation"><tr><th colspan=3>Page Title</th></tr>
+               <tr><td>navigation</td><td>main</td><td>sidebar</td></tr></table>"#,
+        );
+        let findings = check_presentation_table_semantics(&p, &CheckOptions::default());
+        assert_eq!(findings.len(), 1);
+        assert_eq!(findings[0].rule_id, "F46");
+        assert!(
+            findings[0].message.ends_with("markup: <th>"),
+            "{}",
+            findings[0].message
+        );
+    }
+
+    #[test]
+    fn data_table_marked_presentation_lists_its_markup() {
+        let p = page_from_html(
+            r#"<table role="presentation" summary="Fruit colors"><caption>Fruits and their colors</caption>
+               <tr><th>Name</th><th>Color</th></tr><tr><td scope="row">banana</td><td>yellow</td></tr></table>"#,
+        );
+        let findings = check_presentation_table_semantics(&p, &CheckOptions::default());
+        assert!(
+            findings[0]
+                .message
+                .ends_with("<th>, <caption>, summary, scope"),
+            "{}",
+            findings[0].message
+        );
+    }
+
+    #[test]
+    fn plain_layout_table_is_not_flagged() {
+        let p = page_from_html(
+            r#"<table role="none" summary=""><tr><td>A</td><td>B</td></tr></table>"#,
+        );
+        assert!(check_presentation_table_semantics(&p, &CheckOptions::default()).is_empty());
+    }
+
+    #[test]
+    fn data_table_nested_in_layout_table_is_not_flagged() {
+        let p = page_from_html(
+            r#"<table role="presentation"><tr><td>
+               <table><tr><th scope="col">Name</th></tr><tr><td>Alex</td></tr></table>
+               </td></tr></table>"#,
+        );
+        assert!(check_presentation_table_semantics(&p, &CheckOptions::default()).is_empty());
+    }
+
+    #[test]
+    fn headers_pointing_at_a_missing_or_data_cell_is_flagged() {
+        let p = page_from_html(
+            r#"<table><tr><th id="h">Homework</th><td id="d">x</td></tr>
+               <tr><td headers="h">15%</td><td headers="h e1 d">10%</td></tr></table>"#,
+        );
+        let findings = check_headers_reference(&p, &CheckOptions::default());
+        assert_eq!(findings.len(), 1);
+        assert_eq!(findings[0].rule_id, "F90");
+        assert!(
+            findings[0].message.contains(r#"references "e1", "d" that"#),
+            "{}",
+            findings[0].message
+        );
+    }
+
+    #[test]
+    fn headers_pointing_at_another_tables_th_is_flagged() {
+        let p = page_from_html(
+            r#"<table><tr><th id="other">Other</th></tr></table>
+               <table><tr><th id="h">H</th></tr><tr><td headers="other">1</td></tr></table>"#,
+        );
+        assert_eq!(
+            check_headers_reference(&p, &CheckOptions::default()).len(),
+            1
+        );
     }
 }

@@ -1,4 +1,4 @@
-//! WCAG 1.2.2 / 2.2.2 checks for `video` elements.
+//! WCAG 1.2.2 / 1.4.2 / 2.2.2 checks for media and moving content.
 
 use crate::page::{ElementRef, RenderedPage};
 
@@ -50,6 +50,44 @@ pub fn check_autoplay_without_controls(
         .collect()
 }
 
+/// F93: an `audio` or `video` element that starts playing sound on its own, with no controls,
+/// talks over screen readers with no way to stop it.
+pub fn check_autoplay_audio_without_controls(
+    page: &RenderedPage,
+    _options: &CheckOptions,
+) -> Vec<Finding> {
+    page.all()
+        .filter(|el| matches!(el.tag(), "audio" | "video"))
+        .filter(|media| media.has_attr("autoplay") && !media.has_attr("muted"))
+        .filter(|media| !media.has_attr("controls"))
+        .map(|media| {
+            Finding::error(
+                "F93",
+                format!(
+                    "<{} autoplay> plays sound with no controls to pause or stop it",
+                    media.tag()
+                ),
+            )
+            .at(media)
+            .help("add the controls attribute, add muted, or remove autoplay")
+        })
+        .collect()
+}
+
+/// F16: a `marquee` scrolls for as long as the page is open, and offers no way to pause it.
+pub fn check_marquee(page: &RenderedPage, _options: &CheckOptions) -> Vec<Finding> {
+    page.by_tag("marquee")
+        .map(|marquee| {
+            Finding::error(
+                "F16",
+                "<marquee> scrolls content with no way to pause it".to_string(),
+            )
+            .at(marquee)
+            .help("show the text statically, or animate it with a visible pause button")
+        })
+        .collect()
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -89,5 +127,32 @@ mod tests {
     fn non_autoplay_video_is_not_flagged() {
         let p = page_from_html(r#"<video src="a.mp4"></video>"#);
         assert!(check_autoplay_without_controls(&p, &CheckOptions::default()).is_empty());
+    }
+
+    #[test]
+    fn unmuted_autoplay_without_controls_is_flagged() {
+        let p = page_from_html(
+            r#"<video src="ads.cgi?kind=video" autoplay loop></video><audio src="a.mp3" autoplay></audio>"#,
+        );
+        let findings = check_autoplay_audio_without_controls(&p, &CheckOptions::default());
+        assert_eq!(findings.len(), 2);
+        assert_eq!(findings[0].rule_id, "F93");
+        assert!(findings[1].message.starts_with("<audio autoplay>"));
+    }
+
+    #[test]
+    fn muted_or_controlled_autoplay_is_not_flagged_for_sound() {
+        let p = page_from_html(
+            r#"<video src="a.mp4" autoplay muted></video><audio src="a.mp3" autoplay controls></audio>"#,
+        );
+        assert!(check_autoplay_audio_without_controls(&p, &CheckOptions::default()).is_empty());
+    }
+
+    #[test]
+    fn marquee_is_flagged() {
+        let p = page_from_html("<marquee>Breaking news: sale ends today!</marquee>");
+        let findings = check_marquee(&p, &CheckOptions::default());
+        assert_eq!(findings.len(), 1);
+        assert_eq!(findings[0].rule_id, "F16");
     }
 }

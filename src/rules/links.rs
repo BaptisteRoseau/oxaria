@@ -23,8 +23,8 @@ fn is_link(el: ElementRef) -> bool {
     el.tag() == "a" && el.has_attr("href")
 }
 
-/// H30: a link's accessible name must not be empty, and must not be one of the generic phrases
-/// ("click here", "more", …) that reads as meaningless out of context.
+/// H30 (F89 for an image-only link): a link's accessible name must not be empty, and must not be
+/// one of the generic phrases ("click here", "more", …) that reads as meaningless out of context.
 pub fn check_non_descriptive_link_text(
     page: &RenderedPage,
     _options: &CheckOptions,
@@ -39,11 +39,7 @@ fn non_descriptive_finding(link: ElementRef) -> Option<Finding> {
     let name = link.accessible_name();
     let href = href_of(link);
     if name.trim().is_empty() {
-        return Some(
-            Finding::error("H30", format!("link to \"{href}\" has no link text"))
-                .at(link)
-                .help(empty_link_help(link)),
-        );
+        return Some(empty_link_finding(link, href));
     }
     is_generic_phrase(&name).then(|| {
         Finding::error(
@@ -59,12 +55,21 @@ fn non_descriptive_finding(link: ElementRef) -> Option<Finding> {
     })
 }
 
-fn empty_link_help(link: ElementRef) -> &'static str {
+/// F89 is the failure specific to a link whose only content is an image with no text
+/// alternative; any other nameless link is reported under H30.
+fn empty_link_finding(link: ElementRef, href: &str) -> Finding {
     match link.descendants().any(|el| el.tag() == "img") {
-        true => "give the image an alt saying where the link goes, e.g. alt=\"Acme home page\"",
-        false => {
-            "add text saying where the link goes, or an aria-label=\"...\" if it only shows an icon"
-        }
+        true => Finding::error(
+            "F89",
+            format!("link to \"{href}\" contains only an image with no text alternative"),
+        )
+        .at(link)
+        .help("give the image an alt saying where the link goes, e.g. alt=\"Acme home page\""),
+        false => Finding::error("H30", format!("link to \"{href}\" has no link text"))
+            .at(link)
+            .help(
+                "add text saying where the link goes, or an aria-label=\"...\" if it only shows an icon",
+            ),
     }
 }
 
@@ -177,6 +182,17 @@ mod tests {
         let help = |index: usize| findings[index].help.as_deref().unwrap();
         assert!(help(0).starts_with("give the image an alt"), "{}", help(0));
         assert!(help(1).starts_with("add text"), "{}", help(1));
+    }
+
+    #[test]
+    fn image_only_link_without_alt_is_reported_as_f89() {
+        let p = page_from_html(
+            r#"<a href="scores.html"><img src="football.gif" alt=""></a>
+               <a href="scores.html">Football Scoreboard</a>"#,
+        );
+        let findings = check_non_descriptive_link_text(&p, &CheckOptions::default());
+        assert_eq!(findings.len(), 1);
+        assert_eq!(findings[0].rule_id, "F89");
     }
 
     #[test]

@@ -9,6 +9,9 @@ pub fn reference_url(rule_id: &str) -> Option<String> {
         "TGT001" => Some(format!("{UNDERSTANDING_URL}/target-size-minimum")),
         "LNK001" => Some(format!("{UNDERSTANDING_URL}/link-purpose-link-only")),
         "IDS001" => Some(format!("{UNDERSTANDING_URL}/name-role-value")),
+        "AUT001" => Some(format!(
+            "{UNDERSTANDING_URL}/accessible-authentication-minimum"
+        )),
         _ => technique_url(rule_id),
     }
 }
@@ -52,6 +55,10 @@ mod tests {
     #[case(
         "TGT001",
         "https://www.w3.org/WAI/WCAG22/Understanding/target-size-minimum"
+    )]
+    #[case(
+        "AUT001",
+        "https://www.w3.org/WAI/WCAG22/Understanding/accessible-authentication-minimum"
     )]
     fn rule_ids_link_to_their_page(#[case] rule_id: &str, #[case] expected: &str) {
         assert_eq!(reference_url(rule_id).as_deref(), Some(expected));

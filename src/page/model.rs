@@ -242,8 +242,9 @@ impl<'a> ElementRef<'a> {
 
     /// A simplified subset of the WAI-ARIA accessible-name computation:
     /// `aria-labelledby`, then `aria-label`, then an associated `label` (via
-    /// `for` or wrapping), then visible text content, then `alt`, `value` (for
-    /// submit/button inputs), then `title`.
+    /// `for` or wrapping), then visible text content, then the `alt` of images
+    /// it contains, then its own `alt`, `value` (for submit/button inputs), then
+    /// `title`.
     pub fn accessible_name(&self) -> String {
         let el = *self;
         if let Some(name) = name_from_labelledby(el) {
@@ -259,6 +260,9 @@ impl<'a> ElementRef<'a> {
         if !text.is_empty() {
             return text;
         }
+        if let Some(name) = name_from_images(el) {
+            return name;
+        }
         if let Some(name) = non_empty_attr(el, "alt") {
             return name;
         }
@@ -268,6 +272,11 @@ impl<'a> ElementRef<'a> {
             return name;
         }
         non_empty_attr(el, "title").unwrap_or_default()
+    }
+
+    /// Text of the `label` associated with this control (via `for` or wrapping), if any.
+    pub fn label_text(&self) -> Option<String> {
+        name_from_label(*self)
     }
 }
 
@@ -286,6 +295,15 @@ fn name_from_labelledby(el: ElementRef) -> Option<String> {
     let ids = el.attr("aria-labelledby")?;
     let text = el.page.ids_text(ids);
     (!text.is_empty()).then_some(text)
+}
+
+fn name_from_images(el: ElementRef) -> Option<String> {
+    let alts: Vec<String> = el
+        .descendants()
+        .filter(|descendant| descendant.tag() == "img")
+        .filter_map(|img| non_empty_attr(img, "alt"))
+        .collect();
+    (!alts.is_empty()).then(|| alts.join(" "))
 }
 
 fn name_from_label(el: ElementRef) -> Option<String> {
@@ -380,6 +398,13 @@ mod tests {
         let p = page_from_html(r#"<label>Email <input id="a"></label>"#);
         let input = p.by_tag("input").next().unwrap();
         assert_eq!(input.accessible_name(), "Email");
+    }
+
+    #[test]
+    fn accessible_name_uses_the_alt_of_contained_images() {
+        let p = page_from_html(r#"<a href="/"><img src="a.png" alt="Acme home page"></a>"#);
+        let link = p.by_tag("a").next().unwrap();
+        assert_eq!(link.accessible_name(), "Acme home page");
     }
 
     #[test]

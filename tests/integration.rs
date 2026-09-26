@@ -36,7 +36,7 @@ fn page_with_violations_exits_one() {
     let report = stdout(&output);
     for rule_id in [
         "H57", "G1", "H42", "G141", "F30", "H44", "F68", "ARIA1", "LNK001", "H30", "F91", "G87",
-        "G186", "IDS001", "G195",
+        "G186", "IDS001", "G195", "F93",
     ] {
         assert!(
             report.contains(&format!("[ERROR] {rule_id}: ")),
@@ -294,10 +294,10 @@ fn github_summary_defaults_to_github_step_summary_and_appends() {
     assert_eq!(exit_code(&output), 1);
     let summary = read(&summary);
     assert!(
-        summary.starts_with("previous command\n## ❌ WCAG 2.2: 19 error(s)"),
+        summary.starts_with("previous command\n## ❌ WCAG 2.2: 20 error(s)"),
         "{summary}"
     );
-    assert_eq!(summary.matches("| ❌ Error |").count(), 19, "{summary}");
+    assert_eq!(summary.matches("| ❌ Error |").count(), 20, "{summary}");
 }
 
 #[test]

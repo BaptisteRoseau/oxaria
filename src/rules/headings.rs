@@ -1,4 +1,4 @@
-//! WCAG 1.3.1 / 2.4.6 checks for heading structure.
+//! WCAG 1.3.1 / 2.4.6 checks for heading structure and semantics.
 
 use crate::page::{ElementRef, RenderedPage};
 
@@ -33,6 +33,28 @@ pub fn check_skipped_heading_level(page: &RenderedPage, _options: &CheckOptions)
         previous_level = level;
     }
     findings
+}
+
+/// F92: `role="presentation"` (or `none`) strips a heading's semantics, dropping it from the
+/// outline that assistive technology users navigate by.
+pub fn check_presentational_heading(page: &RenderedPage, _options: &CheckOptions) -> Vec<Finding> {
+    headings(page)
+        .into_iter()
+        .filter(|(heading, _)| matches!(heading.attr("role"), Some("presentation" | "none")))
+        .map(|(heading, level)| {
+            Finding::error(
+                "F92",
+                format!(
+                    "<h{level}> has role=\"{}\", hiding that it is a heading",
+                    heading.attr("role").unwrap_or_default()
+                ),
+            )
+            .at(heading)
+            .help(format!(
+                "remove the role; if the text is not a heading, use a <p> or <div> instead of <h{level}>"
+            ))
+        })
+        .collect()
 }
 
 fn headings(page: &RenderedPage) -> Vec<(ElementRef<'_>, u8)> {
@@ -104,5 +126,21 @@ mod tests {
     fn heading_going_backwards_is_not_flagged() {
         let p = page_from_html("<h1>T</h1><h2>A</h2><h3>B</h3><h2>C</h2>");
         assert!(check_skipped_heading_level(&p, &CheckOptions::default()).is_empty());
+    }
+
+    #[test]
+    fn presentational_heading_is_flagged() {
+        let p = page_from_html(
+            r#"<h1>T</h1><h2 role="presentation">Reviews</h2><h3 role="none">A</h3>"#,
+        );
+        let findings = check_presentational_heading(&p, &CheckOptions::default());
+        assert_eq!(findings.len(), 2);
+        assert_eq!(findings[0].rule_id, "F92");
+    }
+
+    #[test]
+    fn heading_with_other_role_is_not_flagged() {
+        let p = page_from_html(r#"<h2 role="heading">Reviews</h2><h3>Specs</h3>"#);
+        assert!(check_presentational_heading(&p, &CheckOptions::default()).is_empty());
     }
 }

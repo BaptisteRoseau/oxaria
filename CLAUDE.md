@@ -108,7 +108,17 @@ exact list). Categories deliberately **not** implemented, and why:
   (session timeouts, drag-alternative interactions, multi-step form memory, login flows) --
   these require understanding a multi-page *process* and user intent, not a page snapshot. No
   real accessibility checker (axe, Lighthouse, WAVE) auto-verifies these either; they're
-  flagged for manual review industry-wide.
+  flagged for manual review industry-wide. The exceptions are the parts written into the
+  markup itself: a timed `<meta http-equiv="refresh">` (F40/F41) and an `onpaste` handler
+  cancelling paste into a password/code field (AUT001).
+- **Inline event handlers are the only script the rules see** (F42, F54, F55, F59, AUT001):
+  they read `on*="..."` attributes, never `addEventListener` calls, which would need JS
+  execution. Each handler name must be in `ATTRIBUTES_OF_INTEREST` to be visible at all.
+- **Failures that need interaction are listed in `wcag2.2-rules.md` but not implemented**:
+  F95 (hover content), F97 (orientation), F99 (single-key shortcuts), F101 (down-event),
+  F103 (status messages), F105 (path gestures), F108 (dragging), F109 (split code fields),
+  F110 (focus obscured). F94 (viewport-unit font sizes) is also left out: litehtml resolves
+  `vw` to px, and a stylesheet scan can't tell whether media queries rescue the text.
 - **Keyboard trap / keyboard operability, ARIA state-toggle verification** -- would need real
   event dispatch and JS execution, which litehtml doesn't provide (see above).
 - **G195 (focus outline) is implemented, but only as a heuristic**: it scans raw `<style>` tag

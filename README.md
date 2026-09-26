@@ -177,7 +177,9 @@ src/
 │
 └── rules/                   # one module per WCAG rule area, one Rule fn per rule
     ├── images.rs, forms.rs, headings.rs, language.rs, links.rs, contrast.rs,
-    │   tables.rs, aria.rs, multimedia.rs, focus.rs, navigation.rs, target_size.rs
+    │   tables.rs, aria.rs, multimedia.rs, focus.rs, navigation.rs, target_size.rs,
+    │   document.rs, frames.rs, timing.rs, autocomplete.rs, label_in_name.rs,
+    │   scripting.rs, authentication.rs
     └── mod.rs                  # rule registry + parallel dispatch via spawn_blocking
 
 vendor/

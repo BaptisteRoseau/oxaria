@@ -264,7 +264,7 @@ mod tests {
     use wiremock::matchers::{method, path};
     use wiremock::{Mock, MockServer, ResponseTemplate};
 
-    const CLEAN_BODY: &str = r##"<html lang="en"><body>
+    const CLEAN_BODY: &str = r##"<html lang="en"><head><title>Page</title></head><body>
         <a href="#main">Skip to main content</a><h1 id="main">Title</h1>"##;
 
     fn options() -> Arc<CheckOptions> {
