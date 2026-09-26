@@ -15,12 +15,12 @@ pub struct CliConfig {
     pub path_or_url: String,
 
     /// Enable stdout output
-    #[arg(short, long, default_value_t = false, conflicts_with = "quiet")]
+    #[arg(short, long, conflicts_with = "quiet")]
     pub verbose: bool,
 
     /// Print nothing on stdout (findings, summary, and logs); only the exit code and the
     /// --report-* files remain
-    #[arg(short, long, default_value_t = false)]
+    #[arg(short, long)]
     pub quiet: bool,
 
     /// Minimum contrast ratio for normal-size text (WCAG 1.4.3 default: 4.5)
@@ -36,7 +36,7 @@ pub struct CliConfig {
     pub target_size_threshold: f64,
 
     /// When given a URL, also scan every same-domain page reachable through its links
-    #[arg(long, default_value_t = false)]
+    #[arg(long)]
     pub full_site_scan: bool,
 
     /// Maximum number of HTML pages checked during a full-site scan (default: no limit)
