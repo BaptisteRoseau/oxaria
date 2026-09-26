@@ -114,8 +114,8 @@ mod tests {
     }
 
     #[test]
-    fn is_url_rejects_relative_path_with_colon_looking_segment() {
-        assert!(!is_url("./page.html"));
+    fn is_url_rejects_windows_path_with_drive_letter() {
+        assert!(!is_url("C:\\page.html"));
     }
 
     #[tokio::test]
