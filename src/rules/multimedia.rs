@@ -23,7 +23,7 @@ fn has_captions_track(video: ElementRef) -> bool {
     video
         .descendants()
         .filter(|el| el.tag() == "track")
-        .any(|track| matches!(track.attr("kind"), Some("captions") | Some("subtitles")))
+        .any(|track| matches!(track.attr("kind"), Some("captions" | "subtitles")))
 }
 
 /// G152/F16: an autoplaying video without visible controls gives users no way to pause or stop

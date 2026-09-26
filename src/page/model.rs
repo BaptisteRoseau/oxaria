@@ -321,7 +321,7 @@ fn non_empty_attr(el: ElementRef, name: &str) -> Option<String> {
 }
 
 fn is_submit_or_button_input(el: ElementRef) -> bool {
-    el.tag() == "input" && matches!(el.attr("type"), Some("submit") | Some("button"))
+    el.tag() == "input" && matches!(el.attr("type"), Some("submit" | "button"))
 }
 
 #[cfg(test)]

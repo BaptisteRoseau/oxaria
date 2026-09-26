@@ -30,10 +30,7 @@ fn is_fragment_link(el: ElementRef) -> bool {
 }
 
 fn target_exists(page: &RenderedPage, link: ElementRef) -> bool {
-    match fragment_id(link) {
-        Some(id) => page.element_by_id(id).is_some(),
-        None => false,
-    }
+    fragment_id(link).is_some_and(|id| page.element_by_id(id).is_some())
 }
 
 fn fragment_id(link: ElementRef<'_>) -> Option<&str> {

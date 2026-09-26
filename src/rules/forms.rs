@@ -46,11 +46,7 @@ pub fn check_unnamed_control(page: &RenderedPage, _options: &CheckOptions) -> Ve
 fn is_unnamed_control_candidate(el: ElementRef) -> bool {
     el.tag() == "button"
         || el.attr("role") == Some("button")
-        || (el.tag() == "input"
-            && matches!(
-                el.attr("type"),
-                Some("submit") | Some("button") | Some("image")
-            ))
+        || (el.tag() == "input" && matches!(el.attr("type"), Some("submit" | "button" | "image")))
 }
 
 fn unnamed_control_message(control: ElementRef) -> String {
@@ -80,10 +76,10 @@ fn required_is_indicated(page: &RenderedPage, control: ElementRef) -> bool {
 }
 
 fn description_text(page: &RenderedPage, control: ElementRef) -> String {
-    match control.attr("aria-describedby") {
-        Some(ids) => page.ids_text(ids),
-        None => String::new(),
-    }
+    control
+        .attr("aria-describedby")
+        .map(|ids| page.ids_text(ids))
+        .unwrap_or_default()
 }
 
 fn mentions_required(text: &str) -> bool {

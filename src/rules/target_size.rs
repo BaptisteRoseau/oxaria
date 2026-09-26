@@ -16,7 +16,7 @@ fn is_interactive(el: ElementRef) -> bool {
         || (el.tag() == "input"
             && matches!(
                 el.attr("type"),
-                Some("button") | Some("submit") | Some("checkbox") | Some("radio") | Some("image")
+                Some("button" | "submit" | "checkbox" | "radio" | "image")
             ))
 }
 

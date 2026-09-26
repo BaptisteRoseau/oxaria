@@ -35,13 +35,9 @@ fn removes_outline_without_alternative(body: &str) -> bool {
 }
 
 fn declares_no_outline(body: &str) -> bool {
-    match property_value(body, "outline") {
-        Some(value) => is_none_value(&value),
-        None => match property_value(body, "outline-style") {
-            Some(value) => is_none_value(&value),
-            None => false,
-        },
-    }
+    property_value(body, "outline")
+        .or_else(|| property_value(body, "outline-style"))
+        .is_some_and(|value| is_none_value(&value))
 }
 
 fn is_none_value(value: &str) -> bool {

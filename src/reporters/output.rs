@@ -100,12 +100,9 @@ fn check_conflicts(targets: &[ReportTarget], path_or_url: &str) -> Result<(), Re
 }
 
 fn overwrites_input(identity: Option<&Path>, path_or_url: &str) -> bool {
-    match identity {
-        Some(identity) => {
-            !page::is_url(path_or_url) && identity == resolved(Path::new(path_or_url))
-        }
-        None => false,
-    }
+    identity.is_some_and(|identity| {
+        !page::is_url(path_or_url) && identity == resolved(Path::new(path_or_url))
+    })
 }
 
 /// Reports usually don't exist yet, so only their parent directory can be

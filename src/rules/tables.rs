@@ -21,7 +21,7 @@ pub fn check_table_missing_headers(page: &RenderedPage, _options: &CheckOptions)
 }
 
 fn is_presentation_table(table: ElementRef) -> bool {
-    matches!(table.attr("role"), Some("presentation") | Some("none"))
+    matches!(table.attr("role"), Some("presentation" | "none"))
 }
 
 fn has_data_rows(table: ElementRef) -> bool {
@@ -56,10 +56,8 @@ fn referenced_header_ids(page: &RenderedPage) -> Vec<String> {
 }
 
 fn is_referenced(th: ElementRef, referenced_ids: &[String]) -> bool {
-    match th.attr("id") {
-        Some(id) => referenced_ids.iter().any(|referenced| referenced == id),
-        None => false,
-    }
+    th.attr("id")
+        .is_some_and(|id| referenced_ids.iter().any(|referenced| referenced == id))
 }
 
 #[cfg(test)]

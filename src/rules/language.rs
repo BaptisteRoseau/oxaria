@@ -19,8 +19,7 @@ fn has_lang(page: &RenderedPage) -> bool {
     page.by_tag("html")
         .next()
         .and_then(|html| html.attr("lang"))
-        .map(|lang| !lang.trim().is_empty())
-        .unwrap_or(false)
+        .is_some_and(|lang| !lang.trim().is_empty())
 }
 
 #[cfg(test)]
