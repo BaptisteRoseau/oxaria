@@ -102,19 +102,11 @@ mod tests {
     use super::*;
     use crate::page::testutil::page_from_html;
 
-    fn options() -> CheckOptions {
-        CheckOptions {
-            contrast_threshold: 4.5,
-            large_text_contrast_threshold: 3.0,
-            target_size_threshold: 24.0,
-        }
-    }
-
     #[test]
     fn missing_label_message_omits_absent_type_attribute() {
         // debian.org's search box, `<input name="P">`, was reported as `<input type="">`.
         let p = page_from_html(r#"<input name="P" value="" size="14">"#);
-        let findings = check_missing_label(&p, &options());
+        let findings = check_missing_label(&p, &CheckOptions::default());
         assert_eq!(findings.len(), 1);
         assert_eq!(findings[0].message, "<input> has no associated label");
     }
@@ -122,7 +114,7 @@ mod tests {
     #[test]
     fn input_without_label_is_flagged() {
         let p = page_from_html(r#"<input id="email" type="email">"#);
-        let findings = check_missing_label(&p, &options());
+        let findings = check_missing_label(&p, &CheckOptions::default());
         assert_eq!(findings.len(), 1);
         assert_eq!(findings[0].rule_id, "H44");
     }
@@ -131,31 +123,31 @@ mod tests {
     fn input_with_matching_label_for_is_not_flagged() {
         let p =
             page_from_html(r#"<label for="email">Email</label><input id="email" type="email">"#);
-        assert!(check_missing_label(&p, &options()).is_empty());
+        assert!(check_missing_label(&p, &CheckOptions::default()).is_empty());
     }
 
     #[test]
     fn input_wrapped_in_label_is_not_flagged() {
         let p = page_from_html(r#"<label>Email <input type="email"></label>"#);
-        assert!(check_missing_label(&p, &options()).is_empty());
+        assert!(check_missing_label(&p, &CheckOptions::default()).is_empty());
     }
 
     #[test]
     fn input_with_aria_label_is_not_flagged() {
         let p = page_from_html(r#"<input type="search" aria-label="Search">"#);
-        assert!(check_missing_label(&p, &options()).is_empty());
+        assert!(check_missing_label(&p, &CheckOptions::default()).is_empty());
     }
 
     #[test]
     fn hidden_input_is_not_flagged() {
         let p = page_from_html(r#"<input type="hidden" value="1">"#);
-        assert!(check_missing_label(&p, &options()).is_empty());
+        assert!(check_missing_label(&p, &CheckOptions::default()).is_empty());
     }
 
     #[test]
     fn icon_button_without_name_is_flagged() {
         let p = page_from_html("<button><svg></svg></button>");
-        let findings = check_unnamed_control(&p, &options());
+        let findings = check_unnamed_control(&p, &CheckOptions::default());
         assert_eq!(findings.len(), 1);
         assert_eq!(findings[0].rule_id, "F68");
     }
@@ -163,19 +155,19 @@ mod tests {
     #[test]
     fn button_with_text_is_not_flagged() {
         let p = page_from_html("<button>Submit</button>");
-        assert!(check_unnamed_control(&p, &options()).is_empty());
+        assert!(check_unnamed_control(&p, &CheckOptions::default()).is_empty());
     }
 
     #[test]
     fn button_with_aria_label_is_not_flagged() {
         let p = page_from_html(r#"<button aria-label="Close"><svg></svg></button>"#);
-        assert!(check_unnamed_control(&p, &options()).is_empty());
+        assert!(check_unnamed_control(&p, &CheckOptions::default()).is_empty());
     }
 
     #[test]
     fn required_field_without_indication_is_flagged() {
         let p = page_from_html(r#"<label for="n">Last name</label><input id="n" required>"#);
-        let findings = check_required_not_indicated(&p, &options());
+        let findings = check_required_not_indicated(&p, &CheckOptions::default());
         assert_eq!(findings.len(), 1);
         assert_eq!(findings[0].rule_id, "H90");
     }
@@ -184,7 +176,7 @@ mod tests {
     fn required_field_with_label_wording_is_not_flagged() {
         let p =
             page_from_html(r#"<label for="n">Last name (required)</label><input id="n" required>"#);
-        assert!(check_required_not_indicated(&p, &options()).is_empty());
+        assert!(check_required_not_indicated(&p, &CheckOptions::default()).is_empty());
     }
 
     #[test]
@@ -192,6 +184,6 @@ mod tests {
         let p = page_from_html(
             r#"<label for="n">Last name</label><input id="n" required aria-required="true">"#,
         );
-        assert!(check_required_not_indicated(&p, &options()).is_empty());
+        assert!(check_required_not_indicated(&p, &CheckOptions::default()).is_empty());
     }
 }

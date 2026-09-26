@@ -89,10 +89,24 @@ impl Finding {
     }
 }
 
+pub const DEFAULT_CONTRAST_THRESHOLD: f64 = 4.5;
+pub const DEFAULT_LARGE_TEXT_CONTRAST_THRESHOLD: f64 = 3.0;
+pub const DEFAULT_TARGET_SIZE_THRESHOLD: f64 = 24.0;
+
 pub struct CheckOptions {
     pub contrast_threshold: f64,
     pub large_text_contrast_threshold: f64,
     pub target_size_threshold: f64,
+}
+
+impl Default for CheckOptions {
+    fn default() -> Self {
+        CheckOptions {
+            contrast_threshold: DEFAULT_CONTRAST_THRESHOLD,
+            large_text_contrast_threshold: DEFAULT_LARGE_TEXT_CONTRAST_THRESHOLD,
+            target_size_threshold: DEFAULT_TARGET_SIZE_THRESHOLD,
+        }
+    }
 }
 
 impl From<&CliConfig> for CheckOptions {
@@ -165,11 +179,7 @@ mod tests {
     use crate::page::testutil::page_from_html;
 
     fn options() -> Arc<CheckOptions> {
-        Arc::new(CheckOptions {
-            contrast_threshold: 4.5,
-            large_text_contrast_threshold: 3.0,
-            target_size_threshold: 24.0,
-        })
+        Arc::new(CheckOptions::default())
     }
 
     #[tokio::test]

@@ -50,18 +50,10 @@ mod tests {
     use super::*;
     use crate::page::testutil::page_from_html;
 
-    fn options() -> CheckOptions {
-        CheckOptions {
-            contrast_threshold: 4.5,
-            large_text_contrast_threshold: 3.0,
-            target_size_threshold: 24.0,
-        }
-    }
-
     #[test]
     fn missing_h1_is_flagged() {
         let p = page_from_html("<h2>Section</h2>");
-        let findings = check_missing_h1(&p, &options());
+        let findings = check_missing_h1(&p, &CheckOptions::default());
         assert_eq!(findings.len(), 1);
         assert_eq!(findings[0].rule_id, "H42");
     }
@@ -69,19 +61,19 @@ mod tests {
     #[test]
     fn present_h1_is_not_flagged() {
         let p = page_from_html("<h1>Title</h1>");
-        assert!(check_missing_h1(&p, &options()).is_empty());
+        assert!(check_missing_h1(&p, &CheckOptions::default()).is_empty());
     }
 
     #[test]
     fn sequential_headings_are_not_flagged() {
         let p = page_from_html("<h1>T</h1><h2>A</h2><h2>B</h2><h3>C</h3>");
-        assert!(check_skipped_heading_level(&p, &options()).is_empty());
+        assert!(check_skipped_heading_level(&p, &CheckOptions::default()).is_empty());
     }
 
     #[test]
     fn skipped_heading_level_is_flagged() {
         let p = page_from_html("<h1>T</h1><h4>Specifications</h4>");
-        let findings = check_skipped_heading_level(&p, &options());
+        let findings = check_skipped_heading_level(&p, &CheckOptions::default());
         assert_eq!(findings.len(), 1);
         assert_eq!(findings[0].rule_id, "G141");
     }
@@ -89,6 +81,6 @@ mod tests {
     #[test]
     fn heading_going_backwards_is_not_flagged() {
         let p = page_from_html("<h1>T</h1><h2>A</h2><h3>B</h3><h2>C</h2>");
-        assert!(check_skipped_heading_level(&p, &options()).is_empty());
+        assert!(check_skipped_heading_level(&p, &CheckOptions::default()).is_empty());
     }
 }

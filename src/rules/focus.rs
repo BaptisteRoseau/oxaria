@@ -97,14 +97,6 @@ mod tests {
     use super::*;
     use crate::page::testutil::page_from_html;
 
-    fn options() -> CheckOptions {
-        CheckOptions {
-            contrast_threshold: 4.5,
-            large_text_contrast_threshold: 3.0,
-            target_size_threshold: 24.0,
-        }
-    }
-
     #[test]
     fn split_css_rules_splits_simple_stylesheet() {
         let rules = split_css_rules("a{color:red} b{color:blue}");
@@ -123,7 +115,7 @@ mod tests {
     #[test]
     fn outline_none_without_alternative_is_flagged() {
         let p = page_from_html("<style>a:focus, button:focus { outline: none; }</style>");
-        let findings = check_outline_removed_without_alternative(&p, &options());
+        let findings = check_outline_removed_without_alternative(&p, &CheckOptions::default());
         assert_eq!(findings.len(), 1);
         assert_eq!(findings[0].rule_id, "G195");
     }
@@ -133,18 +125,18 @@ mod tests {
         let p = page_from_html(
             "<style>a:focus-visible { outline: none; box-shadow: 0 0 0 3px blue; }</style>",
         );
-        assert!(check_outline_removed_without_alternative(&p, &options()).is_empty());
+        assert!(check_outline_removed_without_alternative(&p, &CheckOptions::default()).is_empty());
     }
 
     #[test]
     fn rule_without_focus_selector_is_ignored() {
         let p = page_from_html("<style>a { outline: none; }</style>");
-        assert!(check_outline_removed_without_alternative(&p, &options()).is_empty());
+        assert!(check_outline_removed_without_alternative(&p, &CheckOptions::default()).is_empty());
     }
 
     #[test]
     fn no_style_tag_is_not_flagged() {
         let p = page_from_html("<body></body>");
-        assert!(check_outline_removed_without_alternative(&p, &options()).is_empty());
+        assert!(check_outline_removed_without_alternative(&p, &CheckOptions::default()).is_empty());
     }
 }

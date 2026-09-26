@@ -67,18 +67,10 @@ mod tests {
     use super::*;
     use crate::page::testutil::page_from_html;
 
-    fn options() -> CheckOptions {
-        CheckOptions {
-            contrast_threshold: 4.5,
-            large_text_contrast_threshold: 3.0,
-            target_size_threshold: 24.0,
-        }
-    }
-
     #[test]
     fn table_without_th_is_flagged() {
         let p = page_from_html("<table><tr><td>Month</td><td>Revenue</td></tr></table>");
-        let findings = check_table_missing_headers(&p, &options());
+        let findings = check_table_missing_headers(&p, &CheckOptions::default());
         assert_eq!(findings.len(), 1);
         assert_eq!(findings[0].rule_id, "F91");
     }
@@ -88,26 +80,26 @@ mod tests {
         let p = page_from_html(
             r#"<table><tr><th scope="col">Month</th></tr><tr><td>January</td></tr></table>"#,
         );
-        assert!(check_table_missing_headers(&p, &options()).is_empty());
+        assert!(check_table_missing_headers(&p, &CheckOptions::default()).is_empty());
     }
 
     #[test]
     fn presentation_table_is_not_flagged() {
         let p =
             page_from_html(r#"<table role="presentation"><tr><td>A</td><td>B</td></tr></table>"#);
-        assert!(check_table_missing_headers(&p, &options()).is_empty());
+        assert!(check_table_missing_headers(&p, &CheckOptions::default()).is_empty());
     }
 
     #[test]
     fn table_without_data_rows_is_not_flagged() {
         let p = page_from_html("<table><tr><th>Header only</th></tr></table>");
-        assert!(check_table_missing_headers(&p, &options()).is_empty());
+        assert!(check_table_missing_headers(&p, &CheckOptions::default()).is_empty());
     }
 
     #[test]
     fn th_without_scope_is_flagged() {
         let p = page_from_html("<table><tr><th>Name</th></tr></table>");
-        let findings = check_header_missing_scope(&p, &options());
+        let findings = check_header_missing_scope(&p, &CheckOptions::default());
         assert_eq!(findings.len(), 1);
         assert_eq!(findings[0].rule_id, "H63");
     }
@@ -115,7 +107,7 @@ mod tests {
     #[test]
     fn th_with_scope_is_not_flagged() {
         let p = page_from_html(r#"<table><tr><th scope="col">Name</th></tr></table>"#);
-        assert!(check_header_missing_scope(&p, &options()).is_empty());
+        assert!(check_header_missing_scope(&p, &CheckOptions::default()).is_empty());
     }
 
     #[test]
@@ -123,6 +115,6 @@ mod tests {
         let p = page_from_html(
             r#"<table><tr><th id="name-h">Name</th></tr><tr><td headers="name-h">Alex</td></tr></table>"#,
         );
-        assert!(check_header_missing_scope(&p, &options()).is_empty());
+        assert!(check_header_missing_scope(&p, &CheckOptions::default()).is_empty());
     }
 }

@@ -28,18 +28,10 @@ mod tests {
     use super::*;
     use crate::page::testutil::page_from_html;
 
-    fn options() -> CheckOptions {
-        CheckOptions {
-            contrast_threshold: 4.5,
-            large_text_contrast_threshold: 3.0,
-            target_size_threshold: 24.0,
-        }
-    }
-
     #[test]
     fn missing_lang_is_flagged() {
         let p = page_from_html("<html><head></head><body></body></html>");
-        let findings = check_missing_lang(&p, &options());
+        let findings = check_missing_lang(&p, &CheckOptions::default());
         assert_eq!(findings.len(), 1);
         assert_eq!(findings[0].rule_id, "H57");
     }
@@ -47,12 +39,12 @@ mod tests {
     #[test]
     fn empty_lang_is_flagged() {
         let p = page_from_html(r#"<html lang=""><body></body></html>"#);
-        assert_eq!(check_missing_lang(&p, &options()).len(), 1);
+        assert_eq!(check_missing_lang(&p, &CheckOptions::default()).len(), 1);
     }
 
     #[test]
     fn present_lang_is_not_flagged() {
         let p = page_from_html(r#"<html lang="en"><body></body></html>"#);
-        assert!(check_missing_lang(&p, &options()).is_empty());
+        assert!(check_missing_lang(&p, &CheckOptions::default()).is_empty());
     }
 }

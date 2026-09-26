@@ -50,18 +50,10 @@ mod tests {
     use super::*;
     use crate::page::testutil::page_from_html;
 
-    fn options() -> CheckOptions {
-        CheckOptions {
-            contrast_threshold: 4.5,
-            large_text_contrast_threshold: 3.0,
-            target_size_threshold: 24.0,
-        }
-    }
-
     #[test]
     fn missing_skip_link_is_flagged() {
         let p = page_from_html(r#"<body><nav></nav><main id="main"></main></body>"#);
-        let findings = check_missing_skip_link(&p, &options());
+        let findings = check_missing_skip_link(&p, &CheckOptions::default());
         assert_eq!(findings.len(), 1);
         assert_eq!(findings[0].rule_id, "G1");
     }
@@ -71,13 +63,13 @@ mod tests {
         let p = page_from_html(
             r##"<body><a href="#main">Skip to main content</a><main id="main"></main></body>"##,
         );
-        assert!(check_missing_skip_link(&p, &options()).is_empty());
+        assert!(check_missing_skip_link(&p, &CheckOptions::default()).is_empty());
     }
 
     #[test]
     fn dangling_skip_link_target_is_flagged() {
         let p = page_from_html(r##"<body><a href="#main">Skip to main content</a></body>"##);
-        let findings = check_missing_skip_link(&p, &options());
+        let findings = check_missing_skip_link(&p, &CheckOptions::default());
         assert_eq!(findings.len(), 1);
         assert_eq!(findings[0].rule_id, "G1");
     }

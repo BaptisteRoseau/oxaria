@@ -269,10 +269,9 @@ mod tests {
 
     fn options() -> Arc<CheckOptions> {
         Arc::new(CheckOptions {
-            contrast_threshold: 4.5,
-            large_text_contrast_threshold: 3.0,
             // Unstyled links render below 24px; irrelevant to crawl behavior.
             target_size_threshold: 0.0,
+            ..CheckOptions::default()
         })
     }
 

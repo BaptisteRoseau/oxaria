@@ -66,18 +66,10 @@ mod tests {
     use super::*;
     use crate::page::testutil::page_from_html;
 
-    fn options() -> CheckOptions {
-        CheckOptions {
-            contrast_threshold: 4.5,
-            large_text_contrast_threshold: 3.0,
-            target_size_threshold: 24.0,
-        }
-    }
-
     #[test]
     fn duplicate_ids_are_flagged() {
         let p = page_from_html(r#"<input id="search"><input id="search">"#);
-        let findings = check_duplicate_ids(&p, &options());
+        let findings = check_duplicate_ids(&p, &CheckOptions::default());
         assert_eq!(findings.len(), 1);
         assert_eq!(findings[0].rule_id, "F77");
     }
@@ -87,7 +79,7 @@ mod tests {
         let p = page_from_html(
             r#"<i id="c"></i><i id="c"></i><i id="a"></i><i id="a"></i><i id="b"></i><i id="b"></i>"#,
         );
-        let messages: Vec<_> = check_duplicate_ids(&p, &options())
+        let messages: Vec<_> = check_duplicate_ids(&p, &CheckOptions::default())
             .into_iter()
             .map(|f| f.message)
             .collect();
@@ -99,13 +91,13 @@ mod tests {
     #[test]
     fn unique_ids_are_not_flagged() {
         let p = page_from_html(r#"<input id="a"><input id="b">"#);
-        assert!(check_duplicate_ids(&p, &options()).is_empty());
+        assert!(check_duplicate_ids(&p, &CheckOptions::default()).is_empty());
     }
 
     #[test]
     fn dangling_aria_labelledby_is_flagged() {
         let p = page_from_html(r#"<input aria-labelledby="missing">"#);
-        let findings = check_dangling_aria_reference(&p, &options());
+        let findings = check_dangling_aria_reference(&p, &CheckOptions::default());
         assert_eq!(findings.len(), 1);
         assert_eq!(findings[0].rule_id, "ARIA16");
     }
@@ -113,12 +105,15 @@ mod tests {
     #[test]
     fn resolved_aria_labelledby_is_not_flagged() {
         let p = page_from_html(r#"<span id="lbl">Name</span><input aria-labelledby="lbl">"#);
-        assert!(check_dangling_aria_reference(&p, &options()).is_empty());
+        assert!(check_dangling_aria_reference(&p, &CheckOptions::default()).is_empty());
     }
 
     #[test]
     fn dangling_aria_describedby_is_flagged() {
         let p = page_from_html(r#"<input aria-describedby="missing">"#);
-        assert_eq!(check_dangling_aria_reference(&p, &options()).len(), 1);
+        assert_eq!(
+            check_dangling_aria_reference(&p, &CheckOptions::default()).len(),
+            1
+        );
     }
 }

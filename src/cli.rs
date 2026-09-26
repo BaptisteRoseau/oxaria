@@ -2,6 +2,11 @@ use std::num::NonZeroUsize;
 
 use clap::Parser;
 
+use crate::rules::{
+    DEFAULT_CONTRAST_THRESHOLD, DEFAULT_LARGE_TEXT_CONTRAST_THRESHOLD,
+    DEFAULT_TARGET_SIZE_THRESHOLD,
+};
+
 /// Check a web page against a subset of WCAG 2.2 rules.
 #[derive(Parser, Debug, Clone)]
 #[command(author, version, about, long_about = None)]
@@ -19,15 +24,15 @@ pub struct CliConfig {
     pub quiet: bool,
 
     /// Minimum contrast ratio for normal-size text (WCAG 1.4.3 default: 4.5)
-    #[arg(long, default_value_t = 4.5)]
+    #[arg(long, default_value_t = DEFAULT_CONTRAST_THRESHOLD)]
     pub contrast_threshold: f64,
 
     /// Minimum contrast ratio for large-scale text (WCAG 1.4.3 default: 3.0)
-    #[arg(long, default_value_t = 3.0)]
+    #[arg(long, default_value_t = DEFAULT_LARGE_TEXT_CONTRAST_THRESHOLD)]
     pub large_text_contrast_threshold: f64,
 
     /// Minimum pointer target size in CSS pixels (WCAG 2.5.8 default: 24.0)
-    #[arg(long, default_value_t = 24.0)]
+    #[arg(long, default_value_t = DEFAULT_TARGET_SIZE_THRESHOLD)]
     pub target_size_threshold: f64,
 
     /// When given a URL, also scan every same-domain page reachable through its links

@@ -80,14 +80,6 @@ mod tests {
     use super::*;
     use crate::page::testutil::page_from_html;
 
-    fn options() -> CheckOptions {
-        CheckOptions {
-            contrast_threshold: 4.5,
-            large_text_contrast_threshold: 3.0,
-            target_size_threshold: 24.0,
-        }
-    }
-
     #[test]
     fn relative_luminance_black_is_zero() {
         assert!((relative_luminance((0, 0, 0)) - 0.0).abs() < 1e-6);
@@ -111,7 +103,7 @@ mod tests {
     fn low_contrast_text_is_flagged_as_warning() {
         let p =
             page_from_html(r#"<p style="color: #999999; background-color: #ffffff">Body text</p>"#);
-        let findings = check_text_contrast(&p, &options());
+        let findings = check_text_contrast(&p, &CheckOptions::default());
         assert_eq!(findings.len(), 1);
         assert_eq!(findings[0].rule_id, "G18");
         assert_eq!(findings[0].severity, crate::rules::Severity::Warning);
@@ -121,7 +113,7 @@ mod tests {
     fn high_contrast_text_is_not_flagged() {
         let p =
             page_from_html(r#"<p style="color: #000000; background-color: #ffffff">Body text</p>"#);
-        assert!(check_text_contrast(&p, &options()).is_empty());
+        assert!(check_text_contrast(&p, &CheckOptions::default()).is_empty());
     }
 
     #[test]
@@ -129,7 +121,7 @@ mod tests {
         let p = page_from_html(
             r#"<h1 style="color: #949494; background-color: #ffffff; font-size: 28px; font-weight: bold">Title</h1>"#,
         );
-        assert!(check_text_contrast(&p, &options()).is_empty());
+        assert!(check_text_contrast(&p, &CheckOptions::default()).is_empty());
     }
 
     #[test]
@@ -137,7 +129,7 @@ mod tests {
         let p = page_from_html(
             r#"<div style="color: #999999; background-color: #ffffff"><span style="color: #999999; background-color: #ffffff">nested</span></div>"#,
         );
-        let findings = check_text_contrast(&p, &options());
+        let findings = check_text_contrast(&p, &CheckOptions::default());
         assert_eq!(
             findings.len(),
             1,
@@ -148,7 +140,7 @@ mod tests {
     #[test]
     fn missing_background_defaults_to_white_canvas() {
         let p = page_from_html(r#"<p style="color: #eeeeee">Body text</p>"#);
-        let findings = check_text_contrast(&p, &options());
+        let findings = check_text_contrast(&p, &CheckOptions::default());
         assert_eq!(
             findings.len(),
             1,

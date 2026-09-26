@@ -77,18 +77,10 @@ mod tests {
     use super::*;
     use crate::page::testutil::page_from_html;
 
-    fn options() -> CheckOptions {
-        CheckOptions {
-            contrast_threshold: 4.5,
-            large_text_contrast_threshold: 3.0,
-            target_size_threshold: 24.0,
-        }
-    }
-
     #[test]
     fn small_target_is_flagged_as_warning() {
         let p = page_from_html(r#"<button style="width: 16px; height: 16px">X</button>"#);
-        let findings = check_target_size(&p, &options());
+        let findings = check_target_size(&p, &CheckOptions::default());
         assert_eq!(findings.len(), 1);
         assert_eq!(findings[0].rule_id, "TGT001");
         assert_eq!(findings[0].severity, crate::rules::Severity::Warning);
@@ -97,19 +89,21 @@ mod tests {
     #[test]
     fn large_target_is_not_flagged() {
         let p = page_from_html(r#"<button style="width: 24px; height: 24px">X</button>"#);
-        assert!(check_target_size(&p, &options()).is_empty());
+        assert!(check_target_size(&p, &CheckOptions::default()).is_empty());
     }
 
     #[test]
     fn element_without_size_is_skipped() {
         let p = page_from_html("<button>X</button>");
-        assert!(check_target_size(&p, &options()).is_empty());
+        assert!(check_target_size(&p, &CheckOptions::default()).is_empty());
     }
 
     #[test]
     fn custom_threshold_is_respected() {
-        let mut opts = options();
-        opts.target_size_threshold = 44.0;
+        let opts = CheckOptions {
+            target_size_threshold: 44.0,
+            ..CheckOptions::default()
+        };
         let p = page_from_html(r#"<button style="width: 32px; height: 32px">X</button>"#);
         assert_eq!(check_target_size(&p, &opts).len(), 1);
     }
@@ -120,7 +114,7 @@ mod tests {
         let p = page_from_html(
             r#"<input type="submit" value="Search" style="width: 0px; height: 30px">"#,
         );
-        assert!(check_target_size(&p, &options()).is_empty());
+        assert!(check_target_size(&p, &CheckOptions::default()).is_empty());
     }
 
     #[test]
@@ -128,7 +122,7 @@ mod tests {
         let p = page_from_html(
             r#"<input type="submit" value="Search" style="width: 0px; height: 16px">"#,
         );
-        let findings = check_target_size(&p, &options());
+        let findings = check_target_size(&p, &CheckOptions::default());
         assert_eq!(findings.len(), 1);
         assert!(
             findings[0].message.contains("16px"),
@@ -144,7 +138,7 @@ mod tests {
         let p = page_from_html(
             r#"<a href="/customers/weave/" aria-label="weave logo" style="width: 164px; height: 0px"><img src="logo.png"></a>"#,
         );
-        assert!(check_target_size(&p, &options()).is_empty());
+        assert!(check_target_size(&p, &CheckOptions::default()).is_empty());
     }
 
     #[test]
@@ -153,7 +147,7 @@ mod tests {
         let p = page_from_html(
             r#"<button aria-label="Search" style="width: 0px; height: 16px"><svg viewBox="0 0 24 24"></svg></button>"#,
         );
-        let findings = check_target_size(&p, &options());
+        let findings = check_target_size(&p, &CheckOptions::default());
         assert_eq!(findings.len(), 1);
         assert!(
             findings[0].message.contains("16px"),
@@ -166,25 +160,25 @@ mod tests {
     fn text_link_containing_an_icon_is_measured_normally() {
         let p =
             page_from_html(r#"<a href="/x" style="width: 0px; height: 30px">Docs <svg></svg></a>"#);
-        assert_eq!(check_target_size(&p, &options()).len(), 1);
+        assert_eq!(check_target_size(&p, &CheckOptions::default()).len(), 1);
     }
 
     #[test]
     fn zero_width_link_is_still_flagged() {
         // Only form controls lack an intrinsic size; a laid-out 0px-wide link is a real finding.
         let p = page_from_html(r#"<a href="/x" style="width: 0px; height: 30px">X</a>"#);
-        assert_eq!(check_target_size(&p, &options()).len(), 1);
+        assert_eq!(check_target_size(&p, &CheckOptions::default()).len(), 1);
     }
 
     #[test]
     fn anchor_without_href_is_not_checked() {
         let p = page_from_html(r#"<a name="top" style="width: 4px; height: 4px"></a>"#);
-        assert!(check_target_size(&p, &options()).is_empty());
+        assert!(check_target_size(&p, &CheckOptions::default()).is_empty());
     }
 
     #[test]
     fn non_interactive_element_is_not_checked() {
         let p = page_from_html(r#"<div style="width: 4px; height: 4px"></div>"#);
-        assert!(check_target_size(&p, &options()).is_empty());
+        assert!(check_target_size(&p, &CheckOptions::default()).is_empty());
     }
 }
