@@ -10,12 +10,11 @@
 
 use scraper::{ElementRef, Html, Node};
 
-use super::model::{Rect, RenderedElement, RenderedPage, TEXT_TAG};
+use super::model::{
+    DEFAULT_COLOR, DEFAULT_FONT_SIZE_PX, DEFAULT_FONT_WEIGHT, Rect, RenderedElement, RenderedPage,
+    TEXT_TAG,
+};
 use super::render::extract_stylesheets;
-
-const DEFAULT_COLOR: (u8, u8, u8) = (0, 0, 0);
-const DEFAULT_FONT_SIZE_PX: f32 = 16.0;
-const DEFAULT_FONT_WEIGHT: u32 = 400;
 
 pub fn page_from_html(html: &str) -> RenderedPage {
     let document = Html::parse_document(html);
@@ -34,15 +33,11 @@ fn walk(element: ElementRef, parent: Option<usize>, elements: &mut Vec<RenderedE
     let style = element.value().attr("style");
 
     elements.push(RenderedElement {
-        tag: element.value().name().to_string(),
         attrs: element
             .value()
             .attrs()
             .map(|(name, value)| (name.to_string(), value.to_string()))
             .collect(),
-        own_text: String::new(),
-        parent,
-        children: Vec::new(),
         color: style.and_then(declared_color).unwrap_or(DEFAULT_COLOR),
         background_color: style.and_then(declared_background_color),
         font_size_px: style
@@ -52,6 +47,7 @@ fn walk(element: ElementRef, parent: Option<usize>, elements: &mut Vec<RenderedE
             .and_then(declared_font_weight)
             .unwrap_or(DEFAULT_FONT_WEIGHT),
         bounding_box: style.and_then(declared_bounding_box).unwrap_or_default(),
+        ..RenderedElement::new(element.value().name().to_string(), parent)
     });
 
     let mut children = Vec::new();
@@ -75,16 +71,8 @@ fn walk(element: ElementRef, parent: Option<usize>, elements: &mut Vec<RenderedE
 fn push_text(text: &str, parent: usize, elements: &mut Vec<RenderedElement>) -> usize {
     let index = elements.len();
     elements.push(RenderedElement {
-        tag: TEXT_TAG.to_string(),
-        attrs: Vec::new(),
         own_text: text.to_string(),
-        parent: Some(parent),
-        children: Vec::new(),
-        color: DEFAULT_COLOR,
-        background_color: None,
-        font_size_px: DEFAULT_FONT_SIZE_PX,
-        font_weight: DEFAULT_FONT_WEIGHT,
-        bounding_box: Rect::default(),
+        ..RenderedElement::new(TEXT_TAG.to_string(), Some(parent))
     });
     index
 }

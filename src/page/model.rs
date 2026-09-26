@@ -10,6 +10,9 @@
 use url::Url;
 
 pub const TEXT_TAG: &str = "#text";
+pub const DEFAULT_COLOR: (u8, u8, u8) = (0, 0, 0);
+pub const DEFAULT_FONT_SIZE_PX: f32 = 16.0;
+pub const DEFAULT_FONT_WEIGHT: u32 = 400;
 
 #[derive(Debug, Clone, Copy, Default, PartialEq)]
 pub struct Rect {
@@ -40,6 +43,21 @@ pub struct RenderedElement {
 }
 
 impl RenderedElement {
+    pub fn new(tag: String, parent: Option<usize>) -> Self {
+        RenderedElement {
+            tag,
+            attrs: Vec::new(),
+            own_text: String::new(),
+            parent,
+            children: Vec::new(),
+            color: DEFAULT_COLOR,
+            background_color: None,
+            font_size_px: DEFAULT_FONT_SIZE_PX,
+            font_weight: DEFAULT_FONT_WEIGHT,
+            bounding_box: Rect::default(),
+        }
+    }
+
     pub fn is_text(&self) -> bool {
         self.tag == TEXT_TAG
     }

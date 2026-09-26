@@ -20,13 +20,13 @@ use litehtml::{
 
 use crate::error::CheckerError;
 
-use super::model::{Rect, RenderedElement, RenderedPage, TEXT_TAG};
+use super::model::{
+    DEFAULT_FONT_SIZE_PX, DEFAULT_FONT_WEIGHT, Rect, RenderedElement, RenderedPage, TEXT_TAG,
+};
 
 const MASTER_CSS: &str = include_str!("master.css");
 const VIEWPORT_WIDTH: f32 = 1280.0;
 const VIEWPORT_HEIGHT: f32 = 1024.0;
-const DEFAULT_FONT_SIZE: f32 = 16.0;
-const DEFAULT_FONT_WEIGHT: u32 = 400;
 
 const ATTRIBUTES_OF_INTEREST: &[&str] = &[
     "id",
@@ -121,7 +121,7 @@ impl DocumentContainer for Container {
             .fonts
             .borrow()
             .get(&font.0)
-            .map_or(DEFAULT_FONT_SIZE, |f| f.size);
+            .map_or(DEFAULT_FONT_SIZE_PX, |f| f.size);
         text.chars().count() as f32 * size * 0.5
     }
 
@@ -166,7 +166,7 @@ fn walk(
     elements: &mut Vec<RenderedElement>,
 ) -> usize {
     let index = elements.len();
-    elements.push(reserved_slot(parent));
+    elements.push(RenderedElement::new(String::new(), parent));
 
     elements[index] = match node.is_text() {
         true => text_element(&node, parent),
@@ -184,26 +184,10 @@ fn walk(
     index
 }
 
-fn reserved_slot(parent: Option<usize>) -> RenderedElement {
-    RenderedElement {
-        tag: String::new(),
-        attrs: Vec::new(),
-        own_text: String::new(),
-        parent,
-        children: Vec::new(),
-        color: (0, 0, 0),
-        background_color: None,
-        font_size_px: DEFAULT_FONT_SIZE,
-        font_weight: DEFAULT_FONT_WEIGHT,
-        bounding_box: Rect::default(),
-    }
-}
-
 fn text_element(node: &Element, parent: Option<usize>) -> RenderedElement {
     RenderedElement {
-        tag: TEXT_TAG.to_string(),
         own_text: node.get_text(),
-        ..reserved_slot(parent)
+        ..RenderedElement::new(TEXT_TAG.to_string(), parent)
     }
 }
 
@@ -217,7 +201,6 @@ fn rendered_element(
     let placement = node.placement();
 
     RenderedElement {
-        tag: node.tag_name(),
         attrs: attributes(node),
         color,
         background_color: effective_background_color(*node),
@@ -229,7 +212,7 @@ fn rendered_element(
             width: placement.width,
             height: placement.height,
         },
-        ..reserved_slot(parent)
+        ..RenderedElement::new(node.tag_name(), parent)
     }
 }
 
