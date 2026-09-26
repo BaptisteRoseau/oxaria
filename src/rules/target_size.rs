@@ -10,7 +10,8 @@ use crate::page::{ElementRef, RenderedPage};
 use super::{CheckOptions, Finding};
 
 fn is_interactive(el: ElementRef) -> bool {
-    matches!(el.tag(), "a" | "button")
+    (el.tag() == "a" && el.has_attr("href"))
+        || el.tag() == "button"
         || el.attr("role") == Some("button")
         || (el.tag() == "input"
             && matches!(
@@ -173,6 +174,12 @@ mod tests {
         // Only form controls lack an intrinsic size; a laid-out 0px-wide link is a real finding.
         let p = page_from_html(r#"<a href="/x" style="width: 0px; height: 30px">X</a>"#);
         assert_eq!(check_target_size(&p, &options()).len(), 1);
+    }
+
+    #[test]
+    fn anchor_without_href_is_not_checked() {
+        let p = page_from_html(r#"<a name="top" style="width: 4px; height: 4px"></a>"#);
+        assert!(check_target_size(&p, &options()).is_empty());
     }
 
     #[test]
