@@ -38,7 +38,7 @@ impl Reporter for GitlabReporter {
 
 fn code_quality_issue(issue: &Issue) -> CodeQualityIssue<'_> {
     CodeQualityIssue {
-        description: issue.full_text(),
+        description: description(issue),
         check_name: issue.rule_id,
         fingerprint: &issue.fingerprint,
         severity: severity(issue.severity),
@@ -47,6 +47,35 @@ fn code_quality_issue(issue: &Issue) -> CodeQualityIssue<'_> {
             lines: CodeQualityLines { begin: LINE },
         },
     }
+}
+
+fn description(issue: &Issue) -> String {
+    issue
+        .full_text()
+        .lines()
+        .map(code_span_markup)
+        .collect::<Vec<_>>()
+        .join("  \n")
+}
+
+fn code_span_markup(line: &str) -> String {
+    let mut spanned = String::with_capacity(line.len());
+    let mut rest = line;
+    while let Some((before, tag, after)) = next_tag(rest) {
+        spanned.push_str(before);
+        spanned.push('`');
+        spanned.push_str(tag);
+        spanned.push('`');
+        rest = after;
+    }
+    spanned.push_str(rest);
+    spanned
+}
+
+fn next_tag(text: &str) -> Option<(&str, &str, &str)> {
+    let start = text.find('<')?;
+    let end = start + text[start..].find('>')? + 1;
+    Some((&text[..start], &text[start..end], &text[end..]))
 }
 
 fn severity(severity: Severity) -> &'static str {
@@ -81,7 +110,7 @@ mod tests {
         assert_eq!(
             output,
             json!([{
-                "description": "boom\nsee: https://www.w3.org/WAI/WCAG22/Techniques/html/H57",
+                "description": "boom  \nsee: https://www.w3.org/WAI/WCAG22/Techniques/html/H57",
                 "check_name": "H57",
                 "fingerprint": report.issues[0].fingerprint,
                 "severity": "major",
@@ -98,7 +127,21 @@ mod tests {
         };
         assert_eq!(
             render("a.html", &[finding])[0]["description"],
-            "boom\nhelp: add lang"
+            "boom  \nhelp: add lang"
+        );
+    }
+
+    #[test]
+    fn quoted_markup_becomes_code_spans() {
+        let finding = Finding {
+            help: Some(r#"add <label for="a">...</label>"#.to_string()),
+            ..Finding::error("G87", "<video> has no track (at body > video)".to_string())
+        };
+        assert_eq!(
+            render("a.html", &[finding])[0]["description"],
+            "`<video>` has no track (at body > video)  \n\
+             help: add `<label for=\"a\">`...`</label>`  \n\
+             see: https://www.w3.org/WAI/WCAG22/Techniques/general/G87"
         );
     }
 

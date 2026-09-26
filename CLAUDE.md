@@ -268,8 +268,14 @@ See [README.md](./README.md#architecture) for the module tree. Notes beyond what
 - **Help stays out of `Issue.message`**, which the fingerprint and JUnit test names are built
   from: rewording a hint must not make GitLab see every issue as fixed-and-new. Formats with a
   single text field get `Issue::full_text()`; GitHub puts help in the message cell and links the
-  rule ID; Warnings NG gets it as HTML in `description`. GitLab's and Warnings NG's rendering of
-  these fields has not yet been checked in a real instance.
+  rule ID; Warnings NG gets it as HTML in `description` (verified in a real Jenkins: shown under
+  the bold message in the issue's details row, link clickable).
+- **GitLab's description is Markdown in one view and plain text in another** (found by running
+  GitLab's frontend rendering, `marked` + its strict DOMPurify config, not from the docs): the
+  pipeline Code Quality tab passes raw HTML through, so a quoted `<video>` erased its whole
+  message and `<h1>` broke the layout, while the MR widget escapes it. `gitlab.rs` wraps every
+  `<...>` in backticks (a code span in one, readable in the other) and ends lines with two spaces
+  (a line break in one, invisible in the other).
 - **`Finding.page` is the page's final URL, not its path** (query and fragment dropped), so a
   start URL that redirects to another host (`www.openai.com` -> `openai.com`) locates findings
   on the host that actually served them. The text output still shows only the path.
