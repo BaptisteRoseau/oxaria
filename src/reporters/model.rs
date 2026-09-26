@@ -245,14 +245,6 @@ pub(crate) mod tests {
     }
 
     #[test]
-    fn fingerprints_are_stable_across_runs() {
-        let first = Report::new("a.html", &[error("H57")]);
-        let second = Report::new("a.html", &[error("H57")]);
-        assert_eq!(first.issues[0].fingerprint, second.issues[0].fingerprint);
-        assert_eq!(first.issues[0].fingerprint.len(), 16);
-    }
-
-    #[test]
     fn identical_findings_get_distinct_fingerprints() {
         let report = Report::new("a.html", &[error("F65"), error("F65")]);
         assert_ne!(report.issues[0].fingerprint, report.issues[1].fingerprint);

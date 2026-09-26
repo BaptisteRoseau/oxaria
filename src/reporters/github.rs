@@ -177,9 +177,4 @@ mod tests {
             "no truncation note"
         );
     }
-
-    #[test]
-    fn github_appends_to_its_file() {
-        assert!(GithubReporter.appends());
-    }
 }

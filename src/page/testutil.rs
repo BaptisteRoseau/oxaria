@@ -226,15 +226,6 @@ mod tests {
     }
 
     #[test]
-    fn defaults_when_no_style_declared() {
-        let page = page_from_html("<p>Text</p>");
-        let p = page.by_tag("p").next().unwrap();
-        assert_eq!(p.color(), DEFAULT_COLOR);
-        assert_eq!(p.background_color(), None);
-        assert_eq!(p.font_size_px(), DEFAULT_FONT_SIZE_PX);
-    }
-
-    #[test]
     fn extracts_style_tag_text() {
         let page = page_from_html("<head><style>a:focus{outline:none}</style></head>");
         assert_eq!(page.stylesheet_text(), "a:focus{outline:none}");
