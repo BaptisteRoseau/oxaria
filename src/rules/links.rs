@@ -65,7 +65,8 @@ fn href_of(link: ElementRef) -> String {
 /// (`index.html` vs `index.html#index`) and query string (tracking params
 /// like `?_gl=...`) are dropped, and when the page's own URL is known, a
 /// same-host absolute link is reduced to its path (`https://github.com/pricing`
-/// vs `/pricing`). Links to other hosts keep their host.
+/// vs `/pricing`). Links to other hosts keep their host but lose their
+/// scheme (`http://canonical.com/x` vs `https://canonical.com/x`).
 ///
 /// Case and a trailing slash are ignored too (`/Download` vs `/download`,
 /// `psf-landing` vs `psf-landing/`): strictly these are different URLs, but
@@ -76,14 +77,22 @@ fn destination(href: &str, page_url: Option<&Url>) -> String {
     let href = href.split(['#', '?']).next().unwrap_or_default();
     let resolved = match page_url.map(|base| (base, base.join(href))) {
         Some((base, Ok(url))) if url.host_str() == base.host_str() => url.path().to_string(),
-        Some((_, Ok(mut url))) => {
-            url.set_query(None);
-            url.set_fragment(None);
-            url.to_string()
-        }
+        Some((_, Ok(url))) => without_scheme(&url),
         _ => href.to_string(),
     };
     comparable(&resolved)
+}
+
+fn without_scheme(url: &Url) -> String {
+    let port = url
+        .port()
+        .map(|port| format!(":{port}"))
+        .unwrap_or_default();
+    format!(
+        "//{}{port}{}",
+        url.host_str().unwrap_or_default(),
+        url.path()
+    )
 }
 
 fn comparable(destination: &str) -> String {
@@ -262,6 +271,17 @@ mod tests {
     }
 
     #[test]
+    fn http_and_https_links_to_the_same_page_are_the_same_destination() {
+        // ubuntu.com: Multipass linked as both `http://` and `https://canonical.com/multipass`.
+        let p = page_at(
+            r#"<a href="http://canonical.com/multipass">Multipass VMs</a>
+               <a href="https://canonical.com/multipass">Multipass VMs</a>"#,
+            "https://ubuntu.com/navigation",
+        );
+        assert!(check_ambiguous_duplicate_link_text(&p, &options()).is_empty());
+    }
+
+    #[test]
     fn root_and_empty_href_keep_their_distinct_destinations() {
         assert_eq!(comparable("/"), "/");
         assert_eq!(comparable(""), "");
@@ -278,7 +298,7 @@ mod tests {
         assert!(
             findings[0]
                 .message
-                .contains("/pricing, https://other.example/pricing"),
+                .contains("//other.example/pricing, /pricing"),
             "{}",
             findings[0].message
         );
