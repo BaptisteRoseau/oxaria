@@ -6,8 +6,8 @@ use super::{CheckOptions, Finding};
 
 /// H44: every labelable control needs a `label`, an ARIA name, or a wrapping `label`.
 pub fn check_missing_label(page: &RenderedPage, _options: &CheckOptions) -> Vec<Finding> {
-    page.select(is_labelable_control)
-        .into_iter()
+    page.all()
+        .filter(|el| is_labelable_control(*el))
         .filter(|control| control.accessible_name().is_empty())
         .map(|control| Finding::error("H44", missing_label_message(control)).at(control))
         .collect()
@@ -36,8 +36,8 @@ fn missing_label_message(control: ElementRef) -> String {
 /// F68: interactive controls (buttons, custom `role=button` widgets, image/submit buttons) must
 /// expose an accessible name.
 pub fn check_unnamed_control(page: &RenderedPage, _options: &CheckOptions) -> Vec<Finding> {
-    page.select(is_unnamed_control_candidate)
-        .into_iter()
+    page.all()
+        .filter(|el| is_unnamed_control_candidate(*el))
         .filter(|control| control.accessible_name().is_empty())
         .map(|control| Finding::error("F68", unnamed_control_message(control)).at(control))
         .collect()
@@ -63,8 +63,8 @@ fn unnamed_control_message(control: ElementRef) -> String {
 /// H90: a `required` control's accessible name or description must tell assistive technology
 /// users the field is required, not rely on visual styling alone.
 pub fn check_required_not_indicated(page: &RenderedPage, _options: &CheckOptions) -> Vec<Finding> {
-    page.select(|el| el.has_attr("required"))
-        .into_iter()
+    page.all()
+        .filter(|el| el.has_attr("required"))
         .filter(|control| !required_is_indicated(page, *control))
         .map(|control| Finding::error("H90", required_not_indicated_message(control)).at(control))
         .collect()

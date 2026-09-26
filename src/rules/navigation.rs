@@ -20,8 +20,8 @@ pub fn check_missing_skip_link(page: &RenderedPage, _options: &CheckOptions) -> 
 }
 
 fn find_skip_link(page: &RenderedPage) -> Option<ElementRef<'_>> {
-    page.select(is_fragment_link)
-        .into_iter()
+    page.all()
+        .filter(|el| is_fragment_link(*el))
         .find(|link| link.text().to_lowercase().contains("skip"))
 }
 

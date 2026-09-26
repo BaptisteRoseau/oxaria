@@ -89,10 +89,6 @@ impl RenderedPage {
             .filter(|el| !el.node().is_text())
     }
 
-    pub fn select(&self, predicate: impl Fn(ElementRef) -> bool) -> Vec<ElementRef<'_>> {
-        self.all().filter(|el| predicate(*el)).collect()
-    }
-
     pub fn by_tag<'a>(&'a self, tag: &'a str) -> impl Iterator<Item = ElementRef<'a>> {
         self.all().filter(move |el| el.tag() == tag)
     }

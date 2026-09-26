@@ -44,8 +44,8 @@ pub fn check_header_missing_scope(page: &RenderedPage, _options: &CheckOptions) 
 }
 
 fn referenced_header_ids(page: &RenderedPage) -> Vec<String> {
-    page.select(|el| el.has_attr("headers"))
-        .into_iter()
+    page.all()
+        .filter(|el| el.has_attr("headers"))
         .filter_map(|cell| cell.attr("headers"))
         .flat_map(|ids| {
             ids.split_whitespace()

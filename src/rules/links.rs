@@ -29,8 +29,8 @@ pub fn check_non_descriptive_link_text(
     page: &RenderedPage,
     _options: &CheckOptions,
 ) -> Vec<Finding> {
-    page.select(is_link)
-        .into_iter()
+    page.all()
+        .filter(|el| is_link(*el))
         .filter_map(non_descriptive_finding)
         .collect()
 }
@@ -117,7 +117,7 @@ pub fn check_ambiguous_duplicate_link_text(
 
 fn group_links_by_text(page: &RenderedPage) -> BTreeMap<String, Vec<String>> {
     let mut groups: BTreeMap<String, Vec<String>> = BTreeMap::new();
-    for link in page.select(is_link) {
+    for link in page.all().filter(|el| is_link(*el)) {
         let name = link.accessible_name().trim().to_lowercase();
         if name.len() < 3 {
             continue;

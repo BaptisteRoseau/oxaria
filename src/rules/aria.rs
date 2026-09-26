@@ -20,7 +20,7 @@ pub fn check_duplicate_ids(page: &RenderedPage, _options: &CheckOptions) -> Vec<
 
 fn id_counts(page: &RenderedPage) -> BTreeMap<String, usize> {
     let mut counts = BTreeMap::new();
-    for element in page.select(|el| el.has_attr("id")) {
+    for element in page.all().filter(|el| el.has_attr("id")) {
         if let Some(id) = element.attr("id") {
             *counts.entry(id.to_string()).or_insert(0) += 1;
         }
@@ -42,8 +42,8 @@ pub fn check_dangling_aria_reference(page: &RenderedPage, _options: &CheckOption
 }
 
 fn dangling_references(page: &RenderedPage, attribute: &str) -> Vec<Finding> {
-    page.select(|el| el.has_attr(attribute))
-        .into_iter()
+    page.all()
+        .filter(|el| el.has_attr(attribute))
         .flat_map(|element| {
             element
                 .attr(attribute)

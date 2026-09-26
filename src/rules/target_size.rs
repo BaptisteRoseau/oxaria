@@ -51,8 +51,8 @@ fn has_unsized_content(element: ElementRef) -> bool {
 }
 
 pub fn check_target_size(page: &RenderedPage, options: &CheckOptions) -> Vec<Finding> {
-    page.select(is_interactive)
-        .into_iter()
+    page.all()
+        .filter(|el| is_interactive(*el))
         .filter_map(|element| target_size_finding(element, options))
         .collect()
 }

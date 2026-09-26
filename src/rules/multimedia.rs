@@ -32,8 +32,8 @@ pub fn check_autoplay_without_controls(
     page: &RenderedPage,
     _options: &CheckOptions,
 ) -> Vec<Finding> {
-    page.select(|el| el.tag() == "video" && el.has_attr("autoplay"))
-        .into_iter()
+    page.all()
+        .filter(|el| el.tag() == "video" && el.has_attr("autoplay"))
         .filter(|video| video.attr("controls").is_none())
         .map(|video| {
             Finding::error(

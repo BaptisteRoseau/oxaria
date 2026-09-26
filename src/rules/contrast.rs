@@ -12,8 +12,8 @@ use super::{CheckOptions, Finding};
 const DEFAULT_CANVAS_BACKGROUND: (u8, u8, u8) = (255, 255, 255);
 
 pub fn check_text_contrast(page: &RenderedPage, options: &CheckOptions) -> Vec<Finding> {
-    page.select(renders_own_text)
-        .into_iter()
+    page.all()
+        .filter(|el| renders_own_text(*el))
         .filter_map(|el| contrast_finding(el, options))
         .collect()
 }
