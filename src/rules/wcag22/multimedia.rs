@@ -2,7 +2,7 @@
 
 use crate::page::{ElementRef, RenderedPage};
 
-use super::{CheckOptions, Finding};
+use crate::rules::{CheckOptions, Finding};
 
 /// G87: a prerecorded video needs a captions (or subtitles) track for deaf and hard-of-hearing
 /// users to follow its audio.

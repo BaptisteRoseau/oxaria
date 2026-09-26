@@ -59,7 +59,7 @@ fn testcase_names(issues: &[&Issue]) -> Vec<String> {
     issues
         .iter()
         .map(|issue| {
-            let name = format!("{}: {}", issue.rule_id, issue.message);
+            let name = format!("{}: {}", issue.rule_label(), issue.message);
             let count = seen.entry(name.clone()).or_insert(0);
             *count += 1;
             match *count {
@@ -74,7 +74,7 @@ fn testcase(issue: &Issue, name: &str) -> String {
     let body = match issue.severity {
         Severity::Error => format!(
             "<failure type=\"{}\" message=\"{}\">{}</failure>",
-            escape(issue.rule_id),
+            escape(&issue.rule_label()),
             escape(&issue.message),
             escape(&issue.full_text()),
         ),
@@ -100,7 +100,7 @@ pub(super) fn escape(value: &str) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::reporters::model::tests::{error, on_page, warning};
+    use crate::reporters::model::tests::{error, fatal, on_page, warning};
     use crate::rules::Finding;
 
     fn render(source: &str, findings: &[Finding]) -> String {
@@ -120,21 +120,22 @@ mod tests {
     fn error_is_a_failure() {
         let output = render("a.html", &[error("H57")]);
         assert!(output.contains(
-            "<testcase classname=\"a.html\" name=\"H57: boom\" file=\"a.html\">\
-             <failure type=\"H57\" message=\"boom\">boom\nsee: https://www.w3.org/WAI/WCAG22/Techniques/html/H57</failure></testcase>"
+            "<testcase classname=\"a.html\" name=\"WCAG 2.2 H57: boom\" file=\"a.html\">\
+             <failure type=\"WCAG 2.2 H57\" message=\"boom\">boom\nsee: https://www.w3.org/WAI/WCAG22/Techniques/html/H57</failure></testcase>"
         ));
     }
 
     #[test]
     fn help_is_in_the_body_not_the_name() {
         let finding = Finding {
+            severity: Severity::Warning,
             help: Some("add lang".to_string()),
-            ..warning("FETCH")
+            ..fatal("FETCH")
         };
         let output = render("a.html", &[finding]);
-        assert!(output.contains("name=\"FETCH: meh\""), "{output}");
+        assert!(output.contains("name=\"FETCH: boom\""), "{output}");
         assert!(
-            output.contains("<system-out>meh\nhelp: add lang</system-out>"),
+            output.contains("<system-out>boom\nhelp: add lang</system-out>"),
             "{output}"
         );
     }
@@ -149,9 +150,15 @@ mod tests {
     #[test]
     fn identical_findings_get_unique_testcase_names() {
         let output = render("a.html", &[error("H44"), error("H44"), error("H44")]);
-        assert!(output.contains(r#"name="H44: boom""#), "{output}");
-        assert!(output.contains(r#"name="H44: boom (2)""#), "{output}");
-        assert!(output.contains(r#"name="H44: boom (3)""#), "{output}");
+        assert!(output.contains(r#"name="WCAG 2.2 H44: boom""#), "{output}");
+        assert!(
+            output.contains(r#"name="WCAG 2.2 H44: boom (2)""#),
+            "{output}"
+        );
+        assert!(
+            output.contains(r#"name="WCAG 2.2 H44: boom (3)""#),
+            "{output}"
+        );
     }
 
     #[test]

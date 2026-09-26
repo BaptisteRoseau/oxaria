@@ -2,7 +2,7 @@
 
 use crate::page::{ElementRef, RenderedPage};
 
-use super::{CheckOptions, Finding};
+use crate::rules::{CheckOptions, Finding};
 
 /// H42/G141: the page should have a top-level heading to anchor its outline.
 pub fn check_missing_h1(page: &RenderedPage, _options: &CheckOptions) -> Vec<Finding> {

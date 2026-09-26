@@ -7,7 +7,7 @@ use serde::Serialize;
 use super::junit::escape;
 use super::model::LINE;
 use super::{Issue, Report, Reporter};
-use crate::rules::Severity;
+use crate::rules::{Severity, Standard};
 
 pub struct JenkinsReporter;
 
@@ -52,7 +52,7 @@ fn warnings_issue(issue: &Issue) -> WarningsIssue<'_> {
         file_name: &issue.location.path,
         line_start: LINE,
         severity: severity(issue.severity),
-        category: "WCAG 2.2",
+        category: issue.standard.map_or("wcag-checker", Standard::name),
         kind: issue.rule_id,
         message: &issue.message,
         description: description(issue),
@@ -85,7 +85,7 @@ mod tests {
     use serde_json::{Value, json};
 
     use super::*;
-    use crate::reporters::model::tests::{error, warning};
+    use crate::reporters::model::tests::{error, fatal, warning};
     use crate::rules::Finding;
 
     fn render(source: &str, findings: &[Finding]) -> Value {
@@ -134,11 +134,19 @@ mod tests {
     fn help_is_escaped_into_the_description() {
         let finding = Finding {
             help: Some("add <track>".to_string()),
-            ..error("FETCH")
+            ..fatal("FETCH")
         };
         assert_eq!(
             render("a.html", &[finding])["issues"][0]["description"],
             "<p>help: add &lt;track&gt;</p>"
+        );
+    }
+
+    #[test]
+    fn checker_failures_have_their_own_category() {
+        assert_eq!(
+            render("a.html", &[fatal("FETCH")])["issues"][0]["category"],
+            "wcag-checker"
         );
     }
 

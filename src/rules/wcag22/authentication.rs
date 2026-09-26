@@ -2,7 +2,7 @@
 
 use crate::page::{ElementRef, RenderedPage};
 
-use super::{CheckOptions, Finding};
+use crate::rules::{CheckOptions, Finding};
 
 const SECRET_AUTOCOMPLETE: &[&str] = &["current-password", "new-password", "one-time-code"];
 

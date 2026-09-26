@@ -2,7 +2,7 @@
 
 use crate::page::{ElementRef, RenderedPage};
 
-use super::{CheckOptions, Finding};
+use crate::rules::{CheckOptions, Finding};
 
 /// The WCAG 2.2 input purposes (`guidelines/input-purposes.html`) that aren't contact
 /// details, plus `one-time-code`, which the HTML autofill list added later.

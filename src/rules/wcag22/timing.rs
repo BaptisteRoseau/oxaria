@@ -2,7 +2,7 @@
 
 use crate::page::{ElementRef, RenderedPage};
 
-use super::{CheckOptions, Finding};
+use crate::rules::{CheckOptions, Finding};
 
 /// F40/F41 treat a delay under one second as instant and one over 20 hours as never reached.
 const SHORTEST_TIMED_DELAY: f64 = 1.0;

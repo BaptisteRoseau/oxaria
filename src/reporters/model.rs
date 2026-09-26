@@ -10,7 +10,7 @@ use std::process::ExitCode;
 use url::Url;
 
 use crate::page;
-use crate::rules::{self, Finding, Severity};
+use crate::rules::{Finding, Severity, Standard};
 
 /// Every CI format requires a line number, but litehtml exposes no source
 /// positions, so every issue points at the first line of its document.
@@ -28,6 +28,8 @@ pub struct Location {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Issue {
     pub rule_id: &'static str,
+    /// `None` for failures of the checker itself (`FETCH`, `HTTP`, ...).
+    pub standard: Option<Standard>,
     pub severity: Severity,
     /// The finding's message, followed by the element it is about (if any):
     /// no CI format has a field for it, and without it identical findings
@@ -43,6 +45,14 @@ pub struct Issue {
 }
 
 impl Issue {
+    /// The rule ID, preceded by its standard's name when it has one.
+    pub fn rule_label(&self) -> String {
+        match self.standard {
+            Some(standard) => format!("{standard} {}", self.rule_id),
+            None => self.rule_id.to_string(),
+        }
+    }
+
     /// The message followed by the help and reference lines, for formats
     /// with a single free-text field.
     pub fn full_text(&self) -> String {
@@ -69,15 +79,18 @@ impl Report {
             .map(|finding| {
                 let location = location(source, finding.page.as_ref());
                 let message = message(finding);
-                let key = fingerprint_key(finding.rule_id, &location, &message);
+                let key = fingerprint_key(finding, &location, &message);
                 let occurrence = occurrences.entry(key.clone()).or_insert(0usize);
                 *occurrence += 1;
                 Issue {
                     rule_id: finding.rule_id,
+                    standard: finding.standard,
                     severity: finding.severity,
                     message,
                     help: finding.help.clone(),
-                    reference: rules::reference_url(finding.rule_id),
+                    reference: finding
+                        .standard
+                        .and_then(|standard| standard.reference_url(finding.rule_id)),
                     location,
                     fingerprint: fingerprint(&format!("{key}\u{1f}{occurrence}")),
                 }
@@ -138,9 +151,10 @@ fn strip_current_dir(mut path: &str) -> &str {
     path
 }
 
-fn fingerprint_key(rule_id: &str, location: &Location, message: &str) -> String {
+fn fingerprint_key(finding: &Finding, location: &Location, message: &str) -> String {
     [
-        rule_id,
+        finding.standard.map_or("", Standard::name),
+        finding.rule_id,
         &location.path,
         location.page.as_deref().unwrap_or(""),
         message,
@@ -167,6 +181,10 @@ pub(crate) mod tests {
     use super::*;
 
     pub(crate) fn error(rule_id: &'static str) -> Finding {
+        fatal(rule_id).in_standard(Standard::Wcag22)
+    }
+
+    pub(crate) fn fatal(rule_id: &'static str) -> Finding {
         Finding::error(rule_id, "boom".to_string())
     }
 
@@ -274,7 +292,7 @@ pub(crate) mod tests {
 
     #[test]
     fn issues_link_to_their_rule() {
-        let report = Report::new("a.html", &[error("H57"), error("FETCH")]);
+        let report = Report::new("a.html", &[error("H57"), fatal("FETCH")]);
         assert_eq!(
             report.issues[0].reference.as_deref(),
             Some("https://www.w3.org/WAI/WCAG22/Techniques/html/H57")
@@ -288,7 +306,7 @@ pub(crate) mod tests {
             help: Some("add lang".to_string()),
             ..error("H57")
         };
-        let report = Report::new("a.html", &[finding, error("FETCH")]);
+        let report = Report::new("a.html", &[finding, fatal("FETCH")]);
         assert_eq!(
             report.issues[0].full_text(),
             "boom\nhelp: add lang\nsee: https://www.w3.org/WAI/WCAG22/Techniques/html/H57"
@@ -321,6 +339,22 @@ pub(crate) mod tests {
             ],
         );
         assert_ne!(report.issues[0].fingerprint, report.issues[1].fingerprint);
+    }
+
+    #[test]
+    fn same_finding_under_another_standard_gets_a_distinct_fingerprint() {
+        let report = Report::new(
+            "a.html",
+            &[error("X1"), fatal("X1").in_standard(Standard::Act)],
+        );
+        assert_ne!(report.issues[0].fingerprint, report.issues[1].fingerprint);
+    }
+
+    #[test]
+    fn rule_label_names_the_standard_when_there_is_one() {
+        let report = Report::new("a.html", &[error("H57"), fatal("FETCH")]);
+        assert_eq!(report.issues[0].rule_label(), "WCAG 2.2 H57");
+        assert_eq!(report.issues[1].rule_label(), "FETCH");
     }
 
     #[test]

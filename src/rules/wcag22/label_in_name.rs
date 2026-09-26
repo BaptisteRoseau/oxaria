@@ -2,7 +2,7 @@
 
 use crate::page::{ElementRef, RenderedPage};
 
-use super::{CheckOptions, Finding};
+use crate::rules::{CheckOptions, Finding};
 
 const WIDGET_ROLES: &[&str] = &[
     "button", "link", "menuitem", "tab", "checkbox", "radio", "switch", "option",

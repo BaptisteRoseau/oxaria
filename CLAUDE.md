@@ -101,8 +101,8 @@ code semantics (`0` clean / `1` any error / `2` warnings only).
 ## Rule scope: what's implemented and why the rest isn't
 
 `standards/wcag2.2-rules.md` lists ~48 rules across 15 categories. Only the ones genuinely verifiable from
-a single static render are implemented (see `src/rules/mod.rs`'s `all_rule_checks()` for the
-exact list). Categories deliberately **not** implemented, and why:
+a single static render are implemented (see `rule_checks()` in `src/rules/wcag22/checks.rs` for
+the exact list). Categories deliberately **not** implemented, and why:
 
 - **Timing/motion, dragging, redundant entry, accessible authentication, consistent help**
   (session timeouts, drag-alternative interactions, multi-step form memory, login flows) --
@@ -136,6 +136,14 @@ heuristic bolted onto `RenderedPage`.
 ## Architecture
 
 See [README.md](./README.md#architecture) for the module tree. Notes beyond what's there:
+
+- **One module directory per standard under `src/rules/`** (`wcag22/`, `aria12/`, `html_aria/`,
+  `act/`), each exposing `rule_checks()` and `reference_url()`, so rules of different standards
+  can be added without touching shared files. Rule functions don't know their standard: the
+  registry (`rules/registry.rs`) pairs each list with its `Standard` and stamps it on every
+  finding. Failures of the checker itself (`FETCH`, `HTTP`, `SCAN`, ...) have no standard. In
+  `wai-aria-1.2-rules.md`, `html-aria-rules.md` and `act-rules.md`, a rule with a
+  `Prevailing rule:` line is intentionally not implemented.
 
 - **`page/render.rs`** is the only file that touches the `litehtml` crate directly. Everything
   else (`page/model.rs`, all of `rules/`) only ever sees `RenderedPage`/`RenderedElement`/
@@ -249,12 +257,12 @@ See [README.md](./README.md#architecture) for the module tree. Notes beyond what
   (`model::LINE`). GitLab requires a line; don't drop the field.
 - **Fingerprints must be unique and stable**: GitLab merges issues sharing a fingerprint and
   compares them across pipelines. They're FNV-1a (std's `DefaultHasher` isn't stable across
-  Rust releases) of rule/path/page/message plus an occurrence counter, so two identical
+  Rust releases) of standard/rule/path/page/message plus an occurrence counter, so two identical
   findings (two unlabeled checkboxes) stay two issues.
 - **Consumers silently merge issues they consider identical, each by its own key** (found by
   running their real parsers, not from the docs): Warnings NG's equality ignores `fingerprint`,
   so `jenkins.rs` also puts it in `additionalProperties`; GitLab's JUnit parser keys test cases by
-  suite + classname + name, so `junit.rs` names each case `<rule>: <message>` with a ` (n)`
+  suite + classname + name, so `junit.rs` names each case `<standard> <rule>: <message>` with a ` (n)`
   suffix on repeats. Without these, three unlabeled checkboxes showed up as one issue.
 - **The JUnit report is not for Warnings NG** (verified in a real Jenkins): its JUnit parser
   derives locations from Java stack traces and ignores passing/skipped tests, so warnings are
@@ -272,9 +280,11 @@ See [README.md](./README.md#architecture) for the module tree. Notes beyond what
 - **Findings carry a rustc-style `help`** (`Finding::help`), set by the rule itself rather than
   looked up by rule ID: H30 and G1 each report two different problems under one ID, and the
   most useful hints need the finding's context (G18's nearest passing color, TGT001's missing
-  padding, G141's expected level). `every_finding_has_help` in `rules/mod.rs` fails if a rule
-  ships without one. The `note: see <url>` link is derived from the rule ID's prefix
-  (`rules::reference_url`, URL shapes taken from the w3c/wcag repo's own cross-links).
+  padding, G141's expected level). Each standard's `checks.rs` has an `every_rule_fires_with_help`
+  test (`registry::tests::assert_every_rule_has_help`) that fails if a rule ships without one.
+  The `note: see <url>` link comes from `Standard::reference_url`: for WCAG, from the rule ID's
+  prefix (URL shapes taken from the w3c/wcag repo's own cross-links); for WAI-ARIA and ARIA in
+  HTML, from the `ANCHORS` table in their `reference.rs`; for ACT, from the ID itself.
 - **Help stays out of `Issue.message`**, which the fingerprint and JUnit test names are built
   from: rewording a hint must not make GitLab see every issue as fixed-and-new. Formats with a
   single text field get `Issue::full_text()`; GitHub puts help in the message cell and links the
@@ -301,7 +311,7 @@ See [README.md](./README.md#architecture) for the module tree. Notes beyond what
   which is right inside `="#main"` -- as the closing delimiter, ending the string early with a
   confusing cascade of unrelated parse errors afterward. Use `r##"..."##` (or more hashes) for
   any test fixture HTML containing a `#`-fragment `href`. This has already bitten this codebase
-  once (`src/rules/navigation.rs`, `src/rules/mod.rs`); watch for it in new fixtures.
+  once (`src/rules/wcag22/navigation.rs`, `src/rules/wcag22/checks.rs`); watch for it in new fixtures.
 - **`litehtml::Element<'a>` is `Clone + Copy`** (patched -- see PATCHES.md) specifically so
   ancestor-walking loops (`while let Some(parent) = el.parent() { el = parent }`) don't need to
   thread ownership through a recursive helper. If you find yourself needing another

@@ -7,7 +7,7 @@
 
 use crate::page::{ElementRef, RenderedPage};
 
-use super::{CheckOptions, Finding};
+use crate::rules::{CheckOptions, Finding};
 
 fn is_interactive(el: ElementRef) -> bool {
     (el.tag() == "a" && el.has_attr("href"))

@@ -4,7 +4,7 @@ use std::collections::HashSet;
 
 use crate::page::{ElementRef, RenderedPage};
 
-use super::{CheckOptions, Finding};
+use crate::rules::{CheckOptions, Finding};
 
 /// F91: a table with data rows but no `th` cells leaves row/column headers unmarked.
 pub fn check_table_missing_headers(page: &RenderedPage, _options: &CheckOptions) -> Vec<Finding> {

@@ -39,7 +39,7 @@ fn page_with_violations_exits_one() {
         "G186", "IDS001", "G195", "F93",
     ] {
         assert!(
-            report.contains(&format!("[ERROR] {rule_id}: ")),
+            report.contains(&format!("[ERROR] WCAG 2.2 {rule_id}: ")),
             "expected {rule_id} in:\n{report}"
         );
     }
@@ -50,16 +50,16 @@ fn findings_name_the_element_they_are_about() {
     let report = stdout(&run("tests/assets/errors.html", &[]));
     assert!(
         report.contains(
-            "[ERROR] H44: <input type=\"email\"> has no associated label (at input#signup-email)"
+            "[ERROR] WCAG 2.2 H44: <input type=\"email\"> has no associated label (at input#signup-email)"
         ),
         "{report}"
     );
     assert!(
-        report.contains("[ERROR] H44: <input type=\"checkbox\"> has no associated label (at body > input:nth-of-type(3))"),
+        report.contains("[ERROR] WCAG 2.2 H44: <input type=\"checkbox\"> has no associated label (at body > input:nth-of-type(3))"),
         "{report}"
     );
     assert!(
-        report.contains("[ERROR] H42: page has no <h1> element\n"),
+        report.contains("[ERROR] WCAG 2.2 H42: page has no <h1> element\n"),
         "{report}"
     );
 }
@@ -242,11 +242,11 @@ fn reports_are_written_alongside_the_usual_output() {
     );
 
     assert_eq!(exit_code(&output), 1, "stdout:\n{}", stdout(&output));
-    assert!(stdout(&output).contains("[ERROR] H57"));
+    assert!(stdout(&output).contains("[ERROR] WCAG 2.2 H57"));
 
     let gitlab = json(&gitlab);
     let issues = gitlab.as_array().expect("GitLab report is an array");
-    assert!(issues.iter().any(|i| i["check_name"] == "H57"));
+    assert!(issues.iter().any(|i| i["check_name"] == "WCAG 2.2 H57"));
     assert!(
         issues
             .iter()
@@ -260,7 +260,7 @@ fn reports_are_written_alongside_the_usual_output() {
 
     let junit = read(&junit);
     assert!(junit.starts_with("<?xml"));
-    assert!(junit.contains(r#"name="H57: "#), "{junit}");
+    assert!(junit.contains(r#"name="WCAG 2.2 H57: "#), "{junit}");
 }
 
 #[test]
@@ -273,7 +273,7 @@ fn github_summary_can_go_to_stdout() {
 
     assert_eq!(exit_code(&output), 2, "stdout:\n{report}");
     assert!(
-        report.starts_with("## ⚠️ WCAG 2.2: 0 error(s), 3 warning(s)\n"),
+        report.starts_with("## ⚠️ Accessibility: 0 error(s), 3 warning(s)\n"),
         "{report}"
     );
     assert_eq!(report.matches("| ⚠️ Warning |").count(), 3, "{report}");
@@ -294,7 +294,7 @@ fn github_summary_defaults_to_github_step_summary_and_appends() {
     assert_eq!(exit_code(&output), 1);
     let summary = read(&summary);
     assert!(
-        summary.starts_with("previous command\n## ❌ WCAG 2.2: 20 error(s)"),
+        summary.starts_with("previous command\n## ❌ Accessibility: 20 error(s)"),
         "{summary}"
     );
     assert_eq!(summary.matches("| ❌ Error |").count(), 20, "{summary}");

@@ -2,7 +2,7 @@
 
 use crate::page::{ElementRef, RenderedPage};
 
-use super::{CheckOptions, Finding};
+use crate::rules::{CheckOptions, Finding};
 
 /// H44: every labelable control needs a `label`, an ARIA name, or a wrapping `label`.
 pub fn check_missing_label(page: &RenderedPage, _options: &CheckOptions) -> Vec<Finding> {

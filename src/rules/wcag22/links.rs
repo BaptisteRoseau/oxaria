@@ -6,7 +6,7 @@ use url::Url;
 
 use crate::page::{ElementRef, RenderedPage};
 
-use super::{CheckOptions, Finding};
+use crate::rules::{CheckOptions, Finding};
 
 const GENERIC_LINK_PHRASES: &[&str] = &[
     "click here",

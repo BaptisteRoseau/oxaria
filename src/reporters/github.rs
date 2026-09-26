@@ -7,7 +7,7 @@
 use std::cmp::Reverse;
 
 use super::{Issue, Report, Reporter};
-use crate::rules::Severity;
+use crate::rules::{Severity, Standard};
 
 /// GitHub rejects a step summary over 1 MiB (and then shows none of it). The
 /// margin leaves room for whatever else the same step appends to the file.
@@ -15,7 +15,8 @@ const MAX_SUMMARY_BYTES: usize = 1_000_000;
 
 const TRUNCATION_NOTE_MARGIN: usize = 200;
 
-const TABLE_HEADER: &str = "| Severity | Rule | Location | Message |\n| --- | --- | --- | --- |\n";
+const TABLE_HEADER: &str =
+    "| Severity | Standard | Rule | Location | Message |\n| --- | --- | --- | --- | --- |\n";
 
 pub struct GithubReporter;
 
@@ -40,9 +41,11 @@ impl Reporter for GithubReporter {
 
 fn heading(report: &Report) -> String {
     match (report.errors(), report.warnings()) {
-        (0, 0) => "## ✅ WCAG 2.2: no issues found".to_string(),
-        (0, warnings) => format!("## ⚠️ WCAG 2.2: 0 error(s), {warnings} warning(s)"),
-        (errors, warnings) => format!("## ❌ WCAG 2.2: {errors} error(s), {warnings} warning(s)"),
+        (0, 0) => "## ✅ Accessibility: no issues found".to_string(),
+        (0, warnings) => format!("## ⚠️ Accessibility: 0 error(s), {warnings} warning(s)"),
+        (errors, warnings) => {
+            format!("## ❌ Accessibility: {errors} error(s), {warnings} warning(s)")
+        }
     }
 }
 
@@ -70,8 +73,9 @@ fn rows_within_limit(report: &Report, heading_len: usize) -> String {
 
 fn row(issue: &Issue) -> String {
     format!(
-        "| {} | {} | {} | {} |\n",
+        "| {} | {} | {} | {} | {} |\n",
         severity_label(issue.severity),
+        issue.standard.map_or("", Standard::name),
         rule_cell(issue),
         escape(&issue.location.path),
         message_cell(issue),
@@ -121,7 +125,7 @@ fn escape(text: &str) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::reporters::model::tests::{error, on_page, warning};
+    use crate::reporters::model::tests::{error, fatal, on_page, warning};
     use crate::rules::Finding;
 
     fn render(source: &str, findings: &[Finding]) -> String {
@@ -130,24 +134,27 @@ mod tests {
 
     #[test]
     fn clean_report_is_a_single_heading() {
-        assert_eq!(render("a.html", &[]), "## ✅ WCAG 2.2: no issues found\n");
+        assert_eq!(
+            render("a.html", &[]),
+            "## ✅ Accessibility: no issues found\n"
+        );
     }
 
     #[test]
     fn findings_are_a_table_under_a_heading() {
         assert_eq!(
             render("./a.html", &[error("H57"), warning("G18")]),
-            "## ❌ WCAG 2.2: 1 error(s), 1 warning(s)\n\n\
-             | Severity | Rule | Location | Message |\n\
-             | --- | --- | --- | --- |\n\
-             | ❌ Error | [`H57`](https://www.w3.org/WAI/WCAG22/Techniques/html/H57) | a.html | boom |\n\
-             | ⚠️ Warning | [`G18`](https://www.w3.org/WAI/WCAG22/Techniques/general/G18) | a.html | meh |\n"
+            "## ❌ Accessibility: 1 error(s), 1 warning(s)\n\n\
+             | Severity | Standard | Rule | Location | Message |\n\
+             | --- | --- | --- | --- | --- |\n\
+             | ❌ Error | WCAG 2.2 | [`H57`](https://www.w3.org/WAI/WCAG22/Techniques/html/H57) | a.html | boom |\n\
+             | ⚠️ Warning | WCAG 2.2 | [`G18`](https://www.w3.org/WAI/WCAG22/Techniques/general/G18) | a.html | meh |\n"
         );
     }
 
     #[test]
     fn rules_without_a_reference_are_not_linked() {
-        assert!(render("a.html", &[error("FETCH")]).contains("| ❌ Error | `FETCH` |"));
+        assert!(render("a.html", &[fatal("FETCH")]).contains("| ❌ Error |  | `FETCH` |"));
     }
 
     #[test]
@@ -164,7 +171,7 @@ mod tests {
 
     #[test]
     fn warnings_only_heading() {
-        assert!(render("a.html", &[warning("G18")]).starts_with("## ⚠️ WCAG 2.2: 0 error(s)"));
+        assert!(render("a.html", &[warning("G18")]).starts_with("## ⚠️ Accessibility: 0 error(s)"));
     }
 
     #[test]

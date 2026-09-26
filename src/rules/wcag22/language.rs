@@ -2,7 +2,7 @@
 
 use crate::page::RenderedPage;
 
-use super::{CheckOptions, Finding};
+use crate::rules::{CheckOptions, Finding};
 
 /// H57: the `html` element must declare a non-empty `lang` attribute.
 pub fn check_missing_lang(page: &RenderedPage, _options: &CheckOptions) -> Vec<Finding> {

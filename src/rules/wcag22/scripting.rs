@@ -3,7 +3,7 @@
 
 use crate::page::{ElementRef, RenderedPage};
 
-use super::{CheckOptions, Finding};
+use crate::rules::{CheckOptions, Finding};
 
 const ACTIVATION_HANDLERS: &[&str] = &[
     "onclick",
@@ -149,7 +149,7 @@ mod tests {
     use super::*;
     use crate::page::testutil::page_from_html;
 
-    fn run(check: super::super::RuleCheck, html: &str) -> Vec<Finding> {
+    fn run(check: crate::rules::RuleCheck, html: &str) -> Vec<Finding> {
         check(&page_from_html(html), &CheckOptions::default())
     }
 

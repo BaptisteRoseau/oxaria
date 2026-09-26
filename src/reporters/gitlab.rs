@@ -12,7 +12,7 @@ pub struct GitlabReporter;
 #[derive(Serialize)]
 struct CodeQualityIssue<'a> {
     description: String,
-    check_name: &'a str,
+    check_name: String,
     fingerprint: &'a str,
     severity: &'static str,
     location: CodeQualityLocation<'a>,
@@ -39,7 +39,7 @@ impl Reporter for GitlabReporter {
 fn code_quality_issue(issue: &Issue) -> CodeQualityIssue<'_> {
     CodeQualityIssue {
         description: description(issue),
-        check_name: issue.rule_id,
+        check_name: issue.rule_label(),
         fingerprint: &issue.fingerprint,
         severity: severity(issue.severity),
         location: CodeQualityLocation {
@@ -50,8 +50,7 @@ fn code_quality_issue(issue: &Issue) -> CodeQualityIssue<'_> {
 }
 
 fn description(issue: &Issue) -> String {
-    issue
-        .full_text()
+    format!("{}: {}", issue.rule_label(), issue.full_text())
         .lines()
         .map(code_span_markup)
         .collect::<Vec<_>>()
@@ -90,8 +89,8 @@ mod tests {
     use serde_json::{Value, json};
 
     use super::*;
-    use crate::reporters::model::tests::{error, on_page, warning};
-    use crate::rules::Finding;
+    use crate::reporters::model::tests::{error, fatal, on_page, warning};
+    use crate::rules::{Finding, Standard};
 
     fn render(source: &str, findings: &[Finding]) -> Value {
         let output = GitlabReporter.render(&Report::new(source, findings));
@@ -110,8 +109,8 @@ mod tests {
         assert_eq!(
             output,
             json!([{
-                "description": "boom  \nsee: https://www.w3.org/WAI/WCAG22/Techniques/html/H57",
-                "check_name": "H57",
+                "description": "WCAG 2.2 H57: boom  \nsee: https://www.w3.org/WAI/WCAG22/Techniques/html/H57",
+                "check_name": "WCAG 2.2 H57",
                 "fingerprint": report.issues[0].fingerprint,
                 "severity": "major",
                 "location": { "path": "a.html", "lines": { "begin": 1 } },
@@ -123,11 +122,11 @@ mod tests {
     fn help_is_part_of_the_description() {
         let finding = Finding {
             help: Some("add lang".to_string()),
-            ..error("FETCH")
+            ..fatal("FETCH")
         };
         assert_eq!(
             render("a.html", &[finding])[0]["description"],
-            "boom  \nhelp: add lang"
+            "FETCH: boom  \nhelp: add lang"
         );
     }
 
@@ -136,10 +135,11 @@ mod tests {
         let finding = Finding {
             help: Some(r#"add <label for="a">...</label>"#.to_string()),
             ..Finding::error("G87", "<video> has no track (at body > video)".to_string())
+                .in_standard(Standard::Wcag22)
         };
         assert_eq!(
             render("a.html", &[finding])[0]["description"],
-            "`<video>` has no track (at body > video)  \n\
+            "WCAG 2.2 G87: `<video>` has no track (at body > video)  \n\
              help: add `<label for=\"a\">`...`</label>`  \n\
              see: https://www.w3.org/WAI/WCAG22/Techniques/general/G87"
         );

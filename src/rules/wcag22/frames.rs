@@ -2,7 +2,7 @@
 
 use crate::page::{ElementRef, RenderedPage};
 
-use super::{CheckOptions, Finding};
+use crate::rules::{CheckOptions, Finding};
 
 /// H64: an `iframe` needs a `title` (or ARIA name) so users can tell frames apart before
 /// entering one.

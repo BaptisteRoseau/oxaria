@@ -2,7 +2,7 @@
 
 use crate::page::{ElementRef, RenderedPage};
 
-use super::{CheckOptions, Finding};
+use crate::rules::{CheckOptions, Finding};
 
 /// G1: a page should offer a link (usually the first focusable element) that jumps past repeated
 /// navigation straight to the main content, and its target must actually exist.

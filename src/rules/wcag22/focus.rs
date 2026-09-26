@@ -5,7 +5,7 @@
 
 use crate::page::RenderedPage;
 
-use super::{CheckOptions, Finding};
+use crate::rules::{CheckOptions, Finding};
 
 /// G195: removing the focus outline (`outline: none`/`0`) without declaring another visible
 /// indicator (border, box-shadow, background) leaves keyboard users unable to see where focus is.

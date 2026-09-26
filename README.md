@@ -96,9 +96,9 @@ wcag-checker page.html -q --report-gitlab gl-code-quality.json --report-junit ju
 - `4XX`/`5XX` responses are reported as `HTTP` errors, and network failures as `FETCH` errors. A scan that couldn't check any HTML page (e.g. the start URL returns JSON) reports a `SCAN` error rather than a clean pass.
 - Requests identify themselves as `wcag-checker/<version>` and ask for HTML (`Accept: text/html,…`), in both single-page and full-site mode.
 - Rate limits are respected: `429` (and `503` with `Retry-After`) are retried up to 3 times after the `Retry-After` delay (1s when it is `0` or missing), and `RateLimit-*`/`X-RateLimit-*` headers pause all requests once the quota runs out.
-- Each report line includes the URL path of the page it belongs to, e.g. `[ERROR] H57 /about: ...`. In the `--report-*` files, a crawled page is located by the full URL it was actually served from (after redirects).
+- Each report line includes the URL path of the page it belongs to, e.g. `[ERROR] WCAG 2.2 H57 /about: ...`. In the `--report-*` files, a crawled page is located by the full URL it was actually served from (after redirects).
 
-**Element paths:** findings about one element end with a CSS-selector-like path to it, e.g. `[WARN]  TGT001: <button> target size is 19px, below the required 24px (at body > header > nav > ul > li:nth-of-type(2) > button)`. The path stops at the nearest element with a unique id (`input#signup-email`). Page-level findings (`H42`, `H57`, `G1` without a skip link, ...), stylesheet findings (`G195`), and findings spanning several elements (`IDS001`, `LNK001`) have none.
+**Element paths:** findings about one element end with a CSS-selector-like path to it, e.g. `[WARN]  WCAG 2.2 TGT001: <button> target size is 19px, below the required 24px (at body > header > nav > ul > li:nth-of-type(2) > button)`. The path stops at the nearest element with a unique id (`input#signup-email`). Page-level findings (`H42`, `H57`, `G1` without a skip link, ...), stylesheet findings (`G195`), and findings spanning several elements (`IDS001`, `LNK001`) have none.
 
 **CI reports** (`--report-*`):
 
@@ -111,6 +111,7 @@ Each `--report-<kind> <FILE>` writes the findings in a format a CI platform read
 | `--report-jenkins`  | [Warnings NG](https://github.com/jenkinsci/warnings-ng-plugin/blob/main/doc/Documentation.md) native JSON | Jenkins `recordIssues(tool: issues(pattern: '…'))`              |
 | `--report-junit`    | JUnit XML (errors fail, warnings pass with a `system-out`)                                                 | Jenkins `junit`, GitLab `artifacts:reports:junit`               |
 
+- Every finding names the standard its rule comes from (`WCAG 2.2`, `WAI-ARIA 1.2`, `ARIA in HTML`, `ACT`): before the rule ID on stdout (with a per-standard count in the summary line), in GitLab's `check_name` and description, in a `Standard` column of the GitHub summary, as the Warnings NG `category`, and in JUnit test case names. Failures of the checker itself (`INPUT`, `FETCH`, `HTTP`, ...) have none.
 - Errors map to GitLab `major` / Jenkins `ERROR` / GitHub `❌ Error`; warnings to `minor` / `NORMAL` / `⚠️ Warning`.
 - The GitHub summary is **appended** to its file, as GitHub expects for `$GITHUB_STEP_SUMMARY` (other commands of the same step may write to it too). It lists every finding, errors first; only past GitHub's 1 MiB summary limit are the remaining ones replaced by a count. Annotations aren't used: GitHub shows only 10 errors + 10 warnings per step. To turn the summary off inside GitHub Actions, set `GITHUB_STEP_SUMMARY=` for the command.
 - Warnings NG users should read `--report-jenkins`, not the JUnit report: Warnings NG's JUnit parser drops warnings and can't locate issues on URLs.
@@ -175,12 +176,15 @@ src/
 │   ├── model.rs               # RenderedPage / RenderedElement / ElementRef + query helpers
 │   └── testutil.rs            # page_from_html() test helper (scraper, dev-dependency only)
 │
-└── rules/                   # one module per WCAG rule area, one Rule fn per rule
-    ├── images.rs, forms.rs, headings.rs, language.rs, links.rs, contrast.rs,
-    │   tables.rs, aria.rs, multimedia.rs, focus.rs, navigation.rs, target_size.rs,
-    │   document.rs, frames.rs, timing.rs, autocomplete.rs, label_in_name.rs,
-    │   scripting.rs, authentication.rs
-    └── mod.rs                  # rule registry + parallel dispatch via spawn_blocking
+└── rules/                   # one directory per standard, one rule fn per rule
+    ├── finding.rs             # Finding / Severity
+    ├── options.rs             # CheckOptions (CLI thresholds)
+    ├── standard.rs            # Standard: display name, per-standard reference URL
+    ├── registry.rs            # pairs each standard with its rules, parallel dispatch via spawn_blocking
+    ├── wcag22/                # WCAG 2.2: checks.rs (rule list), reference.rs, one module per rule area
+    ├── aria12/                # WAI-ARIA 1.2: checks.rs, reference.rs
+    ├── html_aria/             # ARIA in HTML: checks.rs, reference.rs
+    └── act/                   # ACT rules: checks.rs, reference.rs
 
 vendor/
 ├── litehtml-sys/            # vendored, patched raw FFI bindings (see vendor/PATCHES.md)

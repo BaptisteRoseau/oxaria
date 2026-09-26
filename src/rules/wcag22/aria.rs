@@ -4,7 +4,7 @@ use std::collections::BTreeMap;
 
 use crate::page::RenderedPage;
 
-use super::{CheckOptions, Finding};
+use crate::rules::{CheckOptions, Finding};
 
 /// Each reference attribute with the technique that uses it.
 const REFERENCE_ATTRIBUTES: &[(&str, &str)] =

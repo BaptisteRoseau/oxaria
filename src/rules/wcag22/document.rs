@@ -2,7 +2,7 @@
 
 use crate::page::{ElementRef, RenderedPage};
 
-use super::{CheckOptions, Finding};
+use crate::rules::{CheckOptions, Finding};
 
 /// Authoring-tool defaults and filler text listed by F25, lowercased.
 const PLACEHOLDER_TITLES: &[&str] = &[
