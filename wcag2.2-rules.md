@@ -1,6 +1,6 @@
 # WCAG 2.2 Accessibility Checker Rules
 
-This document lists automatable/semi-automatable accessibility rules derived from the [WCAG 2.2](https://www.w3.org/TR/WCAG22/) success criteria and their associated [Techniques](https://www.w3.org/WAI/WCAG22/Techniques/) and [Failures](https://www.w3.org/WAI/WCAG22/Techniques/failures/) as published in this repository. Each rule maps to a WCAG Technique/Failure ID where one exists in the repo; where WCAG 2.2 introduced a new success criterion with no technique yet published, a custom three-letter category code is used instead (e.g. `TGT001`).
+This document lists automatable/semi-automatable accessibility rules derived from the [WCAG 2.2](https://www.w3.org/TR/WCAG22/) success criteria and their associated [Techniques](https://www.w3.org/WAI/WCAG22/Techniques/) and [Failures](https://www.w3.org/WAI/WCAG22/Techniques/failures/) as published in this repository. Each rule maps to a WCAG Technique/Failure ID where one exists in the repo; where no published WCAG 2.2 technique or failure covers the rule (a success criterion new in WCAG 2.2, a best practice stated only in an Understanding document, or a failure made obsolete in WCAG 2.2), a custom three-letter category code is used instead (e.g. `TGT001`).
 
 Rules are grouped by category. Each entry cites the WCAG Success Criterion(s) (SC) it supports.
 
@@ -389,9 +389,9 @@ Link text (including alt text of a linked image) must make sense out of context,
 
 ---
 
-### F84 - Don't reuse identical link text for links with different destinations
+### LNK001 - Don't reuse identical link text for links with different destinations
 
-The same visible text ("Read more", "Learn more") used for links that go to different places is ambiguous for users navigating by a list of links. (SC 2.4.9)
+The same visible text ("Read more", "Learn more") used for links that go to different places is ambiguous for users navigating by a list of links. The Understanding document for SC 2.4.9 states this as best practice: links with different purposes and destinations should have different descriptions. No technique or failure covers it (F84 is about non-specific text such as "click here" itself, which H30 covers). (SC 2.4.9)
 
 #### DON'T
 
@@ -586,9 +586,31 @@ When a control has no visible text label (icon-only buttons), provide an accessi
 
 ---
 
-### F77 - Never duplicate id attribute values on a page
+### ARIA1 - Use aria-describedby to attach descriptive text to controls
 
-Duplicate `id`s break `aria-labelledby`/`aria-describedby`/`for` references and `id`-based fragment navigation, since only the first match is used reliably. (SC 4.1.1)
+When a control needs more information than its label (instructions, format hints), reference the element holding that text with `aria-describedby`. The referenced id must exist in the same document. (SC 1.3.1, 3.3.2)
+
+#### DON'T
+
+```html
+<label for="fname">First name</label>
+<input id="fname" type="text" aria-describedby="fname-hint">
+<!-- no element has id="fname-hint" -->
+```
+
+#### DO
+
+```html
+<label for="fname">First name</label>
+<input id="fname" type="text" aria-describedby="fname-hint">
+<p id="fname-hint">Your first name is sometimes called your "given name".</p>
+```
+
+---
+
+### IDS001 - Never duplicate id attribute values on a page
+
+Duplicate `id`s break `aria-labelledby`/`aria-describedby`/`for` references and `id`-based fragment navigation, since only the first match is used reliably. This was failure F77 of SC 4.1.1 Parsing, which WCAG 2.2 removed; its Understanding document notes that such issues now fail SC 1.3.1 or 4.1.2 instead. (SC 1.3.1, 4.1.2)
 
 #### DON'T
 
@@ -680,7 +702,7 @@ When on-screen visual information (actions, scene changes) isn't conveyed by the
 
 ---
 
-### G152 - Let users pause, stop, or hide moving, blinking, or scrolling content
+### G186 - Let users pause, stop, or hide moving, blinking, or scrolling content
 
 Any content that moves, blinks, scrolls, or auto-updates for more than 5 seconds needs a visible control to pause, stop, or hide it. (SC 2.2.2)
 

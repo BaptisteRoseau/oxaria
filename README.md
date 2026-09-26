@@ -98,7 +98,7 @@ wcag-checker page.html -q --report-gitlab gl-code-quality.json --report-junit ju
 - Rate limits are respected: `429` (and `503` with `Retry-After`) are retried up to 3 times after the `Retry-After` delay (1s when it is `0` or missing), and `RateLimit-*`/`X-RateLimit-*` headers pause all requests once the quota runs out.
 - Each report line includes the URL path of the page it belongs to, e.g. `[ERROR] H57 /about: ...`. In the `--report-*` files, a crawled page is located by the full URL it was actually served from (after redirects).
 
-**Element paths:** findings about one element end with a CSS-selector-like path to it, e.g. `[WARN]  TGT001: <button> target size is 19px, below the required 24px (at body > header > nav > ul > li:nth-of-type(2) > button)`. The path stops at the nearest element with a unique id (`input#signup-email`). Page-level findings (`H42`, `H57`, `G1` without a skip link, ...), stylesheet findings (`G195`), and findings spanning several elements (`F77`, `F84`) have none.
+**Element paths:** findings about one element end with a CSS-selector-like path to it, e.g. `[WARN]  TGT001: <button> target size is 19px, below the required 24px (at body > header > nav > ul > li:nth-of-type(2) > button)`. The path stops at the nearest element with a unique id (`input#signup-email`). Page-level findings (`H42`, `H57`, `G1` without a skip link, ...), stylesheet findings (`G195`), and findings spanning several elements (`IDS001`, `LNK001`) have none.
 
 **CI reports** (`--report-*`):
 

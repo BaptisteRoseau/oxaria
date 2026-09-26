@@ -254,11 +254,11 @@ See [README.md](./README.md#architecture) for the module tree. Notes beyond what
   can have 138 identical `<button> target size is 19px` warnings. The path is structural
   (`tag:nth-of-type(n)`, counting same-tag siblings), skips `html` and litehtml's tag-less
   anonymous boxes, and stops at the nearest element whose id is unique *and* CSS-safe (a
-  duplicate id, which F77 reports, would select two elements). It was verified to select exactly
+  duplicate id, which IDS001 reports, would select two elements). It was verified to select exactly
   its element in an HTML5 parse (html5lib + soupsieve) of github.com pages and the fixtures.
   Reporters append it to the message (`(at ...)`), since no CI format has a field for it, and
-  that makes fingerprints independent of finding order. Rules about several elements (F77,
-  F84), the page (H42, H57, G1 without a link) or a stylesheet (G195) leave it `None`.
+  that makes fingerprints independent of finding order. Rules about several elements (IDS001,
+  LNK001), the page (H42, H57, G1 without a link) or a stylesheet (G195) leave it `None`.
 - **Findings carry a rustc-style `help`** (`Finding::help`), set by the rule itself rather than
   looked up by rule ID: H30 and G1 each report two different problems under one ID, and the
   most useful hints need the finding's context (G18's nearest passing color, TGT001's missing

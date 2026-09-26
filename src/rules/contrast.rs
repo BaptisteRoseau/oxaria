@@ -34,7 +34,7 @@ fn contrast_finding(el: ElementRef, options: &CheckOptions) -> Option<Finding> {
     let threshold = required_threshold(el, options);
     (ratio < threshold).then(|| {
         Finding::warning(
-            "G18",
+            contrast_rule_id(el),
             format!(
                 "<{}> has a text contrast ratio of {ratio:.2}:1, below the required {threshold:.2}:1",
                 el.tag()
@@ -109,6 +109,14 @@ fn hex((r, g, b): Rgb) -> String {
 
 fn color_contrast(first: Rgb, second: Rgb) -> f64 {
     contrast_ratio(relative_luminance(first), relative_luminance(second))
+}
+
+/// G145 is G18's large-scale text variant, with its lower threshold.
+fn contrast_rule_id(el: ElementRef) -> &'static str {
+    match is_large_text(el) {
+        true => "G145",
+        false => "G18",
+    }
 }
 
 fn required_threshold(el: ElementRef, options: &CheckOptions) -> f64 {
@@ -238,6 +246,16 @@ mod tests {
             "{:?}",
             findings[0].help
         );
+    }
+
+    #[test]
+    fn low_contrast_large_text_is_reported_as_g145() {
+        let p = page_from_html(
+            r#"<h1 style="color: #aaaaaa; background-color: #ffffff; font-size: 28px">Title</h1>"#,
+        );
+        let findings = check_text_contrast(&p, &CheckOptions::default());
+        assert_eq!(findings.len(), 1);
+        assert_eq!(findings[0].rule_id, "G145");
     }
 
     #[test]

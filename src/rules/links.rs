@@ -119,7 +119,7 @@ fn comparable(destination: &str) -> String {
     }
 }
 
-/// F84: the same link text pointing to different destinations is ambiguous when users navigate a
+/// LNK001: the same link text pointing to different destinations is ambiguous when users navigate a
 /// page's links out of context (e.g. a screen reader's links list).
 pub fn check_ambiguous_duplicate_link_text(
     page: &RenderedPage,
@@ -151,7 +151,7 @@ fn duplicate_text_finding(text: &str, mut distinct_hrefs: Vec<String>) -> Option
     distinct_hrefs.dedup();
     (distinct_hrefs.len() > 1).then(|| {
         Finding::error(
-            "F84",
+            "LNK001",
             format!(
                 "link text \"{text}\" is used for {} different destinations: {}",
                 distinct_hrefs.len(),
@@ -230,7 +230,7 @@ mod tests {
         );
         let findings = check_ambiguous_duplicate_link_text(&p, &CheckOptions::default());
         assert_eq!(findings.len(), 1);
-        assert_eq!(findings[0].rule_id, "F84");
+        assert_eq!(findings[0].rule_id, "LNK001");
     }
 
     #[test]

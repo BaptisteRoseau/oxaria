@@ -30,7 +30,7 @@ fn has_captions_track(video: ElementRef) -> bool {
         .any(|track| matches!(track.attr("kind"), Some("captions" | "subtitles")))
 }
 
-/// G152/F16: an autoplaying video without visible controls gives users no way to pause or stop
+/// G186: an autoplaying video without visible controls gives users no way to pause or stop
 /// it, which WCAG 2.2.2 requires for content that plays automatically.
 pub fn check_autoplay_without_controls(
     page: &RenderedPage,
@@ -41,7 +41,7 @@ pub fn check_autoplay_without_controls(
         .filter(|video| video.attr("controls").is_none())
         .map(|video| {
             Finding::error(
-                "G152",
+                "G186",
                 "<video autoplay> has no controls to pause it".to_string(),
             )
             .at(video)
@@ -76,7 +76,7 @@ mod tests {
         let p = page_from_html(r#"<video src="a.mp4" autoplay></video>"#);
         let findings = check_autoplay_without_controls(&p, &CheckOptions::default());
         assert_eq!(findings.len(), 1);
-        assert_eq!(findings[0].rule_id, "G152");
+        assert_eq!(findings[0].rule_id, "G186");
     }
 
     #[test]

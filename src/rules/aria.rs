@@ -6,16 +6,18 @@ use crate::page::RenderedPage;
 
 use super::{CheckOptions, Finding};
 
-const REFERENCE_ATTRIBUTES: &[&str] = &["aria-labelledby", "aria-describedby"];
+/// Each reference attribute with the technique that uses it.
+const REFERENCE_ATTRIBUTES: &[(&str, &str)] =
+    &[("aria-labelledby", "ARIA16"), ("aria-describedby", "ARIA1")];
 
-/// F77: duplicate `id` values break `for`, `aria-labelledby`/`aria-describedby`, and fragment
+/// IDS001: duplicate `id` values break `for`, `aria-labelledby`/`aria-describedby`, and fragment
 /// navigation, since only one element can be resolved for a given id.
 pub fn check_duplicate_ids(page: &RenderedPage, _options: &CheckOptions) -> Vec<Finding> {
     id_counts(page)
         .into_iter()
         .filter(|(_, count)| *count > 1)
         .map(|(id, count)| {
-            Finding::error("F77", duplicate_id_message(id, count)).help(duplicate_id_help(id))
+            Finding::error("IDS001", duplicate_id_message(id, count)).help(duplicate_id_help(id))
         })
         .collect()
 }
@@ -39,16 +41,20 @@ fn duplicate_id_message(id: &str, count: usize) -> String {
     format!("id \"{id}\" is used {count} times, but ids must be unique")
 }
 
-/// ARIA16: `aria-labelledby`/`aria-describedby` must reference an id that actually exists,
+/// ARIA16/ARIA1: `aria-labelledby`/`aria-describedby` must reference an id that actually exists,
 /// otherwise the accessible name/description computation silently fails.
 pub fn check_dangling_aria_reference(page: &RenderedPage, _options: &CheckOptions) -> Vec<Finding> {
     REFERENCE_ATTRIBUTES
         .iter()
-        .flat_map(|attribute| dangling_references(page, attribute))
+        .flat_map(|(attribute, rule_id)| dangling_references(page, attribute, rule_id))
         .collect()
 }
 
-fn dangling_references(page: &RenderedPage, attribute: &str) -> Vec<Finding> {
+fn dangling_references(
+    page: &RenderedPage,
+    attribute: &str,
+    rule_id: &'static str,
+) -> Vec<Finding> {
     page.all()
         .filter(|el| el.has_attr(attribute))
         .flat_map(|element| {
@@ -58,7 +64,7 @@ fn dangling_references(page: &RenderedPage, attribute: &str) -> Vec<Finding> {
                 .split_whitespace()
                 .filter(|id| page.element_by_id(id).is_none())
                 .map(move |id| {
-                    Finding::error("ARIA16", dangling_reference_message(attribute, id))
+                    Finding::error(rule_id, dangling_reference_message(attribute, id))
                         .at(element)
                         .help(dangling_reference_help(attribute, id))
                 })
@@ -100,7 +106,7 @@ mod tests {
         let p = page_from_html(r#"<input id="search"><input id="search">"#);
         let findings = check_duplicate_ids(&p, &CheckOptions::default());
         assert_eq!(findings.len(), 1);
-        assert_eq!(findings[0].rule_id, "F77");
+        assert_eq!(findings[0].rule_id, "IDS001");
     }
 
     #[test]
@@ -129,6 +135,14 @@ mod tests {
         let findings = check_dangling_aria_reference(&p, &CheckOptions::default());
         assert_eq!(findings.len(), 1);
         assert_eq!(findings[0].rule_id, "ARIA16");
+    }
+
+    #[test]
+    fn dangling_aria_describedby_is_reported_as_aria1() {
+        let p = page_from_html(r#"<input aria-describedby="missing">"#);
+        let findings = check_dangling_aria_reference(&p, &CheckOptions::default());
+        assert_eq!(findings.len(), 1);
+        assert_eq!(findings[0].rule_id, "ARIA1");
     }
 
     #[test]

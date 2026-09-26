@@ -7,6 +7,8 @@ const UNDERSTANDING_URL: &str = "https://www.w3.org/WAI/WCAG22/Understanding";
 pub fn reference_url(rule_id: &str) -> Option<String> {
     match rule_id {
         "TGT001" => Some(format!("{UNDERSTANDING_URL}/target-size-minimum")),
+        "LNK001" => Some(format!("{UNDERSTANDING_URL}/link-purpose-link-only")),
+        "IDS001" => Some(format!("{UNDERSTANDING_URL}/name-role-value")),
         _ => technique_url(rule_id),
     }
 }
@@ -39,6 +41,14 @@ mod tests {
     #[case("G18", "https://www.w3.org/WAI/WCAG22/Techniques/general/G18")]
     #[case("F65", "https://www.w3.org/WAI/WCAG22/Techniques/failures/F65")]
     #[case("ARIA16", "https://www.w3.org/WAI/WCAG22/Techniques/aria/ARIA16")]
+    #[case(
+        "LNK001",
+        "https://www.w3.org/WAI/WCAG22/Understanding/link-purpose-link-only"
+    )]
+    #[case(
+        "IDS001",
+        "https://www.w3.org/WAI/WCAG22/Understanding/name-role-value"
+    )]
     #[case(
         "TGT001",
         "https://www.w3.org/WAI/WCAG22/Understanding/target-size-minimum"

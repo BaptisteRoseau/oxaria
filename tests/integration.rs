@@ -35,8 +35,8 @@ fn page_with_violations_exits_one() {
     assert_eq!(exit_code(&output), 1, "stdout:\n{}", stdout(&output));
     let report = stdout(&output);
     for rule_id in [
-        "H57", "G1", "H42", "G141", "F30", "H44", "F68", "ARIA16", "F84", "H30", "F91", "G87",
-        "G152", "F77", "G195",
+        "H57", "G1", "H42", "G141", "F30", "H44", "F68", "ARIA1", "LNK001", "H30", "F91", "G87",
+        "G186", "IDS001", "G195",
     ] {
         assert!(
             report.contains(&format!("[ERROR] {rule_id}: ")),
