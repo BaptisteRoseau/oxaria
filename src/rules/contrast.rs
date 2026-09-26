@@ -127,7 +127,7 @@ mod tests {
     #[test]
     fn large_bold_text_uses_lower_threshold() {
         let p = page_from_html(
-            r#"<h1 style="color: #767676; background-color: #ffffff; font-size: 28px; font-weight: bold">Title</h1>"#,
+            r#"<h1 style="color: #949494; background-color: #ffffff; font-size: 28px; font-weight: bold">Title</h1>"#,
         );
         assert!(check_text_contrast(&p, &options()).is_empty());
     }
