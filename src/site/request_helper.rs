@@ -19,7 +19,10 @@ use crate::page;
 
 use super::links::visit_key;
 
+#[cfg(not(test))]
 const DEFAULT_RETRY_DELAY: Duration = Duration::from_secs(1);
+#[cfg(test)]
+const DEFAULT_RETRY_DELAY: Duration = Duration::from_millis(10);
 const MAX_RETRIES: u32 = 3;
 const MAX_REDIRECTS: u32 = 10;
 /// `X-RateLimit-Reset` is epoch seconds on some servers (GitHub) and a
@@ -300,7 +303,7 @@ mod tests {
     }
 
     #[test]
-    fn retry_after_past_http_date_defaults_to_one_second() {
+    fn retry_after_past_http_date_uses_the_default_delay() {
         let date = httpdate::fmt_http_date(SystemTime::UNIX_EPOCH);
         assert_eq!(
             retry_after(&headers(&[("retry-after", &date)])),
@@ -336,7 +339,7 @@ mod tests {
     }
 
     #[test]
-    fn proactive_delay_without_reset_defaults_to_one_second() {
+    fn proactive_delay_without_reset_uses_the_default_delay() {
         let map = headers(&[("x-ratelimit-remaining", "0")]);
         assert_eq!(proactive_delay(&map), Some(DEFAULT_RETRY_DELAY));
     }
@@ -592,7 +595,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn request_retries_after_rate_limit_with_one_second_default() {
+    async fn request_retries_after_rate_limit_with_the_default_delay() {
         let server = MockServer::start().await;
         Mock::given(method("GET"))
             .and(path("/slow"))
