@@ -4,6 +4,7 @@
 use reqwest::Client;
 use reqwest::header::{ACCEPT, HeaderMap, HeaderValue, USER_AGENT};
 use tracing::info;
+use url::Url;
 
 use crate::error::CheckerError;
 
@@ -26,7 +27,12 @@ pub fn request_headers() -> HeaderMap {
     headers
 }
 
-pub async fn load_html(path_or_url: &str) -> Result<String, CheckerError> {
+pub struct LoadedHtml {
+    pub html: String,
+    pub url: Option<Url>,
+}
+
+pub async fn load_html(path_or_url: &str) -> Result<LoadedHtml, CheckerError> {
     match is_url(path_or_url) {
         true => fetch_url(path_or_url).await,
         false => read_file(path_or_url).await,
@@ -37,24 +43,31 @@ pub fn is_url(path_or_url: &str) -> bool {
     path_or_url.starts_with("http://") || path_or_url.starts_with("https://")
 }
 
-async fn fetch_url(url: &str) -> Result<String, CheckerError> {
+async fn fetch_url(url: &str) -> Result<LoadedHtml, CheckerError> {
     info!("Fetching {url}");
     let client = Client::builder()
         .default_headers(request_headers())
         .build()?;
     let response = client.get(url).send().await?.error_for_status()?;
-    Ok(response.text().await?)
+    let url = response.url().clone();
+    Ok(LoadedHtml {
+        html: response.text().await?,
+        url: Some(url),
+    })
 }
 
-async fn read_file(path: &str) -> Result<String, CheckerError> {
+async fn read_file(path: &str) -> Result<LoadedHtml, CheckerError> {
     info!("Loading file {path}");
-    Ok(tokio::fs::read_to_string(path).await?)
+    Ok(LoadedHtml {
+        html: tokio::fs::read_to_string(path).await?,
+        url: None,
+    })
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use wiremock::matchers::{header, headers, method};
+    use wiremock::matchers::{header, headers, method, path};
     use wiremock::{Mock, MockServer, ResponseTemplate};
 
     #[test]
@@ -88,8 +101,26 @@ mod tests {
             .mount(&server)
             .await;
 
-        let body = fetch_url(&server.uri()).await.unwrap();
-        assert_eq!(body, "<p>ok</p>");
+        let loaded = fetch_url(&server.uri()).await.unwrap();
+        assert_eq!(loaded.html, "<p>ok</p>");
+    }
+
+    #[tokio::test]
+    async fn fetch_url_reports_the_url_after_redirects() {
+        let server = MockServer::start().await;
+        Mock::given(method("GET"))
+            .and(path("/old"))
+            .respond_with(ResponseTemplate::new(301).insert_header("location", "/new"))
+            .mount(&server)
+            .await;
+        Mock::given(method("GET"))
+            .and(path("/new"))
+            .respond_with(ResponseTemplate::new(200).set_body_string("<p>new</p>"))
+            .mount(&server)
+            .await;
+
+        let loaded = fetch_url(&format!("{}/old", server.uri())).await.unwrap();
+        assert_eq!(loaded.url.unwrap().path(), "/new");
     }
 
     #[tokio::test]
@@ -97,8 +128,9 @@ mod tests {
         let dir = tempfile::tempdir().unwrap();
         let path = dir.path().join("page.html");
         tokio::fs::write(&path, "<html></html>").await.unwrap();
-        let content = read_file(path.to_str().unwrap()).await.unwrap();
-        assert_eq!(content, "<html></html>");
+        let loaded = read_file(path.to_str().unwrap()).await.unwrap();
+        assert_eq!(loaded.html, "<html></html>");
+        assert_eq!(loaded.url, None);
     }
 
     #[tokio::test]

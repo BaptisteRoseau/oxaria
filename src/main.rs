@@ -74,18 +74,10 @@ async fn check_single_page(
     path_or_url: &str,
     options: Arc<CheckOptions>,
 ) -> Result<Vec<Finding>, CheckerError> {
-    let html = page::load_html(path_or_url).await?;
+    let loaded = page::load_html(path_or_url).await?;
     let page = Arc::new(page::RenderedPage {
-        url: page_url(path_or_url),
-        ..page::render(&html)?
+        url: loaded.url,
+        ..page::render(&loaded.html)?
     });
     Ok(rules::run_all(page, options).await)
-}
-
-/// Only for real URLs: `Url::parse` would also accept a Windows path like
-/// `C:\page.html` as a URL with scheme `c`.
-fn page_url(path_or_url: &str) -> Option<Url> {
-    page::is_url(path_or_url)
-        .then(|| Url::parse(path_or_url).ok())
-        .flatten()
 }

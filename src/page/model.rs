@@ -54,7 +54,7 @@ pub struct RenderedPage {
     /// literal, unrendered CSS source text (litehtml has no `:focus` state
     /// simulation, so that check stays a source-level heuristic).
     pub stylesheets: Vec<String>,
-    /// Where the page was fetched from; `None` for a local file. Lets rules
+    /// Where the page was served from (after redirects); `None` for a local file. Lets rules
     /// tell a same-site absolute link (`https://site/pricing`) from a
     /// relative one (`/pricing`) pointing at the same place.
     pub url: Option<Url>,
