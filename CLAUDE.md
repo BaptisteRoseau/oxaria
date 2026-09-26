@@ -165,11 +165,12 @@ See [README.md](./README.md#architecture) for the module tree. Notes beyond what
   time, so the same-host check, the hop limit, and rate-limit waits between hops all live in
   that one function instead of being split into a separate `redirect::Policy::custom` closure.
   Off-domain redirects are skipped silently, not reported.
-- **The client sends a browser-style `Accept` header** (`ACCEPT_HTML` in `request_helper.rs`).
-  reqwest's default `Accept: */*` let content-negotiating servers pick JSON:
-  github.com/marketplace answered `400` with an empty JSON body, which showed up as a bogus
-  `HTTP 400` error. Keep the `*/*;q=0.8` fallback -- without it, API/PDF URLs may answer
-  `406` and be reported as errors instead of being skipped.
+- **Every request sends `page::request_headers()`** -- a browser-style `Accept` and a
+  `wcag-checker/<version>` `User-Agent` -- from both single-page (`fetch.rs`) and full-site
+  (`request_helper.rs`) mode. reqwest's defaults (`Accept: */*`, no `User-Agent`) got
+  github.com/marketplace answering `400` (content negotiation picked JSON) and crates.io
+  answering `403` (it requires a User-Agent). Keep the `*/*;q=0.8` fallback -- without it,
+  API/PDF URLs may answer `406` and be reported as errors instead of being skipped.
 - **Rate limiting is shared**: a single `Arc<RwLock<Instant>>` in `RequestContext` means a
   `429` seen by one task pauses every task, not just the one that got it.
 - **Visit key is the URL path only** (no query, no fragment), since the crawl never leaves

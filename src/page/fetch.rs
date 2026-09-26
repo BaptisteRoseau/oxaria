@@ -1,9 +1,30 @@
 //! Resolves the CLI's single `path_or_url` argument into raw HTML text, fetching it over HTTP(S)
 //! when it looks like a URL and reading it from disk otherwise.
 
+use reqwest::Client;
+use reqwest::header::{ACCEPT, HeaderMap, HeaderValue, USER_AGENT};
 use tracing::info;
 
 use crate::error::CheckerError;
+
+/// Content-negotiating servers answer reqwest's default `Accept: */*` with
+/// whatever they consider their primary format -- github.com/marketplace
+/// replies `400` with an empty JSON body. Prefer HTML like a browser does,
+/// but keep a `*/*` fallback so JSON/PDF-only URLs still answer `200` (and
+/// get skipped as not renderable) instead of `406 Not Acceptable`.
+/// `application/xml` is left out, unlike browsers, since it isn't rendered.
+pub const ACCEPT_HTML: &str = "text/html,application/xhtml+xml;q=0.9,*/*;q=0.8";
+/// reqwest sends no `User-Agent` at all by default, and some sites refuse
+/// such requests outright -- crates.io answers `403`.
+pub const CHECKER_USER_AGENT: &str = concat!("wcag-checker/", env!("CARGO_PKG_VERSION"));
+
+/// Headers sent with every request, single-page and full-site alike.
+pub fn request_headers() -> HeaderMap {
+    let mut headers = HeaderMap::new();
+    headers.insert(ACCEPT, HeaderValue::from_static(ACCEPT_HTML));
+    headers.insert(USER_AGENT, HeaderValue::from_static(CHECKER_USER_AGENT));
+    headers
+}
 
 pub async fn load_html(path_or_url: &str) -> Result<String, CheckerError> {
     match is_url(path_or_url) {
@@ -18,7 +39,10 @@ pub fn is_url(path_or_url: &str) -> bool {
 
 async fn fetch_url(url: &str) -> Result<String, CheckerError> {
     info!("Fetching {url}");
-    let response = reqwest::get(url).await?.error_for_status()?;
+    let client = Client::builder()
+        .default_headers(request_headers())
+        .build()?;
+    let response = client.get(url).send().await?.error_for_status()?;
     Ok(response.text().await?)
 }
 
@@ -30,6 +54,8 @@ async fn read_file(path: &str) -> Result<String, CheckerError> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use wiremock::matchers::{header, headers, method};
+    use wiremock::{Mock, MockServer, ResponseTemplate};
 
     #[test]
     fn is_url_accepts_http() {
@@ -49,6 +75,21 @@ mod tests {
     #[test]
     fn is_url_rejects_relative_path_with_colon_looking_segment() {
         assert!(!is_url("./page.html"));
+    }
+
+    #[tokio::test]
+    async fn fetch_url_identifies_itself_and_asks_for_html() {
+        let server = MockServer::start().await;
+        Mock::given(method("GET"))
+            .and(header("user-agent", CHECKER_USER_AGENT))
+            // wiremock splits comma-separated header values before matching.
+            .and(headers("accept", ACCEPT_HTML.split(',').collect()))
+            .respond_with(ResponseTemplate::new(200).set_body_string("<p>ok</p>"))
+            .mount(&server)
+            .await;
+
+        let body = fetch_url(&server.uri()).await.unwrap();
+        assert_eq!(body, "<p>ok</p>");
     }
 
     #[tokio::test]

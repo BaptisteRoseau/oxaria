@@ -8,13 +8,14 @@ use std::collections::HashSet;
 use std::sync::{Arc, RwLock};
 use std::time::{Duration, SystemTime};
 
-use reqwest::header::{ACCEPT, CONTENT_TYPE, HeaderMap, HeaderValue, LOCATION, RETRY_AFTER};
+use reqwest::header::{CONTENT_TYPE, HeaderMap, LOCATION, RETRY_AFTER};
 use reqwest::{Client, StatusCode, redirect};
 use tokio::time::Instant;
 use tracing::info;
 use url::Url;
 
 use crate::error::CheckerError;
+use crate::page;
 
 use super::links::visit_key;
 
@@ -23,13 +24,6 @@ const MAX_RETRIES: u32 = 3;
 const MAX_REDIRECTS: u32 = 10;
 const REQUEST_TIMEOUT: Duration = Duration::from_secs(30);
 const RENDERABLE_CONTENT_TYPES: &[&str] = &["text/html", "application/xhtml+xml"];
-/// Content-negotiating servers answer reqwest's default `Accept: */*` with
-/// whatever they consider their primary format -- github.com/marketplace
-/// replies `400` with an empty JSON body. Prefer HTML like a browser does,
-/// but keep a `*/*` fallback so JSON/PDF-only URLs still answer `200` (and
-/// get skipped as not renderable) instead of `406 Not Acceptable`.
-/// `application/xml` is left out, unlike browsers, since it isn't rendered.
-const ACCEPT_HTML: &str = "text/html,application/xhtml+xml;q=0.9,*/*;q=0.8";
 /// `X-RateLimit-Reset` is epoch seconds on some servers (GitHub) and a
 /// delta on others; anything this large can only be an epoch timestamp.
 const EPOCH_SECONDS_THRESHOLD: u64 = 1_000_000_000;
@@ -62,10 +56,8 @@ impl RequestContext {
     pub fn new(allowed_host: &str) -> Result<Self, CheckerError> {
         // Redirects are followed by hand in `request` so each hop can be
         // checked against the allowed host before it is requested.
-        let mut default_headers = HeaderMap::new();
-        default_headers.insert(ACCEPT, HeaderValue::from_static(ACCEPT_HTML));
         let client = Client::builder()
-            .default_headers(default_headers)
+            .default_headers(page::request_headers())
             .redirect(redirect::Policy::none())
             .timeout(REQUEST_TIMEOUT)
             .build()?;
@@ -448,12 +440,16 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn request_asks_content_negotiating_servers_for_html() {
+    async fn request_asks_for_html_and_identifies_itself() {
         let server = MockServer::start().await;
         Mock::given(method("GET"))
             .and(path("/negotiated"))
             // wiremock splits comma-separated header values before matching.
-            .and(header_values("accept", ACCEPT_HTML.split(',').collect()))
+            .and(header_values(
+                "accept",
+                page::ACCEPT_HTML.split(',').collect(),
+            ))
+            .and(header_values("user-agent", vec![page::CHECKER_USER_AGENT]))
             .respond_with(html("<p>html</p>"))
             .with_priority(1)
             .mount(&server)
