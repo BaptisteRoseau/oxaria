@@ -1,16 +1,22 @@
 //! Full-site scan: starting from one URL, scan every same-host page
 //! reachable through `href`s, in parallel, each page exactly once.
 //!
-//! Whether a path was already fetched is decided by `request()` itself,
-//! right before each download (see [`RequestContext`]); the orchestrator
-//! only skips links it can already see are fetched, to avoid spawning
-//! tasks that would do nothing.
+//! Pages are crawled breadth-first, one level at a time. A level's links are
+//! ordered by where they were found (the discovering page's position in its
+//! own level, then document order), not by which download happened to
+//! finish first -- so with `--full-site-scan-max-pages`, the same site
+//! always yields the same set of checked pages. Within a level, pages are
+//! fetched in parallel, but never more at once than the page budget has
+//! slots left, so every HTML page downloaded is guaranteed to be checked.
+//!
+//! Whether a path was already fetched is ultimately decided by `request()`
+//! itself, right before each download (see [`RequestContext`]); `queued`
+//! here only stops the same link from being scheduled twice.
 
+use std::collections::{HashSet, VecDeque};
 use std::num::NonZeroUsize;
 use std::sync::Arc;
-use std::sync::atomic::{AtomicUsize, Ordering};
 
-use tokio::sync::{Semaphore, SemaphorePermit};
 use tokio::task::JoinSet;
 use tracing::{error, info};
 use url::Url;
@@ -20,7 +26,7 @@ use crate::page;
 use crate::rules::{self, CheckOptions, Finding};
 
 use super::links::{extract_links, is_same_domain, visit_key};
-use super::request_helper::{RequestContext, RequestOutcome, request};
+use super::request_helper::{RedirectScope, RequestContext, RequestOutcome, request};
 
 const MAX_CONCURRENT_PAGES: usize = 8;
 
@@ -28,89 +34,141 @@ const MAX_CONCURRENT_PAGES: usize = 8;
 struct PageScan {
     findings: Vec<Finding>,
     links: Vec<Url>,
-}
-
-struct Shared {
-    context: RequestContext,
-    options: Arc<CheckOptions>,
-    permits: Semaphore,
-    budget: PageBudget,
-}
-
-/// `--full-site-scan-max-pages`: counts only HTML pages that are actually
-/// rendered and checked -- not API/PDF/other responses, errors, or paths
-/// skipped because they were already fetched.
-///
-/// A slot is reserved *before* downloading, so no more pages are downloaded
-/// at once than there are slots left. A download that turns out not to be
-/// checkable HTML hands its slot back for a waiting task. Without this, every
-/// download already in flight when the budget filled up would be wasted.
-struct PageBudget {
-    max_pages: Option<NonZeroUsize>,
-    /// `None` when there is no limit.
-    slots: Option<Semaphore>,
-    processed: AtomicUsize,
-}
-
-/// Holds a budget slot for the duration of one download; dropping it without
-/// [`PageBudget::consume`] returns the slot.
-struct Reservation<'a>(Option<SemaphorePermit<'a>>);
-
-impl PageBudget {
-    fn new(max_pages: Option<NonZeroUsize>) -> Self {
-        PageBudget {
-            max_pages,
-            slots: max_pages.map(|max| Semaphore::new(max.get())),
-            processed: AtomicUsize::new(0),
-        }
-    }
-
-    fn exhausted(&self) -> bool {
-        self.slots.as_ref().is_some_and(Semaphore::is_closed)
-    }
-
-    /// Waits for a free slot; `None` once the budget is used up.
-    async fn reserve(&self) -> Option<Reservation<'_>> {
-        match &self.slots {
-            Some(slots) => slots.acquire().await.ok().map(|p| Reservation(Some(p))),
-            None => Some(Reservation(None)),
-        }
-    }
-
-    /// Keeps the slot for good. Closing the semaphore once the last slot is
-    /// consumed wakes every task still waiting in `reserve`, which would
-    /// otherwise wait forever on a semaphore with no permits left.
-    fn consume(&self, reservation: Reservation) {
-        if let Some(permit) = reservation.0 {
-            permit.forget();
-        }
-        let processed = self.processed.fetch_add(1, Ordering::SeqCst) + 1;
-        if self.max_pages.is_some_and(|max| processed >= max.get())
-            && let Some(slots) = &self.slots
-        {
-            slots.close();
-        }
-    }
-
-    fn processed(&self) -> usize {
-        self.processed.load(Ordering::SeqCst)
-    }
+    /// Set only when the page was rendered and checked -- the only thing
+    /// `--full-site-scan-max-pages` counts.
+    checked_url: Option<Url>,
 }
 
 struct Crawl {
+    /// Its host is the one links are followed on. Starts as the CLI's URL,
+    /// then becomes wherever that URL finally redirected to.
     origin: Url,
-    shared: Arc<Shared>,
-    tasks: JoinSet<PageScan>,
+    origin_resolved: bool,
+    context: Arc<RequestContext>,
+    options: Arc<CheckOptions>,
+    max_pages: Option<NonZeroUsize>,
+    queued: HashSet<String>,
+    level: VecDeque<Url>,
+    /// Links found by pages of the current level, tagged with the position
+    /// of the page that found them.
+    discovered: Vec<(usize, Vec<Url>)>,
+    started_in_level: usize,
+    tasks: JoinSet<(usize, PageScan)>,
+    checked: usize,
+    findings: Vec<Finding>,
 }
 
 impl Crawl {
-    fn enqueue(&mut self, url: Url) {
-        let skip = !is_same_domain(&url, &self.origin)
-            || self.shared.budget.exhausted()
-            || self.shared.context.has_fetched(&url);
-        if !skip {
-            self.tasks.spawn(scan_page(Arc::clone(&self.shared), url));
+    fn new(
+        start: Url,
+        options: Arc<CheckOptions>,
+        max_pages: Option<NonZeroUsize>,
+    ) -> Result<Self, CheckerError> {
+        Ok(Crawl {
+            origin: start.clone(),
+            origin_resolved: false,
+            context: Arc::new(RequestContext::new()?),
+            options,
+            max_pages,
+            queued: HashSet::from([visit_key(&start)]),
+            level: VecDeque::from([start]),
+            discovered: Vec::new(),
+            started_in_level: 0,
+            tasks: JoinSet::new(),
+            checked: 0,
+            findings: Vec::new(),
+        })
+    }
+
+    async fn run(mut self) -> Vec<Finding> {
+        loop {
+            self.start_tasks();
+            match self.tasks.join_next().await {
+                Some(Ok((position, scan))) => self.collect(position, scan),
+                Some(Err(join_error)) => error!("page scan task panicked: {join_error}"),
+                None if self.advance_level() => {}
+                None => break,
+            }
         }
+        info!("Checked {} HTML page(s)", self.checked);
+        if self.checked == 0 && self.findings.is_empty() {
+            self.findings.push(nothing_checked(&self.origin));
+        }
+        // A stable sort keeps each page's findings in rule order.
+        self.findings.sort_by(|a, b| a.page.cmp(&b.page));
+        self.findings
+    }
+
+    fn start_tasks(&mut self) {
+        while self.capacity() > 0
+            && let Some(url) = self.level.pop_front()
+        {
+            let position = self.started_in_level;
+            self.started_in_level += 1;
+            let scope = self.redirect_scope();
+            let context = Arc::clone(&self.context);
+            let options = Arc::clone(&self.options);
+            self.tasks
+                .spawn(async move { (position, scan_page(&context, options, url, &scope).await) });
+        }
+    }
+
+    /// Every page in flight might turn out to be HTML, so it already holds
+    /// one of the budget's remaining slots.
+    fn capacity(&self) -> usize {
+        let in_flight = self.tasks.len();
+        let budget_left = self.max_pages.map_or(usize::MAX, |max| {
+            max.get().saturating_sub(self.checked + in_flight)
+        });
+        MAX_CONCURRENT_PAGES
+            .saturating_sub(in_flight)
+            .min(budget_left)
+    }
+
+    fn budget_exhausted(&self) -> bool {
+        self.max_pages.is_some_and(|max| self.checked >= max.get())
+    }
+
+    fn redirect_scope(&self) -> RedirectScope {
+        match self.origin_resolved {
+            true => RedirectScope::SameHost(self.origin.host_str().unwrap_or_default().to_string()),
+            false => RedirectScope::AnyHost,
+        }
+    }
+
+    fn collect(&mut self, position: usize, scan: PageScan) {
+        self.findings.extend(scan.findings);
+        if let Some(checked_url) = scan.checked_url {
+            self.checked += 1;
+            if !self.origin_resolved {
+                self.origin = checked_url;
+            }
+        }
+        self.origin_resolved = true;
+        self.discovered.push((position, scan.links));
+    }
+
+    /// Builds the next level from everything the finished one discovered;
+    /// `false` when there is nothing left to crawl.
+    fn advance_level(&mut self) -> bool {
+        if self.budget_exhausted() {
+            return false;
+        }
+        let mut discovered = std::mem::take(&mut self.discovered);
+        discovered.sort_by_key(|(position, _)| *position);
+        self.started_in_level = 0;
+        for link in discovered.into_iter().flat_map(|(_, links)| links) {
+            if self.should_visit(&link) {
+                self.level.push_back(link);
+            }
+        }
+        !self.level.is_empty()
+    }
+
+    fn should_visit(&mut self, url: &Url) -> bool {
+        is_same_domain(url, &self.origin)
+            && !self.context.has_fetched(url)
+            && self.queued.insert(visit_key(url))
     }
 }
 
@@ -119,56 +177,34 @@ pub async fn crawl(
     options: Arc<CheckOptions>,
     max_pages: Option<NonZeroUsize>,
 ) -> Result<Vec<Finding>, CheckerError> {
-    let shared = Shared {
-        context: RequestContext::new(start.host_str().unwrap_or_default())?,
-        options,
-        permits: Semaphore::new(MAX_CONCURRENT_PAGES),
-        budget: PageBudget::new(max_pages),
-    };
-    let mut crawl = Crawl {
-        origin: start.clone(),
-        shared: Arc::new(shared),
-        tasks: JoinSet::new(),
-    };
-
-    crawl.enqueue(start);
-    let mut findings = Vec::new();
-    while let Some(joined) = crawl.tasks.join_next().await {
-        match joined {
-            Ok(scan) => {
-                findings.extend(scan.findings);
-                scan.links.into_iter().for_each(|link| crawl.enqueue(link));
-            }
-            Err(join_error) => error!("page scan task panicked: {join_error}"),
-        }
-    }
-    info!("Checked {} HTML page(s)", crawl.shared.budget.processed());
-
-    // Tasks finish in arbitrary order; a stable sort keeps each page's
-    // findings in rule order while making the overall report deterministic.
-    findings.sort_by(|a, b| a.page.cmp(&b.page));
-    Ok(findings)
+    Ok(Crawl::new(start, options, max_pages)?.run().await)
 }
 
-async fn scan_page(shared: Arc<Shared>, url: Url) -> PageScan {
-    // Budget before concurrency: a task waiting for a budget slot then
-    // doesn't hold one of the concurrency permits other tasks could use.
-    let Some(reservation) = shared.budget.reserve().await else {
-        return PageScan::default();
-    };
-    let _permit = shared
-        .permits
-        .acquire()
-        .await
-        .expect("concurrency semaphore is never closed");
+/// Otherwise a start URL that isn't HTML would read as a clean
+/// `0 error(s)` pass. (HTTP/network failures already report their own
+/// error.)
+fn nothing_checked(origin: &Url) -> Finding {
+    Finding::error(
+        "SCAN",
+        format!("no HTML page could be checked starting from {origin}"),
+    )
+    .on_page(visit_key(origin))
+}
+
+async fn scan_page(
+    context: &RequestContext,
+    options: Arc<CheckOptions>,
+    url: Url,
+    scope: &RedirectScope,
+) -> PageScan {
     let path = visit_key(&url);
 
-    match request(&shared.context, &url).await {
-        RequestOutcome::Html { final_url, body } => {
-            shared.budget.consume(reservation);
-            check_page(&shared, final_url, body).await
+    match request(context, &url, scope).await {
+        RequestOutcome::Html { final_url, body } => check_page(options, final_url, body).await,
+        RequestOutcome::AlreadyFetched(hop) => {
+            info!("Skipping {url}: redirects to {hop}, which was already fetched");
+            PageScan::default()
         }
-        RequestOutcome::AlreadyFetched => PageScan::default(),
         RequestOutcome::NotRenderable => {
             info!("Skipping {url}: not an HTML page");
             PageScan::default()
@@ -186,7 +222,7 @@ async fn scan_page(shared: Arc<Shared>, url: Url) -> PageScan {
     }
 }
 
-async fn check_page(shared: &Shared, url: Url, body: String) -> PageScan {
+async fn check_page(options: Arc<CheckOptions>, url: Url, body: String) -> PageScan {
     let path = visit_key(&url);
     // litehtml rendering is synchronous and CPU-bound; keep it off the async
     // worker threads that are driving the other pages' requests.
@@ -200,24 +236,30 @@ async fn check_page(shared: &Shared, url: Url, body: String) -> PageScan {
     };
 
     let links = extract_links(&page, &url);
-    let findings = rules::run_all(page, Arc::clone(&shared.options))
+    let findings = rules::run_all(page, options)
         .await
         .into_iter()
         .map(|finding| finding.on_page(path.clone()))
         .collect();
-    PageScan { findings, links }
+    PageScan {
+        findings,
+        links,
+        checked_url: Some(url),
+    }
 }
 
 fn failure(finding: Finding) -> PageScan {
     PageScan {
         findings: vec![finding],
-        links: Vec::new(),
+        ..PageScan::default()
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::time::Duration;
+
     use crate::rules::Severity;
     use wiremock::matchers::{method, path};
     use wiremock::{Mock, MockServer, ResponseTemplate};
@@ -475,6 +517,66 @@ mod tests {
             .filter(|r| ["/a", "/b"].contains(&r.url.path()))
             .count();
         assert_eq!(html_requests, 1, "downloaded HTML beyond the budget");
+    }
+
+    #[tokio::test]
+    async fn start_url_redirecting_to_another_host_crawls_that_host() {
+        let server = MockServer::start().await;
+        let moved = MockServer::start().await;
+        let redirect =
+            ResponseTemplate::new(301).insert_header("location", format!("{}/", moved.uri()));
+        serve(&server, "/", redirect, 1).await;
+        let back_to_old_host = start_url(&server, "/old-host-page").to_string();
+        serve(&moved, "/", page_linking_to(&["/b", &back_to_old_host]), 1).await;
+        serve(&moved, "/b", page_linking_to(&[]), 1).await;
+        serve(&server, "/old-host-page", page_linking_to(&[]), 0).await;
+
+        let findings = run(&server, None).await;
+        assert!(findings.is_empty(), "{findings:?}");
+    }
+
+    #[tokio::test]
+    async fn start_url_that_is_not_html_is_an_error_not_a_clean_pass() {
+        let server = MockServer::start().await;
+        let json = ResponseTemplate::new(200).set_body_raw("{}", "application/json");
+        serve(&server, "/", json, 1).await;
+
+        let findings = run(&server, None).await;
+        assert_eq!(findings.len(), 1, "{findings:?}");
+        assert_eq!(findings[0].rule_id, "SCAN");
+        assert_eq!(findings[0].severity, Severity::Error);
+    }
+
+    #[tokio::test]
+    async fn duplicate_links_are_scheduled_once() {
+        let start = Url::parse("http://localhost/").unwrap();
+        let mut crawl = Crawl::new(start.clone(), options(), None).unwrap();
+        crawl.origin_resolved = true;
+        crawl.level.clear();
+        let link = |href: &str| start.join(href).unwrap();
+        crawl.discovered = vec![
+            (1, vec![link("/a"), link("/b#top")]),
+            (0, vec![link("/b"), link("/a?x=1"), link("/a"), link("/")]),
+        ];
+
+        assert!(crawl.advance_level());
+        let level: Vec<&str> = crawl.level.iter().map(Url::path).collect();
+        assert_eq!(level, ["/b", "/a"]);
+    }
+
+    #[tokio::test]
+    async fn page_selection_under_a_budget_ignores_download_speed() {
+        let server = MockServer::start().await;
+        serve(&server, "/", page_linking_to(&["/slow", "/fast"]), 1).await;
+        let slow = page_linking_to(&["/from-slow"]).set_delay(Duration::from_millis(300));
+        serve(&server, "/slow", slow, 1).await;
+        serve(&server, "/fast", page_linking_to(&["/from-fast"]), 1).await;
+        serve(&server, "/from-slow", page_linking_to(&[]), 1).await;
+        serve(&server, "/from-fast", page_linking_to(&[]), 0).await;
+
+        // `/fast` finishes first, but `/slow` comes first in document order,
+        // so its link is the one that gets the last slot.
+        run(&server, Some(4)).await;
     }
 
     #[tokio::test]

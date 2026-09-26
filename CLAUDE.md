@@ -173,6 +173,9 @@ See [README.md](./README.md#architecture) for the module tree. Notes beyond what
   API/PDF URLs may answer `406` and be reported as errors instead of being skipped.
 - **Rate limiting is shared**: a single `Arc<RwLock<Instant>>` in `RequestContext` means a
   `429` seen by one task pauses every task, not just the one that got it.
+- **Logging**: one `Fetching <url>` line per requested URL, then an indented
+  `<from> redirects to <to>` line per hop. An earlier version logged `Fetching` per hop, which
+  made redirect chains look like requests that never produced a result.
 - **Visit key is the URL path only** (no query, no fragment), since the crawl never leaves
   one host. This is what prevents infinite crawls through pagination/facet query strings.
   `/a` and `/a/` are deliberately distinct.
@@ -180,17 +183,25 @@ See [README.md](./README.md#architecture) for the module tree. Notes beyond what
 - **The "already fetched" cache lives in `RequestContext` and is checked by `request()`
   itself, right before every download -- including each redirect hop** (explicitly requested:
   a path must never be downloaded twice). The claim is a check-and-insert under one lock so
-  racing tasks can't both win. The orchestrator's `has_fetched` check before spawning is only
-  an optimisation to avoid spawning no-op tasks; it is not what guarantees uniqueness.
+  racing tasks can't both win. The crawler's `queued` set and `has_fetched` check only stop the
+  same link from being scheduled twice (ubuntu.com links `/navigation` 6 times per page); they
+  are not what guarantees a path is downloaded once.
 - **`--full-site-scan-max-pages` counts only processed HTML pages** (explicitly requested) --
-  not API/PDF/other responses, HTTP errors, or already-fetched skips. `PageBudget` is a
-  semaphore with `max_pages` permits, reserved *before* each download: an HTML response
-  `forget()`s its permit (slot consumed), anything else drops it (slot handed back to a waiting
-  task). This keeps in-flight downloads <= remaining slots, so the budget can't cause wasted
-  downloads (an earlier reserve-after-download version fetched 12 pages to check 5 on
-  github.com). The semaphore is closed when the last slot is consumed -- that's what wakes
-  tasks still waiting in `reserve()`; without it they'd wait forever and the crawl would hang.
-  Budget is acquired before the concurrency permit, so waiting tasks don't hog concurrency.
+  not API/PDF/other responses, HTTP errors, or already-fetched skips.
+- **The crawl is breadth-first, one level at a time, and that's what makes it deterministic.**
+  An earlier version enqueued links as soon as each page finished, so under a page budget
+  *which* pages got checked depended on download speed (two ubuntu.com runs checked different
+  pages). Now a level's links are ordered by the discovering page's position in its level, then
+  document order. The cost is a sync point between levels.
+- **In-flight pages never exceed the budget's remaining slots** (`Crawl::capacity`): every
+  in-flight page might be HTML, so each already holds a slot. This is what prevents wasted
+  downloads near the limit (an earlier version fetched 12 pages to check 5 on github.com) --
+  near the limit, fetches become sequential.
+- **The start URL may redirect to any host** (`RedirectScope::AnyHost`), and the host it lands
+  on becomes the crawl's host. Every later request uses `RedirectScope::SameHost`. Before this,
+  `gitlab.com` -> `about.gitlab.com` checked nothing and exited `0`.
+- **A crawl that checks no page and has no other finding reports a `SCAN` error**, so a non-HTML
+  start URL can't read as a clean pass.
 - HTTP/network/render failures during a crawl become `Finding`s (`HTTP`, `FETCH`, `RENDER`)
   tagged with the page path, rather than aborting the run as they do in single-page mode.
 - Tests use `wiremock`, addressing the main server as `localhost` and a second "external"

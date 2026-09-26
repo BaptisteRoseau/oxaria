@@ -34,28 +34,46 @@ pub enum RequestOutcome {
         final_url: Url,
         body: String,
     },
-    /// The path (or a redirect hop's path) was already claimed by another
-    /// request, so nothing was downloaded.
-    AlreadyFetched,
+    /// The path, or the path of the redirect hop carried here, was already
+    /// claimed by another request, so nothing more was downloaded.
+    AlreadyFetched(Url),
     NotRenderable,
     OffDomainRedirect(Url),
     HttpError(StatusCode),
     Transport(reqwest::Error),
 }
 
+/// Which hosts a redirect may lead to before [`request`] gives up with
+/// [`RequestOutcome::OffDomainRedirect`].
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum RedirectScope {
+    /// Used for a crawl's start URL: `example.com` -> `www.example.com` is
+    /// too common to refuse, and the host it lands on becomes the crawl's.
+    AnyHost,
+    SameHost(String),
+}
+
+impl RedirectScope {
+    fn allows(&self, url: &Url) -> bool {
+        match self {
+            RedirectScope::AnyHost => true,
+            RedirectScope::SameHost(host) => url.host_str() == Some(host.as_str()),
+        }
+    }
+}
+
 /// Shared by every crawl task, so a rate-limit signal on one response slows
 /// down all of them and a path fetched by one is never fetched by another.
 pub struct RequestContext {
     client: Client,
-    allowed_host: String,
     next_allowed: Arc<RwLock<Instant>>,
     fetched: Arc<RwLock<HashSet<String>>>,
 }
 
 impl RequestContext {
-    pub fn new(allowed_host: &str) -> Result<Self, CheckerError> {
+    pub fn new() -> Result<Self, CheckerError> {
         // Redirects are followed by hand in `request` so each hop can be
-        // checked against the allowed host before it is requested.
+        // checked against the redirect scope before it is requested.
         let client = Client::builder()
             .default_headers(page::request_headers())
             .redirect(redirect::Policy::none())
@@ -63,7 +81,6 @@ impl RequestContext {
             .build()?;
         Ok(RequestContext {
             client,
-            allowed_host: allowed_host.to_string(),
             next_allowed: Arc::new(RwLock::new(Instant::now())),
             fetched: Arc::new(RwLock::new(HashSet::new())),
         })
@@ -109,12 +126,13 @@ impl RequestContext {
     }
 }
 
-pub async fn request(context: &RequestContext, url: &Url) -> RequestOutcome {
+pub async fn request(context: &RequestContext, url: &Url, scope: &RedirectScope) -> RequestOutcome {
     let mut current = url.clone();
     let mut claimed_path: Option<String> = None;
     let mut retries = 0;
     let mut redirects = 0;
 
+    info!("Fetching {url}");
     loop {
         // Claimed per hop, not once up front: a redirect can land on a path
         // another task already fetched. Retries of the same path, and
@@ -122,13 +140,12 @@ pub async fn request(context: &RequestContext, url: &Url) -> RequestOutcome {
         let path = visit_key(&current);
         if claimed_path.as_deref() != Some(path.as_str()) {
             if !context.claim(&path) {
-                return RequestOutcome::AlreadyFetched;
+                return RequestOutcome::AlreadyFetched(current);
             }
             claimed_path = Some(path);
         }
 
         context.wait_turn().await;
-        info!("Fetching {current}");
         let response = match context.client.get(current.clone()).send().await {
             Ok(response) => response,
             Err(err) => return RequestOutcome::Transport(err),
@@ -143,13 +160,16 @@ pub async fn request(context: &RequestContext, url: &Url) -> RequestOutcome {
         match status {
             _ if is_rate_limited(status, headers) && retries < MAX_RETRIES => {
                 retries += 1;
-                context.defer(retry_after(headers));
+                let delay = retry_after(headers);
+                info!("{current} answered {status}; retrying in {delay:?}");
+                context.defer(delay);
             }
             _ if status.is_redirection() => match redirect_target(&current, headers) {
-                Some(target) if !is_allowed_host(&target, &context.allowed_host) => {
+                Some(target) if !scope.allows(&target) => {
                     return RequestOutcome::OffDomainRedirect(target);
                 }
                 Some(target) if redirects < MAX_REDIRECTS => {
+                    info!("  {current} redirects to {target}");
                     redirects += 1;
                     current = target;
                 }
@@ -185,10 +205,6 @@ fn is_rate_limited(status: StatusCode, headers: &HeaderMap) -> bool {
 fn redirect_target(current: &Url, headers: &HeaderMap) -> Option<Url> {
     let location = headers.get(LOCATION)?.to_str().ok()?;
     current.join(location).ok()
-}
-
-fn is_allowed_host(url: &Url, allowed_host: &str) -> bool {
-    url.host_str() == Some(allowed_host)
 }
 
 fn is_renderable(headers: &HeaderMap) -> bool {
@@ -273,9 +289,13 @@ mod tests {
         ResponseTemplate::new(200).set_body_raw(body.to_string(), "text/html; charset=utf-8")
     }
 
+    fn localhost() -> RedirectScope {
+        RedirectScope::SameHost("localhost".to_string())
+    }
+
     fn localhost_context(server: &MockServer) -> (RequestContext, Url) {
         let base = Url::parse(&format!("http://localhost:{}/", server.address().port())).unwrap();
-        (RequestContext::new("localhost").unwrap(), base)
+        (RequestContext::new().unwrap(), base)
     }
 
     #[test]
@@ -401,7 +421,7 @@ mod tests {
 
     #[tokio::test(start_paused = true)]
     async fn deferring_delays_the_next_turn() {
-        let context = RequestContext::new("localhost").unwrap();
+        let context = RequestContext::new().unwrap();
         let start = Instant::now();
         context.defer(Duration::from_secs(3));
         context.wait_turn().await;
@@ -410,7 +430,7 @@ mod tests {
 
     #[tokio::test(start_paused = true)]
     async fn waiting_task_honors_a_deferral_made_while_it_sleeps() {
-        let context = Arc::new(RequestContext::new("localhost").unwrap());
+        let context = Arc::new(RequestContext::new().unwrap());
         let start = Instant::now();
         context.defer(Duration::from_secs(1));
         let waiter = tokio::spawn({
@@ -433,7 +453,7 @@ mod tests {
             .await;
         let (context, base) = localhost_context(&server);
 
-        match request(&context, &base.join("/page").unwrap()).await {
+        match request(&context, &base.join("/page").unwrap(), &localhost()).await {
             RequestOutcome::Html { body, .. } => assert_eq!(body, "<p>hi</p>"),
             other => panic!("unexpected outcome: {other:?}"),
         }
@@ -461,7 +481,7 @@ mod tests {
             .await;
         let (context, base) = localhost_context(&server);
 
-        let outcome = request(&context, &base.join("/negotiated").unwrap()).await;
+        let outcome = request(&context, &base.join("/negotiated").unwrap(), &localhost()).await;
         assert!(
             matches!(outcome, RequestOutcome::Html { .. }),
             "{outcome:?}"
@@ -478,7 +498,7 @@ mod tests {
             .await;
         let (context, base) = localhost_context(&server);
 
-        let outcome = request(&context, &base.join("/api").unwrap()).await;
+        let outcome = request(&context, &base.join("/api").unwrap(), &localhost()).await;
         assert!(
             matches!(outcome, RequestOutcome::NotRenderable),
             "{outcome:?}"
@@ -495,7 +515,7 @@ mod tests {
             .await;
         let (context, base) = localhost_context(&server);
 
-        let outcome = request(&context, &base.join("/missing").unwrap()).await;
+        let outcome = request(&context, &base.join("/missing").unwrap(), &localhost()).await;
         assert!(
             matches!(outcome, RequestOutcome::HttpError(StatusCode::NOT_FOUND)),
             "{outcome:?}"
@@ -517,7 +537,7 @@ mod tests {
             .await;
         let (context, base) = localhost_context(&server);
 
-        match request(&context, &base.join("/old").unwrap()).await {
+        match request(&context, &base.join("/old").unwrap(), &localhost()).await {
             RequestOutcome::Html { final_url, .. } => assert_eq!(final_url.path(), "/new"),
             other => panic!("unexpected outcome: {other:?}"),
         }
@@ -539,11 +559,36 @@ mod tests {
             .await;
         let (context, base) = localhost_context(&server);
 
-        let outcome = request(&context, &base.join("/away").unwrap()).await;
+        let outcome = request(&context, &base.join("/away").unwrap(), &localhost()).await;
         assert!(
             matches!(outcome, RequestOutcome::OffDomainRedirect(_)),
             "{outcome:?}"
         );
+    }
+
+    #[tokio::test]
+    async fn any_host_scope_follows_off_domain_redirects() {
+        let server = MockServer::start().await;
+        let external = MockServer::start().await;
+        Mock::given(method("GET"))
+            .and(path("/"))
+            .respond_with(ResponseTemplate::new(301).insert_header("location", external.uri()))
+            .mount(&server)
+            .await;
+        Mock::given(method("GET"))
+            .and(path("/"))
+            .respond_with(html("<p>elsewhere</p>"))
+            .expect(1)
+            .mount(&external)
+            .await;
+        let (context, base) = localhost_context(&server);
+
+        match request(&context, &base, &RedirectScope::AnyHost).await {
+            RequestOutcome::Html { final_url, .. } => {
+                assert_eq!(final_url.host_str(), Some("127.0.0.1"));
+            }
+            other => panic!("unexpected outcome: {other:?}"),
+        }
     }
 
     #[tokio::test]
@@ -557,11 +602,11 @@ mod tests {
             .await;
         let (context, base) = localhost_context(&server);
 
-        let first = request(&context, &base.join("/page?a=1").unwrap()).await;
-        let second = request(&context, &base.join("/page?a=2").unwrap()).await;
+        let first = request(&context, &base.join("/page?a=1").unwrap(), &localhost()).await;
+        let second = request(&context, &base.join("/page?a=2").unwrap(), &localhost()).await;
         assert!(matches!(first, RequestOutcome::Html { .. }), "{first:?}");
         assert!(
-            matches!(second, RequestOutcome::AlreadyFetched),
+            matches!(second, RequestOutcome::AlreadyFetched(_)),
             "{second:?}"
         );
         assert!(context.has_fetched(&base.join("/page").unwrap()));
@@ -584,10 +629,10 @@ mod tests {
             .await;
         let (context, base) = localhost_context(&server);
 
-        request(&context, &base).await;
-        let outcome = request(&context, &base.join("/alias").unwrap()).await;
+        request(&context, &base, &localhost()).await;
+        let outcome = request(&context, &base.join("/alias").unwrap(), &localhost()).await;
         assert!(
-            matches!(outcome, RequestOutcome::AlreadyFetched),
+            matches!(outcome, RequestOutcome::AlreadyFetched(_)),
             "{outcome:?}"
         );
     }
@@ -602,7 +647,7 @@ mod tests {
             .await;
         let (context, base) = localhost_context(&server);
 
-        let outcome = request(&context, &base.join("/loop").unwrap()).await;
+        let outcome = request(&context, &base.join("/loop").unwrap(), &localhost()).await;
         assert!(
             matches!(outcome, RequestOutcome::HttpError(StatusCode::FOUND)),
             "{outcome:?}"
@@ -627,7 +672,7 @@ mod tests {
         let (context, base) = localhost_context(&server);
 
         let start = std::time::Instant::now();
-        let outcome = request(&context, &base.join("/slow").unwrap()).await;
+        let outcome = request(&context, &base.join("/slow").unwrap(), &localhost()).await;
         assert!(
             matches!(outcome, RequestOutcome::Html { .. }),
             "{outcome:?}"
@@ -646,7 +691,7 @@ mod tests {
             .await;
         let (context, base) = localhost_context(&server);
 
-        let outcome = request(&context, &base.join("/busy").unwrap()).await;
+        let outcome = request(&context, &base.join("/busy").unwrap(), &localhost()).await;
         assert!(
             matches!(
                 outcome,
