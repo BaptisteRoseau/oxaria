@@ -48,34 +48,18 @@ impl Destination {
 
 pub struct ReportTarget {
     flag: &'static str,
-    reporter: Arc<dyn Reporter>,
+    reporter: &'static dyn Reporter,
     destination: Destination,
 }
 
 /// Builds one target per `--report-*` flag, failing on any destination
 /// conflict so the caller can abort before spending time on the check.
 pub fn targets_from(config: &CliConfig) -> Result<Vec<ReportTarget>, ReportError> {
-    let requested: [(&'static str, &Option<String>, Arc<dyn Reporter>); 4] = [
-        (
-            "--report-gitlab",
-            &config.report_gitlab,
-            Arc::new(GitlabReporter),
-        ),
-        (
-            "--report-github",
-            &config.report_github,
-            Arc::new(GithubReporter),
-        ),
-        (
-            "--report-jenkins",
-            &config.report_jenkins,
-            Arc::new(JenkinsReporter),
-        ),
-        (
-            "--report-junit",
-            &config.report_junit,
-            Arc::new(JunitReporter),
-        ),
+    let requested: [(&'static str, &Option<String>, &'static dyn Reporter); 4] = [
+        ("--report-gitlab", &config.report_gitlab, &GitlabReporter),
+        ("--report-github", &config.report_github, &GithubReporter),
+        ("--report-jenkins", &config.report_jenkins, &JenkinsReporter),
+        ("--report-junit", &config.report_junit, &JunitReporter),
     ];
     let targets: Vec<_> = requested
         .into_iter()
