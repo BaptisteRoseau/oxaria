@@ -135,7 +135,7 @@ mod tests {
     #[test]
     fn element_with_no_text_children_is_skipped() {
         let p = page_from_html(
-            r#"<div><span style="color: #999999; background-color: #ffffff">nested</span></div>"#,
+            r#"<div style="color: #999999; background-color: #ffffff"><span style="color: #999999; background-color: #ffffff">nested</span></div>"#,
         );
         let findings = check_text_contrast(&p, &options());
         assert_eq!(
