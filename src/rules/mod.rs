@@ -170,7 +170,7 @@ fn spawn_rule(
     page: Arc<RenderedPage>,
     options: Arc<CheckOptions>,
 ) -> tokio::task::JoinHandle<Vec<Finding>> {
-    tokio::spawn(async move { check(&page, &options) })
+    tokio::task::spawn_blocking(move || check(&page, &options))
 }
 
 #[cfg(test)]

@@ -84,7 +84,7 @@ with only one rule shape, a trait would add indirection without buying anything.
 `scraper::Html` and `litehtml::Element` are both non-`Sync` (the latter is explicitly `!Send +
 !Sync`, wrapping a raw C++ pointer). `RenderedPage`/`RenderedElement` are plain owned data
 (`String`, `f32`, `Vec<usize>` parent/child indices) precisely so they're trivially `Send + Sync`
-and one `Arc<RenderedPage>` can be cloned into every parallel `tokio::spawn` rule task directly --
+and one `Arc<RenderedPage>` can be cloned into every parallel `spawn_blocking` rule task directly --
 no per-task re-rendering, no lifetime gymnastics. This is a real simplification over the
 `scraper`-based version, which had to re-parse the HTML string inside every spawned task to work
 around `Html` not being `Sync`.

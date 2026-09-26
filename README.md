@@ -178,7 +178,7 @@ src/
 └── rules/                   # one module per WCAG rule area, one Rule fn per rule
     ├── images.rs, forms.rs, headings.rs, language.rs, links.rs, contrast.rs,
     │   tables.rs, aria.rs, multimedia.rs, focus.rs, navigation.rs, target_size.rs
-    └── mod.rs                  # rule registry + parallel dispatch via tokio::spawn
+    └── mod.rs                  # rule registry + parallel dispatch via spawn_blocking
 
 vendor/
 ├── litehtml-sys/            # vendored, patched raw FFI bindings (see vendor/PATCHES.md)
