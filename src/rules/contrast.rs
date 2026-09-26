@@ -59,7 +59,7 @@ fn is_large_text(el: ElementRef) -> bool {
 fn relative_luminance((r, g, b): (u8, u8, u8)) -> f64 {
     let channel = |value: u8| -> f64 {
         let normalized = value as f64 / 255.0;
-        match normalized <= 0.03928 {
+        match normalized <= 0.04045 {
             true => normalized / 12.92,
             false => ((normalized + 0.055) / 1.055).powf(2.4),
         }
