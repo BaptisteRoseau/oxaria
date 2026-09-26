@@ -1,13 +1,6 @@
 //! Converts raw HTML text into a [`RenderedPage`] using the embedded
-//! litehtml rendering engine -- the single conversion path used for both
-//! URL-fetched and file-read HTML.
-//!
-//! litehtml delegates font measurement to the embedder. Rather than shaping
-//! real glyphs, this uses a plain average-character-width approximation:
-//! none of wcag-checker's rules depend on pixel-accurate text wrapping, only
-//! on computed color, computed font metrics, and the bounding boxes of
-//! elements whose size is set by CSS (buttons, inputs, images, tables, ...)
-//! rather than by an unconstrained run of inline text.
+//! litehtml rendering engine. Text width is an average-character-width
+//! approximation, not real glyph shaping.
 
 use std::cell::RefCell;
 use std::collections::HashMap;

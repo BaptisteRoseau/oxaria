@@ -1,11 +1,6 @@
 //! The plain, owned snapshot every rule queries: a rendered page's DOM
-//! structure together with its computed color, font, and layout data.
-//!
-//! [`RenderedPage`] is an arena of [`RenderedElement`]s connected by
-//! `parent`/`children` indices rather than borrowed references, so it is
-//! trivially `Send + Sync` and can be shared via `Arc` across parallel rule
-//! checks without the lifetime/thread-safety constraints a live DOM handle
-//! (from litehtml or `scraper`) would carry.
+//! structure together with its computed color, font, and layout data, as an
+//! index-linked arena so it is `Send + Sync`.
 
 use url::Url;
 
@@ -66,11 +61,8 @@ impl RenderedElement {
 #[derive(Debug, Clone, Default)]
 pub struct RenderedPage {
     pub elements: Vec<RenderedElement>,
-    /// Raw text content of every `<style>` block in the source document, in
-    /// document order. Extracted directly from the source HTML text rather
-    /// than through the render tree, since G195 is the one rule that needs
-    /// literal, unrendered CSS source text (litehtml has no `:focus` state
-    /// simulation, so that check stays a source-level heuristic).
+    /// Raw text of every `<style>` block, in document order, taken from the
+    /// source HTML rather than the render tree.
     pub stylesheets: Vec<String>,
     /// Where the page was served from (after redirects); `None` for a local file. Lets rules
     /// tell a same-site absolute link (`https://site/pricing`) from a

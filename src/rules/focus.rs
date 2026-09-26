@@ -1,12 +1,7 @@
 //! WCAG 2.4.7 check for visible focus indicators declared in `style` tags.
 //!
-//! litehtml has no `:focus`/`:hover`/`:active` state-simulation API, so there is no way to
-//! compare an element's focused vs. unfocused computed style through the rendering engine. This
-//! rule instead scans the page's raw stylesheet text (captured directly from the source HTML, see
-//! [`RenderedPage::stylesheet_text`]) with a minimal, non-nesting CSS rule splitter rather than a
-//! full CSS parser: it does not descend into `@media`/`@supports` blocks, so a `:focus` rule
-//! nested inside one is not inspected. Plain top-level `:focus` rules, the common case, are still
-//! caught.
+//! litehtml can't simulate `:focus`, so this scans the raw stylesheet text instead. Rules nested in
+//! `@media`/`@supports` blocks are not inspected.
 
 use crate::page::RenderedPage;
 

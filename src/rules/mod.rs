@@ -1,9 +1,6 @@
 //! Rule registry and orchestration. Every rule is a plain function taking the
 //! rendered page and the CLI-configured [`CheckOptions`], returning the
-//! [`Finding`]s it detected -- there is no distinction between rules that
-//! only need DOM/attribute data and rules that need computed style or
-//! layout, since every rule reads from the same [`RenderedPage`] snapshot.
-//! [`run_all`] spawns one `tokio::task` per rule so they run in parallel.
+//! [`Finding`]s it detected. [`run_all`] runs them in parallel.
 
 mod aria;
 mod contrast;
@@ -146,9 +143,7 @@ fn all_rule_checks() -> Vec<RuleCheck> {
     ]
 }
 
-/// Runs every rule in its own `tokio::task`. [`RenderedPage`] is plain owned
-/// data (no borrowed/FFI handles), so it is genuinely `Send + Sync` and can
-/// be shared across tasks through the same `Arc` directly.
+/// Runs every rule in its own blocking task, sharing one `Arc<RenderedPage>`.
 pub async fn run_all(page: Arc<RenderedPage>, options: Arc<CheckOptions>) -> Vec<Finding> {
     let tasks: Vec<_> = all_rule_checks()
         .into_iter()
