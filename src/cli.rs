@@ -42,8 +42,9 @@ pub struct CliConfig {
     #[arg(long, value_name = "FILE")]
     pub report_gitlab: Option<String>,
 
-    /// Write GitHub Actions annotations (workflow commands) to FILE; use '-' so GitHub reads them
-    #[arg(long, value_name = "FILE")]
+    /// Append a GitHub Actions job summary (Markdown) to FILE ('-' for stdout); defaults to
+    /// $GITHUB_STEP_SUMMARY, so it is written automatically inside GitHub Actions
+    #[arg(long, value_name = "FILE", env = "GITHUB_STEP_SUMMARY")]
     pub report_github: Option<String>,
 
     /// Write a Jenkins Warnings NG report (recordIssues tool: issues()) to FILE ('-' for stdout)

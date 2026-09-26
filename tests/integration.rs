@@ -3,10 +3,13 @@ use std::process::{Command, Output};
 use wiremock::matchers::{method, path};
 use wiremock::{Mock, MockServer, ResponseTemplate};
 
+/// `--report-github` defaults to `$GITHUB_STEP_SUMMARY`: without clearing it,
+/// every test run on GitHub Actions would append to the job summary.
 fn run(path: &str, extra_args: &[&str]) -> Output {
     Command::new(env!("CARGO_BIN_EXE_wcag-checker"))
         .arg(path)
         .args(extra_args)
+        .env_remove("GITHUB_STEP_SUMMARY")
         .output()
         .expect("failed to run wcag-checker binary")
 }
@@ -239,7 +242,7 @@ fn reports_are_written_alongside_the_usual_output() {
 }
 
 #[test]
-fn github_annotations_can_go_to_stdout() {
+fn github_summary_can_go_to_stdout() {
     let output = run(
         "tests/assets/warnings_only.html",
         &["--quiet", "--report-github", "-"],
@@ -247,13 +250,42 @@ fn github_annotations_can_go_to_stdout() {
     let report = stdout(&output);
 
     assert_eq!(exit_code(&output), 2, "stdout:\n{report}");
-    assert!(!report.is_empty());
     assert!(
-        report
-            .lines()
-            .all(|line| line.starts_with("::warning file=tests/assets/warnings_only.html,line=1,")),
-        "unexpected line in:\n{report}"
+        report.starts_with("## ⚠️ WCAG 2.2: 0 error(s), 3 warning(s)\n"),
+        "{report}"
     );
+    assert_eq!(report.matches("| ⚠️ Warning |").count(), 3, "{report}");
+}
+
+#[test]
+fn github_summary_defaults_to_github_step_summary_and_appends() {
+    let dir = tempfile::tempdir().unwrap();
+    let summary = dir.path().join("step_summary.md");
+    std::fs::write(&summary, "previous command\n").unwrap();
+
+    let output = Command::new(env!("CARGO_BIN_EXE_wcag-checker"))
+        .args(["tests/assets/errors.html", "-q"])
+        .env("GITHUB_STEP_SUMMARY", &summary)
+        .output()
+        .unwrap();
+
+    assert_eq!(exit_code(&output), 1);
+    let summary = read(&summary);
+    assert!(
+        summary.starts_with("previous command\n## ❌ WCAG 2.2: 19 error(s)"),
+        "{summary}"
+    );
+    assert_eq!(summary.matches("| ❌ Error |").count(), 19, "{summary}");
+}
+
+#[test]
+fn empty_github_step_summary_writes_no_summary() {
+    let output = Command::new(env!("CARGO_BIN_EXE_wcag-checker"))
+        .args(["tests/assets/clean.html", "-q"])
+        .env("GITHUB_STEP_SUMMARY", "")
+        .output()
+        .unwrap();
+    assert_eq!(exit_code(&output), 0);
 }
 
 #[test]

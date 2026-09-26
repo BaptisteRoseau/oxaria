@@ -6,4 +6,10 @@ use super::Report;
 /// interleave mid-line.
 pub trait Reporter: Send + Sync {
     fn render(&self, report: &Report) -> String;
+
+    /// Whether the report is added to the end of an existing file instead
+    /// of replacing it.
+    fn appends(&self) -> bool {
+        false
+    }
 }

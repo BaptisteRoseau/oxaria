@@ -1,59 +1,105 @@
-//! GitHub Actions workflow commands (`::error ...::message`), which GitHub
-//! turns into annotations on the run and the pull request -- but only when
-//! they are printed to a step's stdout, hence `--report-github -`.
-//! Format: <https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-commands>
+//! GitHub Actions job summary: GitHub-flavored Markdown appended to the file
+//! in `$GITHUB_STEP_SUMMARY`, shown on the workflow run's summary page.
+//! Unlike workflow-command annotations (10 errors + 10 warnings per step),
+//! a summary has no per-finding cap, only a size limit.
+//! Format: <https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-commands#adding-a-job-summary>
 
-use super::model::LINE;
+use std::cmp::Reverse;
+
 use super::{Issue, Report, Reporter};
 use crate::rules::Severity;
+
+/// GitHub rejects a step summary over 1 MiB (and then shows none of it). The
+/// margin leaves room for whatever else the same step appends to the file.
+const MAX_SUMMARY_BYTES: usize = 1_000_000;
+
+const TABLE_HEADER: &str = "| Severity | Rule | Location | Message |\n| --- | --- | --- | --- |\n";
 
 pub struct GithubReporter;
 
 impl Reporter for GithubReporter {
     fn render(&self, report: &Report) -> String {
-        report
-            .issues
-            .iter()
-            .map(|issue| command(issue) + "\n")
-            .collect()
+        match report.issues.is_empty() {
+            true => format!("{}\n", heading(report)),
+            false => format!(
+                "{}\n\n{TABLE_HEADER}{}",
+                heading(report),
+                rows_within_limit(report)
+            ),
+        }
+    }
+
+    /// `$GITHUB_STEP_SUMMARY` is shared by every command of the step, and
+    /// GitHub documents appending (`>>`) to it.
+    fn appends(&self) -> bool {
+        true
     }
 }
 
-fn command(issue: &Issue) -> String {
+fn heading(report: &Report) -> String {
+    match (report.errors(), report.warnings()) {
+        (0, 0) => "## ✅ WCAG 2.2: no issues found".to_string(),
+        (0, warnings) => format!("## ⚠️ WCAG 2.2: 0 error(s), {warnings} warning(s)"),
+        (errors, warnings) => format!("## ❌ WCAG 2.2: {errors} error(s), {warnings} warning(s)"),
+    }
+}
+
+/// Errors come first, so a summary cut at the size limit keeps the most
+/// important findings.
+fn rows_within_limit(report: &Report) -> String {
+    let mut issues: Vec<&Issue> = report.issues.iter().collect();
+    issues.sort_by_key(|issue| Reverse(issue.severity == Severity::Error));
+
+    let mut rows = String::new();
+    let budget = MAX_SUMMARY_BYTES - TABLE_HEADER.len() - heading(report).len() - 200;
+    for (shown, issue) in issues.iter().enumerate() {
+        let row = row(issue);
+        if rows.len() + row.len() > budget {
+            let hidden = issues.len() - shown;
+            rows.push_str(&format!(
+                "\n_{hidden} more finding(s) not shown: GitHub limits a job summary to 1 MiB._\n"
+            ));
+            break;
+        }
+        rows.push_str(&row);
+    }
+    rows
+}
+
+fn row(issue: &Issue) -> String {
     format!(
-        "::{} file={},line={LINE},title={}::{}",
-        command_name(issue.severity),
-        escape_property(&issue.location.path),
-        escape_property(&title(issue)),
-        escape_data(&issue.message),
+        "| {} | `{}` | {} | {} |\n",
+        severity_label(issue.severity),
+        issue.rule_id,
+        escape(&issue.location.path),
+        escape(&issue.message),
     )
 }
 
-fn command_name(severity: Severity) -> &'static str {
+fn severity_label(severity: Severity) -> &'static str {
     match severity {
-        Severity::Error => "error",
-        Severity::Warning => "warning",
+        Severity::Error => "❌ Error",
+        Severity::Warning => "⚠️ Warning",
     }
 }
 
-fn title(issue: &Issue) -> String {
-    match &issue.location.page {
-        Some(page) => format!("WCAG {} ({page})", issue.rule_id),
-        None => format!("WCAG {}", issue.rule_id),
+/// Messages quote markup (`<img src=...>`), which GitHub would otherwise
+/// render as HTML, and may contain `|`, which would split the table cell.
+/// CommonMark lets any ASCII punctuation be backslash-escaped.
+fn escape(text: &str) -> String {
+    let mut escaped = String::with_capacity(text.len());
+    for c in text.chars() {
+        match c {
+            '\\' | '`' | '*' | '_' | '[' | ']' | '<' | '>' | '|' | '~' | '&' | '!' => {
+                escaped.push('\\');
+                escaped.push(c);
+            }
+            '\r' => {}
+            '\n' => escaped.push_str("<br>"),
+            _ => escaped.push(c),
+        }
     }
-}
-
-/// Same escaping as `escapeData` in `actions/toolkit`'s `command.ts`.
-fn escape_data(value: &str) -> String {
-    value
-        .replace('%', "%25")
-        .replace('\r', "%0D")
-        .replace('\n', "%0A")
-}
-
-/// Same escaping as `escapeProperty` in `actions/toolkit`'s `command.ts`.
-fn escape_property(value: &str) -> String {
-    escape_data(value).replace(':', "%3A").replace(',', "%2C")
+    escaped
 }
 
 #[cfg(test)]
@@ -67,48 +113,73 @@ mod tests {
     }
 
     #[test]
-    fn empty_report_prints_nothing() {
-        assert_eq!(render("a.html", &[]), "");
+    fn clean_report_is_a_single_heading() {
+        assert_eq!(render("a.html", &[]), "## ✅ WCAG 2.2: no issues found\n");
     }
 
     #[test]
-    fn error_becomes_an_error_command() {
+    fn findings_are_a_table_under_a_heading() {
         assert_eq!(
-            render("./a.html", &[error("H57")]),
-            "::error file=a.html,line=1,title=WCAG H57::boom\n"
+            render("./a.html", &[error("H57"), warning("G18")]),
+            "## ❌ WCAG 2.2: 1 error(s), 1 warning(s)\n\n\
+             | Severity | Rule | Location | Message |\n\
+             | --- | --- | --- | --- |\n\
+             | ❌ Error | `H57` | a.html | boom |\n\
+             | ⚠️ Warning | `G18` | a.html | meh |\n"
         );
     }
 
     #[test]
-    fn warning_becomes_a_warning_command() {
-        assert!(render("a.html", &[warning("G18")]).starts_with("::warning "));
+    fn warnings_only_heading() {
+        assert!(render("a.html", &[warning("G18")]).starts_with("## ⚠️ WCAG 2.2: 0 error(s)"));
     }
 
     #[test]
-    fn crawled_page_url_and_title_are_escaped() {
+    fn errors_are_listed_before_warnings() {
+        let output = render("a.html", &[warning("G18"), error("H57"), warning("TGT001")]);
+        let rules: Vec<_> = output
+            .lines()
+            .skip(4)
+            .map(|line| line.split('`').nth(1).unwrap())
+            .collect();
+        assert_eq!(rules, ["H57", "G18", "TGT001"]);
+    }
+
+    #[test]
+    fn crawled_pages_are_located_by_url() {
         let output = render(
             "https://example.com",
             &[error("H57").on_page("/about".to_string())],
         );
+        assert!(output.contains("| https://example.com/about |"), "{output}");
+    }
+
+    #[test]
+    fn markup_and_table_syntax_are_escaped() {
         assert_eq!(
-            output,
-            "::error file=https%3A//example.com/about,line=1,title=WCAG H57 (/about)::boom\n"
+            escape("<img src=\"a|b\"> *x* _y_ [l](u) `c` a&b !\\\r\nz"),
+            "\\<img src=\"a\\|b\"\\> \\*x\\* \\_y\\_ \\[l\\](u) \\`c\\` a\\&b \\!\\\\<br>z"
         );
     }
 
     #[test]
-    fn message_escapes_percent_and_newlines_but_not_colons() {
-        assert_eq!(escape_data("50%\r\na: b, c"), "50%25%0D%0Aa: b, c");
+    fn summary_stays_under_githubs_size_limit() {
+        let long_message = "x".repeat(10_000);
+        let findings: Vec<_> = (0..200)
+            .map(|_| Finding::error("H57", long_message.clone()))
+            .collect();
+
+        let output = render("a.html", &findings);
+
+        assert!(output.len() <= MAX_SUMMARY_BYTES, "{} bytes", output.len());
+        assert!(
+            output.contains("more finding(s) not shown"),
+            "no truncation note"
+        );
     }
 
     #[test]
-    fn property_escapes_colons_and_commas() {
-        assert_eq!(escape_property("a:b,c%\n"), "a%3Ab%2Cc%25%0A");
-    }
-
-    #[test]
-    fn each_issue_is_on_its_own_line() {
-        let output = render("a.html", &[error("H57"), warning("G18")]);
-        assert_eq!(output.lines().count(), 2);
+    fn github_appends_to_its_file() {
+        assert!(GithubReporter.appends());
     }
 }

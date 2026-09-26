@@ -219,11 +219,18 @@ See [README.md](./README.md#architecture) for the module tree. Notes beyond what
   "fn pointers" convention below) rendering a whole `Report` to a `String`. Whole-buffer
   rendering is what makes the parallel writes in `output.rs` safe: each report is one write, so
   nothing interleaves mid-line on stdout.
-- **Only formats CI platforms read natively** (GitLab Code Quality, GitHub workflow commands,
-  Jenkins Warnings NG, JUnit). A custom JSON format was explicitly rejected.
+- **Only formats CI platforms read natively** (GitLab Code Quality, GitHub job summary,
+  Jenkins Warnings NG, JUnit). A custom JSON format and SARIF were explicitly rejected.
+- **GitHub gets a Markdown job summary, not annotations** (explicitly requested): workflow
+  command annotations are capped at 10 errors + 10 warnings per step, so most findings were
+  invisible. `--report-github` defaults to `$GITHUB_STEP_SUMMARY` (clap `env`); GitLab and
+  Jenkins have no built-in report-path variable (checked: GitLab's predefined variables, a real
+  Jenkins pipeline's `env`). The summary is *appended* (`Reporter::appends`), as GitHub documents,
+  kept under GitHub's 1 MiB step limit, and an empty value (`GITHUB_STEP_SUMMARY=`) disables it.
+  Tests must clear that variable, or running them on GitHub Actions writes to the job summary.
 - **Stdout output is unchanged by `--report-*`**; only `-q/--quiet` removes it (findings,
-  summary, and `tracing` logs, which go to stdout). A `--report-github -` still prints under
-  `--quiet`, since GitHub only reads annotations from stdout.
+  summary, and `tracing` logs, which go to stdout). A report sent to `-` still prints under
+  `--quiet`, since it was asked for explicitly.
 - **Destination conflicts are checked before the check runs** (explicitly requested): two
   reports on one file (compared after lexical `..` normalization and canonicalizing the parent,
   so different spellings collide), two reports on stdout, or a report overwriting the input
@@ -239,6 +246,10 @@ See [README.md](./README.md#architecture) for the module tree. Notes beyond what
   so `jenkins.rs` also puts it in `additionalProperties`; GitLab's JUnit parser keys test cases by
   suite + classname + name, so `junit.rs` names each case `<rule>: <message>` with a ` (n)`
   suffix on repeats. Without these, three unlabeled checkboxes showed up as one issue.
+- **The JUnit report is not for Warnings NG** (verified in a real Jenkins): its JUnit parser
+  derives locations from Java stack traces and ignores passing/skipped tests, so warnings are
+  lost and URL locations come out garbled whatever we write. `--report-jenkins` is the complete
+  Warnings NG route; JUnit is complete for Jenkins' `junit` step and GitLab.
 - **Fatal errors become issues** (`CheckerError::rule_id()` -> `INPUT`/`FETCH`/`RENDER`), not
   log lines, so CI gets a report explaining the failure instead of a missing artifact.
 

@@ -6,6 +6,8 @@ use std::io::Write;
 use std::path::{Component, Path, PathBuf};
 use std::sync::Arc;
 
+use tokio::io::AsyncWriteExt;
+
 use super::{GithubReporter, GitlabReporter, JenkinsReporter, JunitReporter, Report, Reporter};
 use crate::cli::CliConfig;
 use crate::error::CheckerError;
@@ -78,11 +80,15 @@ pub fn targets_from(config: &CliConfig) -> Result<Vec<ReportTarget>, CheckerErro
     let targets: Vec<_> = requested
         .into_iter()
         .filter_map(|(flag, arg, reporter)| {
-            arg.as_deref().map(|arg| ReportTarget {
-                flag,
-                reporter,
-                destination: Destination::parse(arg),
-            })
+            // An empty value comes from an empty `$GITHUB_STEP_SUMMARY`, which
+            // is also how to turn the GitHub summary off inside GitHub Actions.
+            arg.as_deref()
+                .filter(|arg| !arg.is_empty())
+                .map(|arg| ReportTarget {
+                    flag,
+                    reporter,
+                    destination: Destination::parse(arg),
+                })
         })
         .collect();
     check_conflicts(&targets, &config.path_or_url)?;
@@ -177,7 +183,7 @@ async fn write_one(report: Arc<Report>, target: ReportTarget) -> Result<(), Chec
     let content = target.reporter.render(&report);
     let result = match &target.destination {
         Destination::Stdout => write_stdout(&content),
-        Destination::File(path) => write_file(path, &content).await,
+        Destination::File(path) => write_file(path, &content, target.reporter.appends()).await,
     };
     result.map_err(|source| CheckerError::ReportWrite {
         flag: target.flag,
@@ -193,11 +199,19 @@ fn write_stdout(content: &str) -> std::io::Result<()> {
     stdout.flush()
 }
 
-async fn write_file(path: &Path, content: &str) -> std::io::Result<()> {
+async fn write_file(path: &Path, content: &str, append: bool) -> std::io::Result<()> {
     if let Some(parent) = path.parent().filter(|p| !p.as_os_str().is_empty()) {
         tokio::fs::create_dir_all(parent).await?;
     }
-    tokio::fs::write(path, content).await
+    let mut file = tokio::fs::OpenOptions::new()
+        .create(true)
+        .write(true)
+        .append(append)
+        .truncate(!append)
+        .open(path)
+        .await?;
+    file.write_all(content.as_bytes()).await?;
+    file.flush().await
 }
 
 #[cfg(test)]
@@ -208,8 +222,15 @@ mod tests {
     use super::*;
     use crate::reporters::model::tests::error;
 
+    /// `--report-github` falls back to `$GITHUB_STEP_SUMMARY`, which is set
+    /// when these tests run on GitHub Actions; only an explicit flag counts.
     fn config(args: &[&str]) -> CliConfig {
-        CliConfig::parse_from(std::iter::once("wcag-checker").chain(args.iter().copied()))
+        let mut config =
+            CliConfig::parse_from(std::iter::once("wcag-checker").chain(args.iter().copied()));
+        if !args.contains(&"--report-github") {
+            config.report_github = None;
+        }
+        config
     }
 
     fn flags_and_destinations(targets: &[ReportTarget]) -> Vec<(&str, Destination)> {
@@ -222,6 +243,12 @@ mod tests {
     #[test]
     fn no_report_flag_means_no_target() {
         assert!(targets_from(&config(&["a.html"])).unwrap().is_empty());
+    }
+
+    #[test]
+    fn an_empty_destination_means_no_report() {
+        let targets = targets_from(&config(&["a.html", "--report-github", ""])).unwrap();
+        assert!(targets.is_empty());
     }
 
     #[test]
@@ -355,6 +382,38 @@ mod tests {
         assert_eq!(
             std::fs::read_to_string(gitlab).unwrap(),
             GitlabReporter.render(&report)
+        );
+        assert_eq!(
+            std::fs::read_to_string(junit).unwrap(),
+            JunitReporter.render(&report)
+        );
+    }
+
+    #[tokio::test]
+    async fn github_summary_is_appended_other_reports_replaced() {
+        let dir = tempfile::tempdir().unwrap();
+        let summary = dir.path().join("summary.md");
+        let junit = dir.path().join("junit.xml");
+        std::fs::write(&summary, "earlier step output\n").unwrap();
+        std::fs::write(&junit, "stale").unwrap();
+        let report = Arc::new(Report::new("a.html", &[error("H57")]));
+
+        for _ in 0..2 {
+            let targets = targets_from(&config(&[
+                "a.html",
+                "--report-github",
+                summary.to_str().unwrap(),
+                "--report-junit",
+                junit.to_str().unwrap(),
+            ]))
+            .unwrap();
+            write_all(Arc::clone(&report), targets).await.unwrap();
+        }
+
+        let github = GithubReporter.render(&report);
+        assert_eq!(
+            std::fs::read_to_string(summary).unwrap(),
+            format!("earlier step output\n{github}{github}")
         );
         assert_eq!(
             std::fs::read_to_string(junit).unwrap(),

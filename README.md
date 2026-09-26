@@ -53,7 +53,7 @@ Options:
       --report-gitlab <FILE>
           Write a GitLab Code Quality report (artifacts:reports:codequality) to FILE ('-' for stdout)
       --report-github <FILE>
-          Write GitHub Actions annotations (workflow commands) to FILE; use '-' so GitHub reads them
+          Append a GitHub Actions job summary (Markdown) to FILE ('-' for stdout); defaults to $GITHUB_STEP_SUMMARY, so it is written automatically inside GitHub Actions [env: GITHUB_STEP_SUMMARY=]
       --report-jenkins <FILE>
           Write a Jenkins Warnings NG report (recordIssues tool: issues()) to FILE ('-' for stdout)
       --report-junit <FILE>
@@ -100,16 +100,18 @@ wcag-checker page.html -q --report-gitlab gl-code-quality.json --report-junit ju
 
 **CI reports** (`--report-*`):
 
-Each `--report-<kind> <FILE>` writes the findings in a format a CI platform reads natively (`-` writes to stdout). Several can be combined; they are written in parallel once the check is done. The usual stdout output is still printed unless `-q/--quiet` is given.
+Each `--report-<kind> <FILE>` writes the findings in a format a CI platform reads natively (`-` writes to stdout; an empty value writes nothing). Several can be combined; they are written in parallel once the check is done. The usual stdout output is still printed unless `-q/--quiet` is given.
 
 | Flag                | Format                                                                                                    | Read by                                                        |
 | ------------------- | --------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------- |
 | `--report-gitlab`   | [Code Quality JSON](https://docs.gitlab.com/ci/testing/code_quality/)                                      | GitLab `artifacts:reports:codequality` (MR widget, diff annotations) |
-| `--report-github`   | [Workflow commands](https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-commands) (`::error file=…::…`) | GitHub Actions annotations -- must be printed to stdout: `--report-github -` |
+| `--report-github`   | [Job summary](https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-commands#adding-a-job-summary) (GitHub-flavored Markdown table) | GitHub Actions run summary page. Defaults to `$GITHUB_STEP_SUMMARY`, so it's written automatically in GitHub Actions |
 | `--report-jenkins`  | [Warnings NG](https://github.com/jenkinsci/warnings-ng-plugin/blob/main/doc/Documentation.md) native JSON | Jenkins `recordIssues(tool: issues(pattern: '…'))`              |
 | `--report-junit`    | JUnit XML (errors fail, warnings pass with a `system-out`)                                                 | Jenkins `junit`, GitLab `artifacts:reports:junit`               |
 
-- Errors map to GitLab `major` / Jenkins `ERROR` / GitHub `error`; warnings to `minor` / `NORMAL` / `warning`.
+- Errors map to GitLab `major` / Jenkins `ERROR` / GitHub `❌ Error`; warnings to `minor` / `NORMAL` / `⚠️ Warning`.
+- The GitHub summary is **appended** to its file, as GitHub expects for `$GITHUB_STEP_SUMMARY` (other commands of the same step may write to it too). It lists every finding, errors first; only past GitHub's 1 MiB summary limit are the remaining ones replaced by a count. Annotations aren't used: GitHub shows only 10 errors + 10 warnings per step. To turn the summary off inside GitHub Actions, set `GITHUB_STEP_SUMMARY=` for the command.
+- Warnings NG users should read `--report-jenkins`, not the JUnit report: Warnings NG's JUnit parser drops warnings and can't locate issues on URLs.
 - The rendering engine exposes no source positions, so every issue points at line 1 of the checked file (or, for URLs, of the page URL).
 - Two reports writing to the same file (including the same path spelled differently), two reports on stdout, or a report overwriting the checked file are rejected with exit code `1` before anything is checked.
 - A fatal error (unreadable file, unreachable URL) is reported as an `INPUT`/`FETCH`/`RENDER` issue, so CI still gets a report explaining the failure.
@@ -126,8 +128,8 @@ wcag:
 ```
 
 ```yaml
-# GitHub Actions step
-- run: wcag-checker public/index.html -q --report-github -
+# GitHub Actions step: the job summary goes to $GITHUB_STEP_SUMMARY with no flag
+- run: wcag-checker public/index.html -q
 ```
 
 ```groovy
