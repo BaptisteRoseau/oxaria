@@ -16,7 +16,7 @@ use crate::page;
 const STDOUT_ARG: &str = "-";
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub enum Destination {
+enum Destination {
     Stdout,
     File(PathBuf),
 }
@@ -47,9 +47,9 @@ impl Destination {
 }
 
 pub struct ReportTarget {
-    pub flag: &'static str,
-    pub reporter: Arc<dyn Reporter>,
-    pub destination: Destination,
+    flag: &'static str,
+    reporter: Arc<dyn Reporter>,
+    destination: Destination,
 }
 
 /// Builds one target per `--report-*` flag, failing on any destination
