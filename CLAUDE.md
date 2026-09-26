@@ -155,10 +155,12 @@ See [README.md](./README.md#architecture) for the module tree. Notes beyond what
   it's the sentinel for "not laid out" (e.g. `display: none`, or -- in hand-built
   `page_from_html` test fixtures with no declared size -- simply never measured). A genuinely
   laid-out 0×0 interactive element would be a real finding; a not-measured one shouldn't produce
-  a false positive. **`<input>` goes further**: litehtml gives form controls no intrinsic size
-  at all (verified: every unstyled `<input>` renders 0×0), so a 0 on *either* axis means "not
-  measured" and only the other axis is used. Without this, google.com's submit buttons (CSS
-  `height: 30px`, no width) were reported as 0px targets.
+  a false positive. **Targets with unsizable content go further** (`has_unsized_content`): litehtml
+  has no intrinsic size for form controls, never loads images, and ignores `<svg>`'s
+  `width`/`height` (all verified: they render 0×0). So for an `<input>`, or a text-less target
+  wrapping `img`/`svg`/`picture`/`video`/`canvas`, a 0 on *either* axis means "not measured" and
+  only the other axis is used. Without this, google.com's submit buttons (CSS height only),
+  gitlab.com's logo links (CSS width only) and docker.com's icon buttons were reported as 0px.
 
 ### Full-site scan (`src/site/`)
 

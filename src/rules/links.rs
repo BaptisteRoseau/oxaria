@@ -66,19 +66,31 @@ fn href_of(link: ElementRef) -> String {
 /// like `?_gl=...`) are dropped, and when the page's own URL is known, a
 /// same-host absolute link is reduced to its path (`https://github.com/pricing`
 /// vs `/pricing`). Links to other hosts keep their host.
+///
+/// Case and a trailing slash are ignored too (`/Download` vs `/download`,
+/// `psf-landing` vs `psf-landing/`): strictly these are different URLs, but
+/// sites serve them as one page, and to a user reading identical link text
+/// they are the same destination. This is only for comparing link text --
+/// the crawler's visit key keeps them distinct.
 fn destination(href: &str, page_url: Option<&Url>) -> String {
     let href = href.split(['#', '?']).next().unwrap_or_default();
-    let Some(page_url) = page_url else {
-        return href.to_string();
-    };
-    match page_url.join(href) {
-        Ok(url) if url.host_str() == page_url.host_str() => url.path().to_string(),
-        Ok(mut url) => {
+    let resolved = match page_url.map(|base| (base, base.join(href))) {
+        Some((base, Ok(url))) if url.host_str() == base.host_str() => url.path().to_string(),
+        Some((_, Ok(mut url))) => {
             url.set_query(None);
             url.set_fragment(None);
             url.to_string()
         }
-        Err(_) => href.to_string(),
+        _ => href.to_string(),
+    };
+    comparable(&resolved)
+}
+
+fn comparable(destination: &str) -> String {
+    let lowercase = destination.to_lowercase();
+    match lowercase.trim_end_matches('/') {
+        "" => lowercase,
+        trimmed => trimmed.to_string(),
     }
 }
 
@@ -228,6 +240,31 @@ mod tests {
             "https://ubuntu.com/",
         );
         assert!(check_ambiguous_duplicate_link_text(&p, &options()).is_empty());
+    }
+
+    #[test]
+    fn hrefs_differing_only_by_case_are_the_same_destination() {
+        // code.visualstudio.com: "Download" linked as both `/Download` and `/download`.
+        let p =
+            page_from_html(r#"<a href="/Download">Download</a><a href="/download">Download</a>"#);
+        assert!(check_ambiguous_duplicate_link_text(&p, &options()).is_empty());
+    }
+
+    #[test]
+    fn hrefs_differing_only_by_trailing_slash_are_the_same_destination() {
+        // pypi.org: "Python Software Foundation" linked to `/psf-landing` and `/psf-landing/`.
+        let p = page_at(
+            r#"<a href="https://www.python.org/psf-landing">Python Software Foundation</a>
+               <a href="https://www.python.org/psf-landing/">Python Software Foundation</a>"#,
+            "https://pypi.org/",
+        );
+        assert!(check_ambiguous_duplicate_link_text(&p, &options()).is_empty());
+    }
+
+    #[test]
+    fn root_and_empty_href_keep_their_distinct_destinations() {
+        assert_eq!(comparable("/"), "/");
+        assert_eq!(comparable(""), "");
     }
 
     #[test]
