@@ -14,7 +14,7 @@ pub struct CliConfig {
     /// HTML source: an http(s) URL, or a path to a local HTML file
     pub path_or_url: String,
 
-    /// Enable stdout output
+    /// Also log info-level messages
     #[arg(short, long, conflicts_with = "quiet")]
     pub verbose: bool,
 

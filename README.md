@@ -37,7 +37,7 @@ Arguments:
 
 Options:
   -v, --verbose
-          Enable stdout output
+          Also log info-level messages
   -q, --quiet
           Print nothing on stdout (findings, summary, and logs); only the exit code and the --report-* files remain
       --contrast-threshold <CONTRAST_THRESHOLD>
