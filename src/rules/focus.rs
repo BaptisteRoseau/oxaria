@@ -18,7 +18,7 @@ pub fn check_outline_removed_without_alternative(
     page: &RenderedPage,
     _options: &CheckOptions,
 ) -> Vec<Finding> {
-    split_css_rules(&page.stylesheet_text())
+    split_css_rules(&strip_comments(&page.stylesheet_text()))
         .into_iter()
         .filter(|(selector, _)| selector.to_lowercase().contains(":focus"))
         .filter(|(_, body)| removes_outline_without_alternative(body))
@@ -55,6 +55,18 @@ fn property_value<'a>(body: &'a str, property: &str) -> Option<&'a str> {
         let (name, value) = declaration.split_once(':')?;
         (name.trim().eq_ignore_ascii_case(property)).then(|| value.trim())
     })
+}
+
+fn strip_comments(css: &str) -> String {
+    let mut stripped = String::with_capacity(css.len());
+    let mut rest = css;
+    while let Some(start) = rest.find("/*") {
+        stripped.push_str(&rest[..start]);
+        let comment = &rest[start + 2..];
+        rest = comment.find("*/").map_or("", |end| &comment[end + 2..]);
+    }
+    stripped.push_str(rest);
+    stripped
 }
 
 /// Splits a stylesheet into top-level `(selector, declaration_body)` pairs, tracking brace depth
@@ -106,6 +118,23 @@ mod tests {
         let rules = split_css_rules("@media (max-width:600px){ a:focus{outline:none} }");
         assert_eq!(rules.len(), 1);
         assert!(rules[0].0.starts_with("@media"));
+    }
+
+    #[test]
+    fn strip_comments_removes_every_comment() {
+        assert_eq!(
+            strip_comments("a{/* } */x:y}/* b */c{}/* open"),
+            "a{x:y}c{}"
+        );
+    }
+
+    #[test]
+    fn braces_in_comments_do_not_hide_later_rules() {
+        let p = page_from_html(
+            "<style>/* legacy } */ a { color: red } a:focus { outline: none; }</style>",
+        );
+        let findings = check_outline_removed_without_alternative(&p, &CheckOptions::default());
+        assert_eq!(findings.len(), 1, "{findings:?}");
     }
 
     #[test]
