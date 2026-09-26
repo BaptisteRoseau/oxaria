@@ -86,6 +86,16 @@ impl RenderedPage {
     pub fn stylesheet_text(&self) -> String {
         self.stylesheets.join("\n")
     }
+
+    pub fn ids_text(&self, ids: &str) -> String {
+        ids.split_whitespace()
+            .filter_map(|id| self.element_by_id(id))
+            .map(|el| el.text())
+            .collect::<Vec<_>>()
+            .join(" ")
+            .trim()
+            .to_string()
+    }
 }
 
 #[derive(Clone, Copy)]
@@ -224,6 +234,36 @@ impl<'a> ElementRef<'a> {
         collect_text(*self, &mut buf);
         buf.split_whitespace().collect::<Vec<_>>().join(" ")
     }
+
+    /// A simplified subset of the WAI-ARIA accessible-name computation:
+    /// `aria-labelledby`, then `aria-label`, then an associated `label` (via
+    /// `for` or wrapping), then visible text content, then `alt`, `value` (for
+    /// submit/button inputs), then `title`.
+    pub fn accessible_name(&self) -> String {
+        let el = *self;
+        if let Some(name) = name_from_labelledby(el) {
+            return name;
+        }
+        if let Some(name) = non_empty_attr(el, "aria-label") {
+            return name;
+        }
+        if let Some(name) = name_from_label(el) {
+            return name;
+        }
+        let text = el.text();
+        if !text.is_empty() {
+            return text;
+        }
+        if let Some(name) = non_empty_attr(el, "alt") {
+            return name;
+        }
+        if is_submit_or_button_input(el)
+            && let Some(name) = non_empty_attr(el, "value")
+        {
+            return name;
+        }
+        non_empty_attr(el, "title").unwrap_or_default()
+    }
 }
 
 fn collect_text(el: ElementRef, buf: &mut String) {
@@ -237,60 +277,22 @@ fn collect_text(el: ElementRef, buf: &mut String) {
     }
 }
 
-/// A simplified subset of the WAI-ARIA accessible-name computation:
-/// `aria-labelledby`, then `aria-label`, then an associated `label` (via
-/// `for` or wrapping), then visible text content, then `alt`, `value` (for
-/// submit/button inputs), then `title`.
-pub fn accessible_name(page: &RenderedPage, el: ElementRef) -> String {
-    if let Some(name) = name_from_labelledby(page, el) {
-        return name;
-    }
-    if let Some(name) = non_empty_attr(el, "aria-label") {
-        return name;
-    }
-    if let Some(name) = name_from_label(page, el) {
-        return name;
-    }
-    let text = el.text();
-    if !text.is_empty() {
-        return text;
-    }
-    if let Some(name) = non_empty_attr(el, "alt") {
-        return name;
-    }
-    if is_submit_or_button_input(el)
-        && let Some(name) = non_empty_attr(el, "value")
-    {
-        return name;
-    }
-    non_empty_attr(el, "title").unwrap_or_default()
-}
-
-fn name_from_labelledby(page: &RenderedPage, el: ElementRef) -> Option<String> {
+fn name_from_labelledby(el: ElementRef) -> Option<String> {
     let ids = el.attr("aria-labelledby")?;
-    let text = ids_text(page, ids);
+    let text = el.page.ids_text(ids);
     (!text.is_empty()).then_some(text)
 }
 
-pub fn ids_text(page: &RenderedPage, ids: &str) -> String {
-    ids.split_whitespace()
-        .filter_map(|id| page.element_by_id(id))
-        .map(|el| el.text())
-        .collect::<Vec<_>>()
-        .join(" ")
-        .trim()
-        .to_string()
-}
-
-fn name_from_label<'a>(page: &'a RenderedPage, el: ElementRef<'a>) -> Option<String> {
-    let label = label_for(page, el).or_else(|| label_ancestor(el))?;
+fn name_from_label(el: ElementRef) -> Option<String> {
+    let label = label_for(el).or_else(|| label_ancestor(el))?;
     let text = label.text();
     (!text.is_empty()).then_some(text)
 }
 
-fn label_for<'a>(page: &'a RenderedPage, el: ElementRef<'a>) -> Option<ElementRef<'a>> {
+fn label_for(el: ElementRef) -> Option<ElementRef> {
     let id = el.attr("id")?;
-    page.by_tag("label")
+    el.page
+        .by_tag("label")
         .find(|label| label.attr("for") == Some(id))
 }
 
@@ -344,55 +346,55 @@ mod tests {
             r#"<span id="lbl">Billing address</span><input aria-labelledby="lbl" value="ignored">"#,
         );
         let input = p.by_tag("input").next().unwrap();
-        assert_eq!(accessible_name(&p, input), "Billing address");
+        assert_eq!(input.accessible_name(), "Billing address");
     }
 
     #[test]
     fn accessible_name_falls_back_to_aria_label() {
         let p = page_from_html(r#"<button aria-label="Close dialog"></button>"#);
         let button = p.by_tag("button").next().unwrap();
-        assert_eq!(accessible_name(&p, button), "Close dialog");
+        assert_eq!(button.accessible_name(), "Close dialog");
     }
 
     #[test]
     fn accessible_name_falls_back_to_text_content() {
         let p = page_from_html("<button>Submit</button>");
         let button = p.by_tag("button").next().unwrap();
-        assert_eq!(accessible_name(&p, button), "Submit");
+        assert_eq!(button.accessible_name(), "Submit");
     }
 
     #[test]
     fn accessible_name_uses_label_for_text() {
         let p = page_from_html(r#"<label for="a">Email</label><input id="a">"#);
         let input = p.by_tag("input").next().unwrap();
-        assert_eq!(accessible_name(&p, input), "Email");
+        assert_eq!(input.accessible_name(), "Email");
     }
 
     #[test]
     fn accessible_name_uses_wrapping_label_text() {
         let p = page_from_html(r#"<label>Email <input id="a"></label>"#);
         let input = p.by_tag("input").next().unwrap();
-        assert_eq!(accessible_name(&p, input), "Email");
+        assert_eq!(input.accessible_name(), "Email");
     }
 
     #[test]
     fn accessible_name_falls_back_to_value_for_submit_input() {
         let p = page_from_html(r#"<input type="submit" value="Send it">"#);
         let input = p.by_tag("input").next().unwrap();
-        assert_eq!(accessible_name(&p, input), "Send it");
+        assert_eq!(input.accessible_name(), "Send it");
     }
 
     #[test]
     fn accessible_name_is_empty_when_nothing_found() {
         let p = page_from_html("<button></button>");
         let button = p.by_tag("button").next().unwrap();
-        assert_eq!(accessible_name(&p, button), "");
+        assert_eq!(button.accessible_name(), "");
     }
 
     #[test]
     fn ids_text_joins_multiple_ids() {
         let p = page_from_html(r#"<span id="a">Hello</span><span id="b">World</span>"#);
-        assert_eq!(ids_text(&p, "a b"), "Hello World");
+        assert_eq!(p.ids_text("a b"), "Hello World");
     }
 
     #[test]

@@ -4,7 +4,7 @@ use std::collections::BTreeMap;
 
 use url::Url;
 
-use crate::page::{self, ElementRef, RenderedPage};
+use crate::page::{ElementRef, RenderedPage};
 
 use super::{CheckOptions, Finding};
 
@@ -31,12 +31,12 @@ pub fn check_non_descriptive_link_text(
 ) -> Vec<Finding> {
     page.select(is_link)
         .into_iter()
-        .filter_map(|link| non_descriptive_finding(page, link))
+        .filter_map(non_descriptive_finding)
         .collect()
 }
 
-fn non_descriptive_finding(page: &RenderedPage, link: ElementRef) -> Option<Finding> {
-    let name = page::accessible_name(page, link);
+fn non_descriptive_finding(link: ElementRef) -> Option<Finding> {
+    let name = link.accessible_name();
     let href = href_of(link);
     if name.trim().is_empty() {
         return Some(
@@ -118,7 +118,7 @@ pub fn check_ambiguous_duplicate_link_text(
 fn group_links_by_text(page: &RenderedPage) -> BTreeMap<String, Vec<String>> {
     let mut groups: BTreeMap<String, Vec<String>> = BTreeMap::new();
     for link in page.select(is_link) {
-        let name = page::accessible_name(page, link).trim().to_lowercase();
+        let name = link.accessible_name().trim().to_lowercase();
         if name.len() < 3 {
             continue;
         }

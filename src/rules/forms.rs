@@ -1,6 +1,6 @@
 //! WCAG 1.3.1 / 3.3.2 / 4.1.2 checks for form controls.
 
-use crate::page::{self, ElementRef, RenderedPage};
+use crate::page::{ElementRef, RenderedPage};
 
 use super::{CheckOptions, Finding};
 
@@ -8,7 +8,7 @@ use super::{CheckOptions, Finding};
 pub fn check_missing_label(page: &RenderedPage, _options: &CheckOptions) -> Vec<Finding> {
     page.select(is_labelable_control)
         .into_iter()
-        .filter(|control| !has_label(page, *control))
+        .filter(|control| control.accessible_name().is_empty())
         .map(|control| Finding::error("H44", missing_label_message(control)).at(control))
         .collect()
 }
@@ -25,10 +25,6 @@ fn is_labelable(control: ElementRef) -> bool {
     }
 }
 
-fn has_label(page: &RenderedPage, control: ElementRef) -> bool {
-    !page::accessible_name(page, control).is_empty()
-}
-
 fn missing_label_message(control: ElementRef) -> String {
     let name = control.tag();
     match control.attr("type") {
@@ -42,7 +38,7 @@ fn missing_label_message(control: ElementRef) -> String {
 pub fn check_unnamed_control(page: &RenderedPage, _options: &CheckOptions) -> Vec<Finding> {
     page.select(is_unnamed_control_candidate)
         .into_iter()
-        .filter(|control| page::accessible_name(page, *control).is_empty())
+        .filter(|control| control.accessible_name().is_empty())
         .map(|control| Finding::error("F68", unnamed_control_message(control)).at(control))
         .collect()
 }
@@ -78,14 +74,14 @@ fn required_is_indicated(page: &RenderedPage, control: ElementRef) -> bool {
     if control.attr("aria-required") == Some("true") {
         return true;
     }
-    let name = page::accessible_name(page, control);
+    let name = control.accessible_name();
     let description = description_text(page, control);
     mentions_required(&name) || mentions_required(&description)
 }
 
 fn description_text(page: &RenderedPage, control: ElementRef) -> String {
     match control.attr("aria-describedby") {
-        Some(ids) => page::ids_text(page, ids),
+        Some(ids) => page.ids_text(ids),
         None => String::new(),
     }
 }
