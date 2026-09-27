@@ -42,10 +42,19 @@ pub fn check_unresolved_reference(page: &RenderedPage, _options: &CheckOptions) 
         .collect()
 }
 
-/// A collapsed control's popup is often only created when it opens.
+/// A collapsed control's popup, or an unselected tab's panel, is often
+/// only created when it opens.
 fn is_popup_not_rendered_yet(el: ElementRef, name: &str) -> bool {
-    name == "aria-controls"
-        && aria_value(el, "aria-expanded") == Some(Parsed::Valid(AriaValue::False))
+    name == "aria-controls" && (is_collapsed(el) || is_unselected_tab(el))
+}
+
+fn is_collapsed(el: ElementRef) -> bool {
+    aria_value(el, "aria-expanded") == Some(Parsed::Valid(AriaValue::False))
+}
+
+fn is_unselected_tab(el: ElementRef) -> bool {
+    exposed_role(el).is_some_and(|role| role.name == "tab")
+        && aria_value(el, "aria-selected") == Some(Parsed::Valid(AriaValue::False))
 }
 
 fn unresolved_reference(tree: &Tree, el: ElementRef, name: &str, id: &str) -> Option<Finding> {
@@ -194,6 +203,10 @@ mod tests {
         r#"<div role="listbox" aria-activedescendant="gone" tabindex="0"></div>"#,
         1
     )]
+    #[case(
+        r#"<div role="tablist"><button role="tab" aria-selected="true" aria-controls="p1">A</button></div>"#,
+        1
+    )]
     fn unresolved_references_are_flagged(#[case] html: &str, #[case] count: usize) {
         assert_eq!(run(check_unresolved_reference, html).len(), count, "{html}");
     }
@@ -202,6 +215,11 @@ mod tests {
     #[case(r#"<span id="startTime-label">Start time</span><input type="text" aria-labelledby="startTime-label">"#)]
     #[case(r#"<button aria-controls="panel-1 panel-2">Expand all</button><div id="panel-1">x</div><div id="panel-2">y</div>"#)]
     #[case(r#"<button aria-expanded="false" aria-controls="menu">Menu</button>"#)]
+    #[case(
+        r#"<div role="tablist"><button role="tab" aria-selected="true" aria-controls="p1">A</button>
+           <button role="tab" aria-selected="false" aria-controls="p2">B</button></div>
+           <div role="tabpanel" id="p1">a</div>"#
+    )]
     #[case(r#"<input aria-labelledby="">"#)]
     fn resolved_references_are_not_flagged(#[case] html: &str) {
         assert!(run(check_unresolved_reference, html).is_empty(), "{html}");
