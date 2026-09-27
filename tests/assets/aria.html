@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title>Settings</title>
+	<style>
+		body {
+			font: 100% / 1.5 sans-serif;
+			background-color: #fff;
+			color: #000;
+		}
+
+		:focus-visible {
+			outline: 3px solid #1a73e8;
+			outline-offset: 2px;
+		}
+
+		a, button {
+			display: inline-block;
+			padding: 0.75em 1em;
+			min-height: 24px;
+		}
+	</style>
+</head>
+<body>
+	<a href="#main-content">Skip to main content</a>
+
+	<main id="main-content">
+		<h1>Settings</h1>
+
+		<div role="directory">
+			<a href="/account">Account</a>
+		</div>
+
+		<div role="widget">Preferences</div>
+
+		<button type="button" role="button">Save</button>
+
+		<div role="lnik">Help</div>
+
+		<button type="button" aria-expanded="collapsed">More options</button>
+
+		<p hidden aria-hidden="true">Saved</p>
+
+		<label for="nickname">Nickname</label>
+		<input type="text" id="nickname" name="nickname" required aria-required="true">
+	</main>
+</body>
+</html>

@@ -43,6 +43,21 @@ fn page_with_violations_exits_one() {
             "expected {rule_id} in:\n{report}"
         );
     }
+    for finding in [
+        "WAI-ARIA 1.2 ARIA-IDREF001",
+        "ACT b5c3f8",
+        "ACT 97a4e1",
+        "ACT e086e5",
+    ] {
+        assert!(
+            report.contains(&format!("[ERROR] {finding}: ")),
+            "expected {finding} in:\n{report}"
+        );
+    }
+    assert!(
+        report.contains("26 error(s), 0 warning(s) (WCAG 2.2: 20 error(s), 0 warning(s); WAI-ARIA 1.2: 1 error(s), 0 warning(s); ACT: 5 error(s), 0 warning(s))"),
+        "{report}"
+    );
 }
 
 #[test]
@@ -72,6 +87,10 @@ fn page_with_only_warnings_exits_two() {
     assert!(report.contains("G18"), "expected G18 in:\n{report}");
     assert!(report.contains("TGT001"), "expected TGT001 in:\n{report}");
     assert!(
+        report.contains("[WARN]  ACT afw4f7: <p> text #999999 on #ffffff"),
+        "expected afw4f7 in:\n{report}"
+    );
+    assert!(
         !report.contains("[ERROR]"),
         "unexpected error in:\n{report}"
     );
@@ -96,6 +115,10 @@ fn lowering_contrast_threshold_clears_the_warning() {
     );
     let report = stdout(&output);
     assert!(!report.contains("G18"), "expected no G18 in:\n{report}");
+    assert!(
+        !report.contains("afw4f7"),
+        "expected no afw4f7 in:\n{report}"
+    );
     assert!(report.contains("TGT001"), "expected TGT001 in:\n{report}");
     assert_eq!(exit_code(&output), 2, "stdout:\n{report}");
 }
@@ -273,10 +296,10 @@ fn github_summary_can_go_to_stdout() {
 
     assert_eq!(exit_code(&output), 2, "stdout:\n{report}");
     assert!(
-        report.starts_with("## ⚠️ Accessibility: 0 error(s), 3 warning(s)\n"),
+        report.starts_with("## ⚠️ Accessibility: 0 error(s), 4 warning(s)\n"),
         "{report}"
     );
-    assert_eq!(report.matches("| ⚠️ Warning |").count(), 3, "{report}");
+    assert_eq!(report.matches("| ⚠️ Warning |").count(), 4, "{report}");
 }
 
 #[test]
@@ -294,10 +317,10 @@ fn github_summary_defaults_to_github_step_summary_and_appends() {
     assert_eq!(exit_code(&output), 1);
     let summary = read(&summary);
     assert!(
-        summary.starts_with("previous command\n## ❌ Accessibility: 20 error(s)"),
+        summary.starts_with("previous command\n## ❌ Accessibility: 26 error(s)"),
         "{summary}"
     );
-    assert_eq!(summary.matches("| ❌ Error |").count(), 20, "{summary}");
+    assert_eq!(summary.matches("| ❌ Error |").count(), 26, "{summary}");
 }
 
 #[test]
@@ -366,4 +389,73 @@ fn a_fatal_error_is_still_reported() {
     assert_eq!(issues.as_array().unwrap().len(), 1);
     assert_eq!(issues[0]["check_name"], "INPUT");
     assert_eq!(issues[0]["severity"], "major");
+}
+
+#[test]
+fn aria_page_reports_each_new_standard_with_its_spec_link() {
+    let output = run("tests/assets/aria.html", &[]);
+    let report = stdout(&output);
+    assert_eq!(exit_code(&output), 1, "stdout:\n{report}");
+    for expected in [
+        "[ERROR] WAI-ARIA 1.2 ARIA-ROLE002: role=\"widget\" is an abstract role",
+        "note: see https://www.w3.org/TR/wai-aria-1.2/#isAbstract",
+        "[ERROR] WAI-ARIA 1.2 ARIA-DEPR001: <div> uses the deprecated role=\"directory\"",
+        "[ERROR] ARIA in HTML HTMLARIA014: <input type=\"text\" required aria-required=\"true\">",
+        "note: see https://www.w3.org/TR/html-aria/#docconformance-attr",
+        "[ERROR] ARIA in HTML HTMLARIA010: <p hidden aria-hidden=\"true\">",
+        "[ERROR] ACT 674b10: <div role=\"lnik\"> contains no valid WAI-ARIA role (at main#main-content > div:nth-of-type(3))",
+        "note: see https://www.w3.org/WAI/standards-guidelines/act/rules/674b10/",
+        "[ERROR] ACT 6a7281: <button aria-expanded=\"collapsed\">",
+        "11 error(s), 0 warning(s) (WAI-ARIA 1.2: 3 error(s), 0 warning(s); ARIA in HTML: 5 error(s), 0 warning(s); ACT: 3 error(s), 0 warning(s))",
+    ] {
+        assert!(
+            report.contains(expected),
+            "expected {expected} in:\n{report}"
+        );
+    }
+    assert!(!report.contains("WCAG 2.2"), "{report}");
+}
+
+#[test]
+fn ci_reports_name_the_new_standards() {
+    let dir = tempfile::tempdir().unwrap();
+    let gitlab = dir.path().join("gl-code-quality.json");
+    let junit = dir.path().join("junit.xml");
+    let output = run(
+        "tests/assets/aria.html",
+        &[
+            "--report-gitlab",
+            gitlab.to_str().unwrap(),
+            "--report-junit",
+            junit.to_str().unwrap(),
+        ],
+    );
+    assert_eq!(exit_code(&output), 1, "stdout:\n{}", stdout(&output));
+
+    let gitlab = json(&gitlab);
+    let check_names: Vec<_> = gitlab
+        .as_array()
+        .expect("GitLab report is an array")
+        .iter()
+        .map(|issue| issue["check_name"].as_str().unwrap().to_string())
+        .collect();
+    for expected in [
+        "WAI-ARIA 1.2 ARIA-ROLE002",
+        "ARIA in HTML HTMLARIA002",
+        "ACT 674b10",
+    ] {
+        assert!(
+            check_names.iter().any(|name| name == expected),
+            "{check_names:?}"
+        );
+    }
+
+    let junit = read(&junit);
+    for expected in [
+        r#"name="WAI-ARIA 1.2 ARIA-VAL001: "#,
+        r#"name="ARIA in HTML HTMLARIA015: "#,
+        r#"name="ACT 6a7281: "#,
+    ] {
+        assert!(junit.contains(expected), "expected {expected} in:\n{junit}");
+    }
 }
