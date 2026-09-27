@@ -4,7 +4,6 @@ mod attributes;
 mod checks;
 mod deprecated;
 mod focus;
-mod hidden;
 mod idrefs;
 mod keyshortcuts;
 mod landmarks;

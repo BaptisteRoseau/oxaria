@@ -1,6 +1,6 @@
 use super::{
-    attributes, deprecated, focus, hidden, idrefs, keyshortcuts, landmarks, presentation, roles,
-    sets, structure, usage, values, widgets,
+    attributes, deprecated, focus, idrefs, keyshortcuts, landmarks, presentation, roles, sets,
+    structure, usage, values, widgets,
 };
 use crate::rules::RuleCheck;
 
@@ -29,7 +29,6 @@ pub fn rule_checks() -> Vec<RuleCheck> {
         presentation::check_ignored_presentation,
         presentation::check_presentational_image_alt,
         presentation::check_content_in_presentational_children,
-        hidden::check_hidden_content,
         widgets::check_combobox_pattern,
         widgets::check_popup_role_match,
         widgets::check_autocomplete_popup,
@@ -78,8 +77,7 @@ mod tests {
               <div role="caption">C</div></div>
             <a href="/c" role="presentation">c</a>
             <img src="s.png" role="presentation" alt="Sales grew">
-            <div role="button" tabindex="0"><h3>Pro</h3></div>
-            <div aria-hidden="true"><a href="/h">h</a></div>"#;
+            <div role="button" tabindex="0"><h3>Pro</h3></div>"#;
         let widgets = r#"<div role="combobox" aria-expanded="false"><input aria-label="Country"></div>
             <button aria-haspopup="true" aria-controls="dlg">Share</button>
             <div role="dialog" id="dlg" aria-label="Share"><button>Close</button></div>
@@ -99,7 +97,7 @@ mod tests {
                 structure,
                 widgets,
             ],
-            37,
+            36,
         )
         .await;
     }

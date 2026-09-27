@@ -29,7 +29,6 @@ const ANCHORS: &[(&str, &str)] = &[
     ("ARIA-PRES001", "conflict_resolution_presentation_none"),
     ("ARIA-PRES002", "presentation"),
     ("ARIA-PRES003", "childrenArePresentational"),
-    ("ARIA-HIDDEN001", "aria-hidden"),
     ("ARIA-WIDGET001", "combobox"),
     ("ARIA-WIDGET002", "aria-haspopup"),
     ("ARIA-WIDGET003", "aria-autocomplete"),

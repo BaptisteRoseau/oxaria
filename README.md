@@ -18,7 +18,7 @@ Rules come from four standards, each listed with the rules it defines (implement
 | Standard                              | Rules checked | Rule list                                                           |
 | ------------------------------------- | ------------- | ------------------------------------------------------------------- |
 | WCAG 2.2 techniques and failures      | 38            | [wcag2.2-rules.md](./standards/wcag2.2-rules.md)                    |
-| WAI-ARIA 1.2                          | 37            | [wai-aria-1.2-rules.md](./standards/wai-aria-1.2-rules.md)          |
+| WAI-ARIA 1.2                          | 36            | [wai-aria-1.2-rules.md](./standards/wai-aria-1.2-rules.md)          |
 | ARIA in HTML                          | 12            | [html-aria-rules.md](./standards/html-aria-rules.md)                |
 | ACT rules (W3C accessibility testing) | 27            | [act-rules.md](./standards/act-rules.md)                            |
 

@@ -145,6 +145,9 @@ deduplicate across standards.
   FOCUS007, STATE001, STATE004, STATE005, LIVE001 (not reported, per overlap C12), LIVE002,
   USAGE001.
 - IDREF005: whether a tooltip is displayed depends on CSS/JS state litehtml doesn't show.
+- HIDDEN001: like ACT 6cfa84, it needs computed `display`/`visibility`, which litehtml doesn't
+  give and external stylesheets don't feed, so menus and banners hidden by CSS were errors (162 on
+  pypi.org). Its `tabindex="-1"` advice was also what HTMLARIA009 reports.
 - Partial, checking only their reliable part: ATTR009, VAL002, VAL005, USAGE002, USAGE003,
   WIDGET006, WIDGET007, FOCUS001, FOCUS006.
 - ATTR001 accepts the WAI-ARIA 1.3-only names in `aria_spec::ARIA_1_3_ATTRIBUTES` (overlap S7):
