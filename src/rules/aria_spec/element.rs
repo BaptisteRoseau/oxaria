@@ -59,7 +59,7 @@ pub fn aria_attributes<'a>(el: ElementRef<'a>) -> impl Iterator<Item = (&'a str,
 }
 
 /// A global WAI-ARIA 1.2 state or property with a non-empty value.
-pub fn has_global_aria_attribute(el: ElementRef) -> bool {
+fn has_global_aria_attribute(el: ElementRef) -> bool {
     aria_attributes(el).any(|(name, value)| {
         attribute(name).is_some_and(|attribute| {
             attribute.is_global() && parse_value(attribute, value) != Parsed::Empty
@@ -116,7 +116,7 @@ pub fn is_not_rendered(el: ElementRef) -> bool {
         || is_in_closed_details(el)
 }
 
-pub fn is_inert(el: ElementRef) -> bool {
+fn is_inert(el: ElementRef) -> bool {
     self_and_ancestors(el).any(|el| el.has_attr("inert"))
 }
 

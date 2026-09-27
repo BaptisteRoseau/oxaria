@@ -27,7 +27,6 @@ pub fn rule_checks() -> Vec<RuleCheck> {
         aria::check_role_valid,
         focus::check_focusable_in_presentational_children,
         contrast::check_contrast_minimum,
-        contrast::check_contrast_enhanced,
         refresh::check_refresh_delay,
         refresh::check_refresh_instant,
         zoom::check_viewport_zoom,
@@ -62,6 +61,6 @@ mod tests {
                    <p role="checkbox" aria-checked="false" tabindex="0">I agree <a href="/t">terms</a></p>
                    <p style="color: #999999; letter-spacing: 0.1em !important; word-spacing: 0 !important">Low contrast</p>
                    </body></html>"#;
-        assert_every_rule_has_help(Standard::Act, &[page, "<p>No title</p>"], 28).await;
+        assert_every_rule_has_help(Standard::Act, &[page, "<p>No title</p>"], 27).await;
     }
 }

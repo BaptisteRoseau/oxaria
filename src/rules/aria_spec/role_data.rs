@@ -11,15 +11,12 @@ pub(super) const ROLES: &[Role] = &[
     Role {
         name: "alert",
         is_abstract: false,
-        is_deprecated: false,
         superclasses: &["section"],
         ancestors: &["section", "structure", "roletype"],
         required_context: &[],
         required_owned: &[],
         name_from: &[NameFrom::Author],
-        name_required: false,
         children_presentational: false,
-        required_attributes: &[],
         specific_attributes: &[],
         prohibited_attributes: &[],
         deprecated_attributes: &[
@@ -35,7 +32,6 @@ pub(super) const ROLES: &[Role] = &[
     Role {
         name: "alertdialog",
         is_abstract: false,
-        is_deprecated: false,
         superclasses: &["alert", "dialog"],
         ancestors: &[
             "alert",
@@ -48,9 +44,7 @@ pub(super) const ROLES: &[Role] = &[
         required_context: &[],
         required_owned: &[],
         name_from: &[NameFrom::Author],
-        name_required: true,
         children_presentational: false,
-        required_attributes: &[],
         specific_attributes: &["aria-modal"],
         prohibited_attributes: &[],
         deprecated_attributes: &[
@@ -66,15 +60,12 @@ pub(super) const ROLES: &[Role] = &[
     Role {
         name: "application",
         is_abstract: false,
-        is_deprecated: false,
         superclasses: &["structure"],
         ancestors: &["structure", "roletype"],
         required_context: &[],
         required_owned: &[],
         name_from: &[NameFrom::Author],
-        name_required: true,
         children_presentational: false,
-        required_attributes: &[],
         specific_attributes: &["aria-activedescendant", "aria-expanded"],
         prohibited_attributes: &[],
         deprecated_attributes: &["aria-dropeffect", "aria-grabbed"],
@@ -83,15 +74,12 @@ pub(super) const ROLES: &[Role] = &[
     Role {
         name: "article",
         is_abstract: false,
-        is_deprecated: false,
         superclasses: &["document"],
         ancestors: &["document", "structure", "roletype"],
         required_context: &[],
         required_owned: &[],
         name_from: &[NameFrom::Author],
-        name_required: false,
         children_presentational: false,
-        required_attributes: &[],
         specific_attributes: &["aria-posinset", "aria-setsize"],
         prohibited_attributes: &[],
         deprecated_attributes: &[
@@ -107,15 +95,12 @@ pub(super) const ROLES: &[Role] = &[
     Role {
         name: "banner",
         is_abstract: false,
-        is_deprecated: false,
         superclasses: &["landmark"],
         ancestors: &["landmark", "section", "structure", "roletype"],
         required_context: &[],
         required_owned: &[],
         name_from: &[NameFrom::Author],
-        name_required: false,
         children_presentational: false,
-        required_attributes: &[],
         specific_attributes: &[],
         prohibited_attributes: &[],
         deprecated_attributes: &[
@@ -131,15 +116,12 @@ pub(super) const ROLES: &[Role] = &[
     Role {
         name: "blockquote",
         is_abstract: false,
-        is_deprecated: false,
         superclasses: &["section"],
         ancestors: &["section", "structure", "roletype"],
         required_context: &[],
         required_owned: &[],
         name_from: &[NameFrom::Author],
-        name_required: false,
         children_presentational: false,
-        required_attributes: &[],
         specific_attributes: &[],
         prohibited_attributes: &[],
         deprecated_attributes: &[
@@ -155,15 +137,12 @@ pub(super) const ROLES: &[Role] = &[
     Role {
         name: "button",
         is_abstract: false,
-        is_deprecated: false,
         superclasses: &["command"],
         ancestors: &["command", "widget", "roletype"],
         required_context: &[],
         required_owned: &[],
         name_from: &[NameFrom::Author, NameFrom::Contents],
-        name_required: true,
         children_presentational: true,
-        required_attributes: &[],
         specific_attributes: &["aria-expanded", "aria-pressed"],
         prohibited_attributes: &[],
         deprecated_attributes: &[
@@ -177,15 +156,12 @@ pub(super) const ROLES: &[Role] = &[
     Role {
         name: "caption",
         is_abstract: false,
-        is_deprecated: false,
         superclasses: &["section"],
         ancestors: &["section", "structure", "roletype"],
         required_context: &["figure", "grid", "table", "treegrid"],
         required_owned: &[],
         name_from: &[NameFrom::Prohibited],
-        name_required: false,
         children_presentational: false,
-        required_attributes: &[],
         specific_attributes: &[],
         prohibited_attributes: &["aria-label", "aria-labelledby"],
         deprecated_attributes: &[
@@ -201,15 +177,12 @@ pub(super) const ROLES: &[Role] = &[
     Role {
         name: "cell",
         is_abstract: false,
-        is_deprecated: false,
         superclasses: &["section"],
         ancestors: &["section", "structure", "roletype"],
         required_context: &["row"],
         required_owned: &[],
         name_from: &[NameFrom::Author, NameFrom::Contents],
-        name_required: false,
         children_presentational: false,
-        required_attributes: &[],
         specific_attributes: &[
             "aria-colindex",
             "aria-colspan",
@@ -230,15 +203,12 @@ pub(super) const ROLES: &[Role] = &[
     Role {
         name: "checkbox",
         is_abstract: false,
-        is_deprecated: false,
         superclasses: &["input"],
         ancestors: &["input", "widget", "roletype"],
         required_context: &[],
         required_owned: &[],
         name_from: &[NameFrom::Author, NameFrom::Contents],
-        name_required: true,
         children_presentational: true,
-        required_attributes: &["aria-checked"],
         specific_attributes: &[
             "aria-checked",
             "aria-expanded",
@@ -252,15 +222,12 @@ pub(super) const ROLES: &[Role] = &[
     Role {
         name: "code",
         is_abstract: false,
-        is_deprecated: false,
         superclasses: &["section"],
         ancestors: &["section", "structure", "roletype"],
         required_context: &[],
         required_owned: &[],
         name_from: &[NameFrom::Prohibited],
-        name_required: false,
         children_presentational: false,
-        required_attributes: &[],
         specific_attributes: &[],
         prohibited_attributes: &["aria-label", "aria-labelledby"],
         deprecated_attributes: &[
@@ -276,7 +243,6 @@ pub(super) const ROLES: &[Role] = &[
     Role {
         name: "columnheader",
         is_abstract: false,
-        is_deprecated: false,
         superclasses: &["cell", "gridcell", "sectionhead"],
         ancestors: &[
             "cell",
@@ -290,9 +256,7 @@ pub(super) const ROLES: &[Role] = &[
         required_context: &["row"],
         required_owned: &[],
         name_from: &[NameFrom::Author, NameFrom::Contents],
-        name_required: true,
         children_presentational: false,
-        required_attributes: &[],
         specific_attributes: &[
             "aria-colindex",
             "aria-colspan",
@@ -318,15 +282,12 @@ pub(super) const ROLES: &[Role] = &[
     Role {
         name: "combobox",
         is_abstract: false,
-        is_deprecated: false,
         superclasses: &["input"],
         ancestors: &["input", "widget", "roletype"],
         required_context: &[],
         required_owned: &[],
         name_from: &[NameFrom::Author],
-        name_required: true,
         children_presentational: false,
-        required_attributes: &["aria-controls", "aria-expanded"],
         specific_attributes: &[
             "aria-activedescendant",
             "aria-autocomplete",
@@ -341,15 +302,12 @@ pub(super) const ROLES: &[Role] = &[
     Role {
         name: "command",
         is_abstract: true,
-        is_deprecated: false,
         superclasses: &["widget"],
         ancestors: &["widget", "roletype"],
         required_context: &[],
         required_owned: &[],
         name_from: &[NameFrom::Author],
-        name_required: false,
         children_presentational: false,
-        required_attributes: &[],
         specific_attributes: &[],
         prohibited_attributes: &[],
         deprecated_attributes: &[
@@ -365,15 +323,12 @@ pub(super) const ROLES: &[Role] = &[
     Role {
         name: "complementary",
         is_abstract: false,
-        is_deprecated: false,
         superclasses: &["landmark"],
         ancestors: &["landmark", "section", "structure", "roletype"],
         required_context: &[],
         required_owned: &[],
         name_from: &[NameFrom::Author],
-        name_required: false,
         children_presentational: false,
-        required_attributes: &[],
         specific_attributes: &[],
         prohibited_attributes: &[],
         deprecated_attributes: &[
@@ -389,15 +344,12 @@ pub(super) const ROLES: &[Role] = &[
     Role {
         name: "composite",
         is_abstract: true,
-        is_deprecated: false,
         superclasses: &["widget"],
         ancestors: &["widget", "roletype"],
         required_context: &[],
         required_owned: &[],
         name_from: &[NameFrom::Author],
-        name_required: false,
         children_presentational: false,
-        required_attributes: &[],
         specific_attributes: &["aria-activedescendant"],
         prohibited_attributes: &[],
         deprecated_attributes: &[
@@ -412,15 +364,12 @@ pub(super) const ROLES: &[Role] = &[
     Role {
         name: "contentinfo",
         is_abstract: false,
-        is_deprecated: false,
         superclasses: &["landmark"],
         ancestors: &["landmark", "section", "structure", "roletype"],
         required_context: &[],
         required_owned: &[],
         name_from: &[NameFrom::Author],
-        name_required: false,
         children_presentational: false,
-        required_attributes: &[],
         specific_attributes: &[],
         prohibited_attributes: &[],
         deprecated_attributes: &[
@@ -436,15 +385,12 @@ pub(super) const ROLES: &[Role] = &[
     Role {
         name: "definition",
         is_abstract: false,
-        is_deprecated: false,
         superclasses: &["section"],
         ancestors: &["section", "structure", "roletype"],
         required_context: &[],
         required_owned: &[],
         name_from: &[NameFrom::Author],
-        name_required: false,
         children_presentational: false,
-        required_attributes: &[],
         specific_attributes: &[],
         prohibited_attributes: &[],
         deprecated_attributes: &[
@@ -460,15 +406,12 @@ pub(super) const ROLES: &[Role] = &[
     Role {
         name: "deletion",
         is_abstract: false,
-        is_deprecated: false,
         superclasses: &["section"],
         ancestors: &["section", "structure", "roletype"],
         required_context: &[],
         required_owned: &[],
         name_from: &[NameFrom::Prohibited],
-        name_required: false,
         children_presentational: false,
-        required_attributes: &[],
         specific_attributes: &[],
         prohibited_attributes: &["aria-label", "aria-labelledby"],
         deprecated_attributes: &[
@@ -484,15 +427,12 @@ pub(super) const ROLES: &[Role] = &[
     Role {
         name: "dialog",
         is_abstract: false,
-        is_deprecated: false,
         superclasses: &["window"],
         ancestors: &["window", "roletype"],
         required_context: &[],
         required_owned: &[],
         name_from: &[NameFrom::Author],
-        name_required: true,
         children_presentational: false,
-        required_attributes: &[],
         specific_attributes: &["aria-modal"],
         prohibited_attributes: &[],
         deprecated_attributes: &[
@@ -508,15 +448,12 @@ pub(super) const ROLES: &[Role] = &[
     Role {
         name: "directory",
         is_abstract: false,
-        is_deprecated: true,
         superclasses: &["list"],
         ancestors: &["list", "section", "structure", "roletype"],
         required_context: &[],
         required_owned: &[],
         name_from: &[NameFrom::Author],
-        name_required: false,
         children_presentational: false,
-        required_attributes: &[],
         specific_attributes: &[],
         prohibited_attributes: &[],
         deprecated_attributes: &[
@@ -532,15 +469,12 @@ pub(super) const ROLES: &[Role] = &[
     Role {
         name: "document",
         is_abstract: false,
-        is_deprecated: false,
         superclasses: &["structure"],
         ancestors: &["structure", "roletype"],
         required_context: &[],
         required_owned: &[],
         name_from: &[NameFrom::Author],
-        name_required: false,
         children_presentational: false,
-        required_attributes: &[],
         specific_attributes: &[],
         prohibited_attributes: &[],
         deprecated_attributes: &[
@@ -556,15 +490,12 @@ pub(super) const ROLES: &[Role] = &[
     Role {
         name: "emphasis",
         is_abstract: false,
-        is_deprecated: false,
         superclasses: &["section"],
         ancestors: &["section", "structure", "roletype"],
         required_context: &[],
         required_owned: &[],
         name_from: &[NameFrom::Prohibited],
-        name_required: false,
         children_presentational: false,
-        required_attributes: &[],
         specific_attributes: &[],
         prohibited_attributes: &["aria-label", "aria-labelledby"],
         deprecated_attributes: &[
@@ -580,7 +511,6 @@ pub(super) const ROLES: &[Role] = &[
     Role {
         name: "feed",
         is_abstract: false,
-        is_deprecated: false,
         superclasses: &["list"],
         ancestors: &["list", "section", "structure", "roletype"],
         required_context: &[],
@@ -589,9 +519,7 @@ pub(super) const ROLES: &[Role] = &[
             via: None,
         }],
         name_from: &[NameFrom::Author],
-        name_required: false,
         children_presentational: false,
-        required_attributes: &[],
         specific_attributes: &[],
         prohibited_attributes: &[],
         deprecated_attributes: &[
@@ -607,15 +535,12 @@ pub(super) const ROLES: &[Role] = &[
     Role {
         name: "figure",
         is_abstract: false,
-        is_deprecated: false,
         superclasses: &["section"],
         ancestors: &["section", "structure", "roletype"],
         required_context: &[],
         required_owned: &[],
         name_from: &[NameFrom::Author],
-        name_required: false,
         children_presentational: false,
-        required_attributes: &[],
         specific_attributes: &[],
         prohibited_attributes: &[],
         deprecated_attributes: &[
@@ -631,15 +556,12 @@ pub(super) const ROLES: &[Role] = &[
     Role {
         name: "form",
         is_abstract: false,
-        is_deprecated: false,
         superclasses: &["landmark"],
         ancestors: &["landmark", "section", "structure", "roletype"],
         required_context: &[],
         required_owned: &[],
         name_from: &[NameFrom::Author],
-        name_required: false,
         children_presentational: false,
-        required_attributes: &[],
         specific_attributes: &[],
         prohibited_attributes: &[],
         deprecated_attributes: &[
@@ -655,15 +577,12 @@ pub(super) const ROLES: &[Role] = &[
     Role {
         name: "generic",
         is_abstract: false,
-        is_deprecated: false,
         superclasses: &["structure"],
         ancestors: &["structure", "roletype"],
         required_context: &[],
         required_owned: &[],
         name_from: &[NameFrom::Prohibited],
-        name_required: false,
         children_presentational: false,
-        required_attributes: &[],
         specific_attributes: &[],
         prohibited_attributes: &["aria-label", "aria-labelledby", "aria-roledescription"],
         deprecated_attributes: &[
@@ -679,7 +598,6 @@ pub(super) const ROLES: &[Role] = &[
     Role {
         name: "grid",
         is_abstract: false,
-        is_deprecated: false,
         superclasses: &["composite", "table"],
         ancestors: &[
             "composite",
@@ -701,9 +619,7 @@ pub(super) const ROLES: &[Role] = &[
             },
         ],
         name_from: &[NameFrom::Author],
-        name_required: true,
         children_presentational: false,
-        required_attributes: &[],
         specific_attributes: &[
             "aria-activedescendant",
             "aria-colcount",
@@ -724,15 +640,12 @@ pub(super) const ROLES: &[Role] = &[
     Role {
         name: "gridcell",
         is_abstract: false,
-        is_deprecated: false,
         superclasses: &["cell", "widget"],
         ancestors: &["cell", "section", "structure", "roletype", "widget"],
         required_context: &["row"],
         required_owned: &[],
         name_from: &[NameFrom::Author, NameFrom::Contents],
-        name_required: false,
         children_presentational: false,
-        required_attributes: &[],
         specific_attributes: &[
             "aria-colindex",
             "aria-colspan",
@@ -750,15 +663,12 @@ pub(super) const ROLES: &[Role] = &[
     Role {
         name: "group",
         is_abstract: false,
-        is_deprecated: false,
         superclasses: &["section"],
         ancestors: &["section", "structure", "roletype"],
         required_context: &[],
         required_owned: &[],
         name_from: &[NameFrom::Author],
-        name_required: false,
         children_presentational: false,
-        required_attributes: &[],
         specific_attributes: &["aria-activedescendant"],
         prohibited_attributes: &[],
         deprecated_attributes: &[
@@ -773,15 +683,12 @@ pub(super) const ROLES: &[Role] = &[
     Role {
         name: "heading",
         is_abstract: false,
-        is_deprecated: false,
         superclasses: &["sectionhead"],
         ancestors: &["sectionhead", "structure", "roletype"],
         required_context: &[],
         required_owned: &[],
         name_from: &[NameFrom::Author, NameFrom::Contents],
-        name_required: true,
         children_presentational: false,
-        required_attributes: &["aria-level"],
         specific_attributes: &["aria-level"],
         prohibited_attributes: &[],
         deprecated_attributes: &[
@@ -797,15 +704,12 @@ pub(super) const ROLES: &[Role] = &[
     Role {
         name: "img",
         is_abstract: false,
-        is_deprecated: false,
         superclasses: &["section"],
         ancestors: &["section", "structure", "roletype"],
         required_context: &[],
         required_owned: &[],
         name_from: &[NameFrom::Author],
-        name_required: true,
         children_presentational: true,
-        required_attributes: &[],
         specific_attributes: &[],
         prohibited_attributes: &[],
         deprecated_attributes: &[
@@ -821,15 +725,12 @@ pub(super) const ROLES: &[Role] = &[
     Role {
         name: "input",
         is_abstract: true,
-        is_deprecated: false,
         superclasses: &["widget"],
         ancestors: &["widget", "roletype"],
         required_context: &[],
         required_owned: &[],
         name_from: &[NameFrom::Author],
-        name_required: false,
         children_presentational: false,
-        required_attributes: &[],
         specific_attributes: &[],
         prohibited_attributes: &[],
         deprecated_attributes: &[
@@ -844,15 +745,12 @@ pub(super) const ROLES: &[Role] = &[
     Role {
         name: "insertion",
         is_abstract: false,
-        is_deprecated: false,
         superclasses: &["section"],
         ancestors: &["section", "structure", "roletype"],
         required_context: &[],
         required_owned: &[],
         name_from: &[NameFrom::Prohibited],
-        name_required: false,
         children_presentational: false,
-        required_attributes: &[],
         specific_attributes: &[],
         prohibited_attributes: &["aria-label", "aria-labelledby"],
         deprecated_attributes: &[
@@ -868,15 +766,12 @@ pub(super) const ROLES: &[Role] = &[
     Role {
         name: "landmark",
         is_abstract: true,
-        is_deprecated: false,
         superclasses: &["section"],
         ancestors: &["section", "structure", "roletype"],
         required_context: &[],
         required_owned: &[],
         name_from: &[NameFrom::Author],
-        name_required: false,
         children_presentational: false,
-        required_attributes: &[],
         specific_attributes: &[],
         prohibited_attributes: &[],
         deprecated_attributes: &[
@@ -892,15 +787,12 @@ pub(super) const ROLES: &[Role] = &[
     Role {
         name: "link",
         is_abstract: false,
-        is_deprecated: false,
         superclasses: &["command"],
         ancestors: &["command", "widget", "roletype"],
         required_context: &[],
         required_owned: &[],
         name_from: &[NameFrom::Author, NameFrom::Contents],
-        name_required: true,
         children_presentational: false,
-        required_attributes: &[],
         specific_attributes: &["aria-expanded"],
         prohibited_attributes: &[],
         deprecated_attributes: &[
@@ -914,7 +806,6 @@ pub(super) const ROLES: &[Role] = &[
     Role {
         name: "list",
         is_abstract: false,
-        is_deprecated: false,
         superclasses: &["section"],
         ancestors: &["section", "structure", "roletype"],
         required_context: &[],
@@ -923,9 +814,7 @@ pub(super) const ROLES: &[Role] = &[
             via: None,
         }],
         name_from: &[NameFrom::Author],
-        name_required: false,
         children_presentational: false,
-        required_attributes: &[],
         specific_attributes: &[],
         prohibited_attributes: &[],
         deprecated_attributes: &[
@@ -941,7 +830,6 @@ pub(super) const ROLES: &[Role] = &[
     Role {
         name: "listbox",
         is_abstract: false,
-        is_deprecated: false,
         superclasses: &["select"],
         ancestors: &[
             "select",
@@ -964,9 +852,7 @@ pub(super) const ROLES: &[Role] = &[
             },
         ],
         name_from: &[NameFrom::Author],
-        name_required: true,
         children_presentational: false,
-        required_attributes: &[],
         specific_attributes: &[
             "aria-activedescendant",
             "aria-expanded",
@@ -982,15 +868,12 @@ pub(super) const ROLES: &[Role] = &[
     Role {
         name: "listitem",
         is_abstract: false,
-        is_deprecated: false,
         superclasses: &["section"],
         ancestors: &["section", "structure", "roletype"],
         required_context: &["directory", "list"],
         required_owned: &[],
         name_from: &[NameFrom::Author],
-        name_required: false,
         children_presentational: false,
-        required_attributes: &[],
         specific_attributes: &["aria-level", "aria-posinset", "aria-setsize"],
         prohibited_attributes: &[],
         deprecated_attributes: &[
@@ -1006,15 +889,12 @@ pub(super) const ROLES: &[Role] = &[
     Role {
         name: "log",
         is_abstract: false,
-        is_deprecated: false,
         superclasses: &["section"],
         ancestors: &["section", "structure", "roletype"],
         required_context: &[],
         required_owned: &[],
         name_from: &[NameFrom::Author],
-        name_required: false,
         children_presentational: false,
-        required_attributes: &[],
         specific_attributes: &[],
         prohibited_attributes: &[],
         deprecated_attributes: &[
@@ -1030,15 +910,12 @@ pub(super) const ROLES: &[Role] = &[
     Role {
         name: "main",
         is_abstract: false,
-        is_deprecated: false,
         superclasses: &["landmark"],
         ancestors: &["landmark", "section", "structure", "roletype"],
         required_context: &[],
         required_owned: &[],
         name_from: &[NameFrom::Author],
-        name_required: false,
         children_presentational: false,
-        required_attributes: &[],
         specific_attributes: &[],
         prohibited_attributes: &[],
         deprecated_attributes: &[
@@ -1054,15 +931,12 @@ pub(super) const ROLES: &[Role] = &[
     Role {
         name: "marquee",
         is_abstract: false,
-        is_deprecated: false,
         superclasses: &["section"],
         ancestors: &["section", "structure", "roletype"],
         required_context: &[],
         required_owned: &[],
         name_from: &[NameFrom::Author],
-        name_required: true,
         children_presentational: false,
-        required_attributes: &[],
         specific_attributes: &[],
         prohibited_attributes: &[],
         deprecated_attributes: &[
@@ -1078,15 +952,12 @@ pub(super) const ROLES: &[Role] = &[
     Role {
         name: "math",
         is_abstract: false,
-        is_deprecated: false,
         superclasses: &["section"],
         ancestors: &["section", "structure", "roletype"],
         required_context: &[],
         required_owned: &[],
         name_from: &[NameFrom::Author],
-        name_required: false,
         children_presentational: false,
-        required_attributes: &[],
         specific_attributes: &[],
         prohibited_attributes: &[],
         deprecated_attributes: &[
@@ -1102,7 +973,6 @@ pub(super) const ROLES: &[Role] = &[
     Role {
         name: "menu",
         is_abstract: false,
-        is_deprecated: false,
         superclasses: &["select"],
         ancestors: &[
             "select",
@@ -1141,9 +1011,7 @@ pub(super) const ROLES: &[Role] = &[
             },
         ],
         name_from: &[NameFrom::Author],
-        name_required: false,
         children_presentational: false,
-        required_attributes: &[],
         specific_attributes: &["aria-activedescendant", "aria-orientation"],
         prohibited_attributes: &[],
         deprecated_attributes: &[
@@ -1158,7 +1026,6 @@ pub(super) const ROLES: &[Role] = &[
     Role {
         name: "menubar",
         is_abstract: false,
-        is_deprecated: false,
         superclasses: &["menu"],
         ancestors: &[
             "menu",
@@ -1198,9 +1065,7 @@ pub(super) const ROLES: &[Role] = &[
             },
         ],
         name_from: &[NameFrom::Author],
-        name_required: false,
         children_presentational: false,
-        required_attributes: &[],
         specific_attributes: &["aria-activedescendant", "aria-orientation"],
         prohibited_attributes: &[],
         deprecated_attributes: &[
@@ -1215,15 +1080,12 @@ pub(super) const ROLES: &[Role] = &[
     Role {
         name: "menuitem",
         is_abstract: false,
-        is_deprecated: false,
         superclasses: &["command"],
         ancestors: &["command", "widget", "roletype"],
         required_context: &["group", "menu", "menubar"],
         required_owned: &[],
         name_from: &[NameFrom::Author, NameFrom::Contents],
-        name_required: true,
         children_presentational: false,
-        required_attributes: &[],
         specific_attributes: &["aria-expanded", "aria-posinset", "aria-setsize"],
         prohibited_attributes: &[],
         deprecated_attributes: &[
@@ -1237,15 +1099,12 @@ pub(super) const ROLES: &[Role] = &[
     Role {
         name: "menuitemcheckbox",
         is_abstract: false,
-        is_deprecated: false,
         superclasses: &["menuitem"],
         ancestors: &["menuitem", "command", "widget", "roletype"],
         required_context: &["group", "menu", "menubar"],
         required_owned: &[],
         name_from: &[NameFrom::Author, NameFrom::Contents],
-        name_required: true,
         children_presentational: true,
-        required_attributes: &["aria-checked"],
         specific_attributes: &[
             "aria-checked",
             "aria-expanded",
@@ -1264,7 +1123,6 @@ pub(super) const ROLES: &[Role] = &[
     Role {
         name: "menuitemradio",
         is_abstract: false,
-        is_deprecated: false,
         superclasses: &["menuitemcheckbox"],
         ancestors: &[
             "menuitemcheckbox",
@@ -1276,9 +1134,7 @@ pub(super) const ROLES: &[Role] = &[
         required_context: &["group", "menu", "menubar"],
         required_owned: &[],
         name_from: &[NameFrom::Author, NameFrom::Contents],
-        name_required: true,
         children_presentational: true,
-        required_attributes: &["aria-checked"],
         specific_attributes: &[
             "aria-checked",
             "aria-expanded",
@@ -1297,15 +1153,12 @@ pub(super) const ROLES: &[Role] = &[
     Role {
         name: "meter",
         is_abstract: false,
-        is_deprecated: false,
         superclasses: &["range"],
         ancestors: &["range", "structure", "roletype"],
         required_context: &[],
         required_owned: &[],
         name_from: &[NameFrom::Author],
-        name_required: true,
         children_presentational: true,
-        required_attributes: &["aria-valuenow"],
         specific_attributes: &[
             "aria-valuemax",
             "aria-valuemin",
@@ -1326,15 +1179,12 @@ pub(super) const ROLES: &[Role] = &[
     Role {
         name: "navigation",
         is_abstract: false,
-        is_deprecated: false,
         superclasses: &["landmark"],
         ancestors: &["landmark", "section", "structure", "roletype"],
         required_context: &[],
         required_owned: &[],
         name_from: &[NameFrom::Author],
-        name_required: false,
         children_presentational: false,
-        required_attributes: &[],
         specific_attributes: &[],
         prohibited_attributes: &[],
         deprecated_attributes: &[
@@ -1350,15 +1200,12 @@ pub(super) const ROLES: &[Role] = &[
     Role {
         name: "none",
         is_abstract: false,
-        is_deprecated: false,
         superclasses: &["structure"],
         ancestors: &["structure", "roletype"],
         required_context: &[],
         required_owned: &[],
         name_from: &[NameFrom::Prohibited],
-        name_required: false,
         children_presentational: false,
-        required_attributes: &[],
         specific_attributes: &[],
         prohibited_attributes: &["aria-label", "aria-labelledby"],
         deprecated_attributes: &[
@@ -1374,15 +1221,12 @@ pub(super) const ROLES: &[Role] = &[
     Role {
         name: "note",
         is_abstract: false,
-        is_deprecated: false,
         superclasses: &["section"],
         ancestors: &["section", "structure", "roletype"],
         required_context: &[],
         required_owned: &[],
         name_from: &[NameFrom::Author],
-        name_required: false,
         children_presentational: false,
-        required_attributes: &[],
         specific_attributes: &[],
         prohibited_attributes: &[],
         deprecated_attributes: &[
@@ -1398,15 +1242,12 @@ pub(super) const ROLES: &[Role] = &[
     Role {
         name: "option",
         is_abstract: false,
-        is_deprecated: false,
         superclasses: &["input"],
         ancestors: &["input", "widget", "roletype"],
         required_context: &["group", "listbox"],
         required_owned: &[],
         name_from: &[NameFrom::Author, NameFrom::Contents],
-        name_required: true,
         children_presentational: true,
-        required_attributes: &["aria-selected"],
         specific_attributes: &[
             "aria-checked",
             "aria-posinset",
@@ -1426,15 +1267,12 @@ pub(super) const ROLES: &[Role] = &[
     Role {
         name: "paragraph",
         is_abstract: false,
-        is_deprecated: false,
         superclasses: &["section"],
         ancestors: &["section", "structure", "roletype"],
         required_context: &[],
         required_owned: &[],
         name_from: &[NameFrom::Prohibited],
-        name_required: false,
         children_presentational: false,
-        required_attributes: &[],
         specific_attributes: &[],
         prohibited_attributes: &["aria-label", "aria-labelledby"],
         deprecated_attributes: &[
@@ -1450,15 +1288,12 @@ pub(super) const ROLES: &[Role] = &[
     Role {
         name: "presentation",
         is_abstract: false,
-        is_deprecated: false,
         superclasses: &["structure"],
         ancestors: &["structure", "roletype"],
         required_context: &[],
         required_owned: &[],
         name_from: &[NameFrom::Prohibited],
-        name_required: false,
         children_presentational: false,
-        required_attributes: &[],
         specific_attributes: &[],
         prohibited_attributes: &["aria-label", "aria-labelledby"],
         deprecated_attributes: &[
@@ -1474,15 +1309,12 @@ pub(super) const ROLES: &[Role] = &[
     Role {
         name: "progressbar",
         is_abstract: false,
-        is_deprecated: false,
         superclasses: &["range", "widget"],
         ancestors: &["range", "structure", "roletype", "widget"],
         required_context: &[],
         required_owned: &[],
         name_from: &[NameFrom::Author],
-        name_required: true,
         children_presentational: true,
-        required_attributes: &[],
         specific_attributes: &[
             "aria-valuemax",
             "aria-valuemin",
@@ -1503,15 +1335,12 @@ pub(super) const ROLES: &[Role] = &[
     Role {
         name: "radio",
         is_abstract: false,
-        is_deprecated: false,
         superclasses: &["input"],
         ancestors: &["input", "widget", "roletype"],
         required_context: &[],
         required_owned: &[],
         name_from: &[NameFrom::Author, NameFrom::Contents],
-        name_required: true,
         children_presentational: true,
-        required_attributes: &["aria-checked"],
         specific_attributes: &["aria-checked", "aria-posinset", "aria-setsize"],
         prohibited_attributes: &[],
         deprecated_attributes: &[
@@ -1526,7 +1355,6 @@ pub(super) const ROLES: &[Role] = &[
     Role {
         name: "radiogroup",
         is_abstract: false,
-        is_deprecated: false,
         superclasses: &["select"],
         ancestors: &[
             "select",
@@ -1543,9 +1371,7 @@ pub(super) const ROLES: &[Role] = &[
             via: None,
         }],
         name_from: &[NameFrom::Author],
-        name_required: true,
         children_presentational: false,
-        required_attributes: &[],
         specific_attributes: &[
             "aria-activedescendant",
             "aria-orientation",
@@ -1559,15 +1385,12 @@ pub(super) const ROLES: &[Role] = &[
     Role {
         name: "range",
         is_abstract: true,
-        is_deprecated: false,
         superclasses: &["structure"],
         ancestors: &["structure", "roletype"],
         required_context: &[],
         required_owned: &[],
         name_from: &[NameFrom::Author],
-        name_required: false,
         children_presentational: false,
-        required_attributes: &[],
         specific_attributes: &[
             "aria-valuemax",
             "aria-valuemin",
@@ -1588,15 +1411,12 @@ pub(super) const ROLES: &[Role] = &[
     Role {
         name: "region",
         is_abstract: false,
-        is_deprecated: false,
         superclasses: &["landmark"],
         ancestors: &["landmark", "section", "structure", "roletype"],
         required_context: &[],
         required_owned: &[],
         name_from: &[NameFrom::Author],
-        name_required: true,
         children_presentational: false,
-        required_attributes: &[],
         specific_attributes: &[],
         prohibited_attributes: &[],
         deprecated_attributes: &[
@@ -1612,15 +1432,12 @@ pub(super) const ROLES: &[Role] = &[
     Role {
         name: "roletype",
         is_abstract: true,
-        is_deprecated: false,
         superclasses: &[],
         ancestors: &[],
         required_context: &[],
         required_owned: &[],
         name_from: &[],
-        name_required: false,
         children_presentational: false,
-        required_attributes: &[],
         specific_attributes: &[],
         prohibited_attributes: &[],
         deprecated_attributes: &[
@@ -1636,7 +1453,6 @@ pub(super) const ROLES: &[Role] = &[
     Role {
         name: "row",
         is_abstract: false,
-        is_deprecated: false,
         superclasses: &["group", "widget"],
         ancestors: &["group", "section", "structure", "roletype", "widget"],
         required_context: &["grid", "rowgroup", "table", "treegrid"],
@@ -1659,9 +1475,7 @@ pub(super) const ROLES: &[Role] = &[
             },
         ],
         name_from: &[NameFrom::Author, NameFrom::Contents],
-        name_required: false,
         children_presentational: false,
-        required_attributes: &[],
         specific_attributes: &[
             "aria-activedescendant",
             "aria-colindex",
@@ -1685,7 +1499,6 @@ pub(super) const ROLES: &[Role] = &[
     Role {
         name: "rowgroup",
         is_abstract: false,
-        is_deprecated: false,
         superclasses: &["structure"],
         ancestors: &["structure", "roletype"],
         required_context: &["grid", "table", "treegrid"],
@@ -1694,9 +1507,7 @@ pub(super) const ROLES: &[Role] = &[
             via: None,
         }],
         name_from: &[NameFrom::Author],
-        name_required: false,
         children_presentational: false,
-        required_attributes: &[],
         specific_attributes: &[],
         prohibited_attributes: &[],
         deprecated_attributes: &[
@@ -1712,7 +1523,6 @@ pub(super) const ROLES: &[Role] = &[
     Role {
         name: "rowheader",
         is_abstract: false,
-        is_deprecated: false,
         superclasses: &["cell", "gridcell", "sectionhead"],
         ancestors: &[
             "cell",
@@ -1726,9 +1536,7 @@ pub(super) const ROLES: &[Role] = &[
         required_context: &["row"],
         required_owned: &[],
         name_from: &[NameFrom::Author, NameFrom::Contents],
-        name_required: true,
         children_presentational: false,
-        required_attributes: &[],
         specific_attributes: &[
             "aria-colindex",
             "aria-colspan",
@@ -1754,15 +1562,12 @@ pub(super) const ROLES: &[Role] = &[
     Role {
         name: "scrollbar",
         is_abstract: false,
-        is_deprecated: false,
         superclasses: &["range", "widget"],
         ancestors: &["range", "structure", "roletype", "widget"],
         required_context: &[],
         required_owned: &[],
         name_from: &[NameFrom::Author],
-        name_required: false,
         children_presentational: true,
-        required_attributes: &["aria-controls", "aria-valuenow"],
         specific_attributes: &[
             "aria-orientation",
             "aria-valuemax",
@@ -1787,15 +1592,12 @@ pub(super) const ROLES: &[Role] = &[
     Role {
         name: "search",
         is_abstract: false,
-        is_deprecated: false,
         superclasses: &["landmark"],
         ancestors: &["landmark", "section", "structure", "roletype"],
         required_context: &[],
         required_owned: &[],
         name_from: &[NameFrom::Author],
-        name_required: false,
         children_presentational: false,
-        required_attributes: &[],
         specific_attributes: &[],
         prohibited_attributes: &[],
         deprecated_attributes: &[
@@ -1811,15 +1613,12 @@ pub(super) const ROLES: &[Role] = &[
     Role {
         name: "searchbox",
         is_abstract: false,
-        is_deprecated: false,
         superclasses: &["textbox"],
         ancestors: &["textbox", "input", "widget", "roletype"],
         required_context: &[],
         required_owned: &[],
         name_from: &[NameFrom::Author],
-        name_required: true,
         children_presentational: false,
-        required_attributes: &[],
         specific_attributes: &[
             "aria-activedescendant",
             "aria-autocomplete",
@@ -1835,15 +1634,12 @@ pub(super) const ROLES: &[Role] = &[
     Role {
         name: "section",
         is_abstract: true,
-        is_deprecated: false,
         superclasses: &["structure"],
         ancestors: &["structure", "roletype"],
         required_context: &[],
         required_owned: &[],
         name_from: &[],
-        name_required: false,
         children_presentational: false,
-        required_attributes: &[],
         specific_attributes: &[],
         prohibited_attributes: &[],
         deprecated_attributes: &[
@@ -1859,15 +1655,12 @@ pub(super) const ROLES: &[Role] = &[
     Role {
         name: "sectionhead",
         is_abstract: true,
-        is_deprecated: false,
         superclasses: &["structure"],
         ancestors: &["structure", "roletype"],
         required_context: &[],
         required_owned: &[],
         name_from: &[NameFrom::Author, NameFrom::Contents],
-        name_required: false,
         children_presentational: false,
-        required_attributes: &[],
         specific_attributes: &[],
         prohibited_attributes: &[],
         deprecated_attributes: &[
@@ -1883,7 +1676,6 @@ pub(super) const ROLES: &[Role] = &[
     Role {
         name: "select",
         is_abstract: true,
-        is_deprecated: false,
         superclasses: &["composite", "group"],
         ancestors: &[
             "composite",
@@ -1896,9 +1688,7 @@ pub(super) const ROLES: &[Role] = &[
         required_context: &[],
         required_owned: &[],
         name_from: &[NameFrom::Author],
-        name_required: false,
         children_presentational: false,
-        required_attributes: &[],
         specific_attributes: &["aria-activedescendant", "aria-orientation"],
         prohibited_attributes: &[],
         deprecated_attributes: &[
@@ -1913,15 +1703,12 @@ pub(super) const ROLES: &[Role] = &[
     Role {
         name: "separator",
         is_abstract: false,
-        is_deprecated: false,
         superclasses: &["structure", "widget"],
         ancestors: &["structure", "roletype", "widget"],
         required_context: &[],
         required_owned: &[],
         name_from: &[NameFrom::Author],
-        name_required: false,
         children_presentational: true,
-        required_attributes: &["aria-valuenow"],
         specific_attributes: &[
             "aria-orientation",
             "aria-valuemax",
@@ -1946,15 +1733,12 @@ pub(super) const ROLES: &[Role] = &[
     Role {
         name: "slider",
         is_abstract: false,
-        is_deprecated: false,
         superclasses: &["input", "range"],
         ancestors: &["input", "widget", "roletype", "range", "structure"],
         required_context: &[],
         required_owned: &[],
         name_from: &[NameFrom::Author],
-        name_required: true,
         children_presentational: true,
-        required_attributes: &["aria-valuenow"],
         specific_attributes: &[
             "aria-orientation",
             "aria-readonly",
@@ -1974,7 +1758,6 @@ pub(super) const ROLES: &[Role] = &[
     Role {
         name: "spinbutton",
         is_abstract: false,
-        is_deprecated: false,
         superclasses: &["composite", "input", "range"],
         ancestors: &[
             "composite",
@@ -1987,9 +1770,7 @@ pub(super) const ROLES: &[Role] = &[
         required_context: &[],
         required_owned: &[],
         name_from: &[NameFrom::Author],
-        name_required: true,
         children_presentational: false,
-        required_attributes: &[],
         specific_attributes: &[
             "aria-activedescendant",
             "aria-readonly",
@@ -2006,15 +1787,12 @@ pub(super) const ROLES: &[Role] = &[
     Role {
         name: "status",
         is_abstract: false,
-        is_deprecated: false,
         superclasses: &["section"],
         ancestors: &["section", "structure", "roletype"],
         required_context: &[],
         required_owned: &[],
         name_from: &[NameFrom::Author],
-        name_required: false,
         children_presentational: false,
-        required_attributes: &[],
         specific_attributes: &[],
         prohibited_attributes: &[],
         deprecated_attributes: &[
@@ -2030,15 +1808,12 @@ pub(super) const ROLES: &[Role] = &[
     Role {
         name: "strong",
         is_abstract: false,
-        is_deprecated: false,
         superclasses: &["section"],
         ancestors: &["section", "structure", "roletype"],
         required_context: &[],
         required_owned: &[],
         name_from: &[NameFrom::Prohibited],
-        name_required: false,
         children_presentational: false,
-        required_attributes: &[],
         specific_attributes: &[],
         prohibited_attributes: &["aria-label", "aria-labelledby"],
         deprecated_attributes: &[
@@ -2054,15 +1829,12 @@ pub(super) const ROLES: &[Role] = &[
     Role {
         name: "structure",
         is_abstract: true,
-        is_deprecated: false,
         superclasses: &["roletype"],
         ancestors: &["roletype"],
         required_context: &[],
         required_owned: &[],
         name_from: &[],
-        name_required: false,
         children_presentational: false,
-        required_attributes: &[],
         specific_attributes: &[],
         prohibited_attributes: &[],
         deprecated_attributes: &[
@@ -2078,15 +1850,12 @@ pub(super) const ROLES: &[Role] = &[
     Role {
         name: "subscript",
         is_abstract: false,
-        is_deprecated: false,
         superclasses: &["section"],
         ancestors: &["section", "structure", "roletype"],
         required_context: &[],
         required_owned: &[],
         name_from: &[NameFrom::Prohibited],
-        name_required: false,
         children_presentational: false,
-        required_attributes: &[],
         specific_attributes: &[],
         prohibited_attributes: &["aria-label", "aria-labelledby"],
         deprecated_attributes: &[
@@ -2102,15 +1871,12 @@ pub(super) const ROLES: &[Role] = &[
     Role {
         name: "superscript",
         is_abstract: false,
-        is_deprecated: false,
         superclasses: &["section"],
         ancestors: &["section", "structure", "roletype"],
         required_context: &[],
         required_owned: &[],
         name_from: &[NameFrom::Prohibited],
-        name_required: false,
         children_presentational: false,
-        required_attributes: &[],
         specific_attributes: &[],
         prohibited_attributes: &["aria-label", "aria-labelledby"],
         deprecated_attributes: &[
@@ -2126,15 +1892,12 @@ pub(super) const ROLES: &[Role] = &[
     Role {
         name: "switch",
         is_abstract: false,
-        is_deprecated: false,
         superclasses: &["checkbox"],
         ancestors: &["checkbox", "input", "widget", "roletype"],
         required_context: &[],
         required_owned: &[],
         name_from: &[NameFrom::Author, NameFrom::Contents],
-        name_required: true,
         children_presentational: true,
-        required_attributes: &["aria-checked"],
         specific_attributes: &[
             "aria-checked",
             "aria-expanded",
@@ -2148,15 +1911,12 @@ pub(super) const ROLES: &[Role] = &[
     Role {
         name: "tab",
         is_abstract: false,
-        is_deprecated: false,
         superclasses: &["sectionhead", "widget"],
         ancestors: &["sectionhead", "structure", "roletype", "widget"],
         required_context: &["tablist"],
         required_owned: &[],
         name_from: &[NameFrom::Author, NameFrom::Contents],
-        name_required: false,
         children_presentational: true,
-        required_attributes: &[],
         specific_attributes: &[
             "aria-expanded",
             "aria-posinset",
@@ -2175,7 +1935,6 @@ pub(super) const ROLES: &[Role] = &[
     Role {
         name: "table",
         is_abstract: false,
-        is_deprecated: false,
         superclasses: &["section"],
         ancestors: &["section", "structure", "roletype"],
         required_context: &[],
@@ -2190,9 +1949,7 @@ pub(super) const ROLES: &[Role] = &[
             },
         ],
         name_from: &[NameFrom::Author],
-        name_required: true,
         children_presentational: false,
-        required_attributes: &[],
         specific_attributes: &["aria-colcount", "aria-rowcount"],
         prohibited_attributes: &[],
         deprecated_attributes: &[
@@ -2208,7 +1965,6 @@ pub(super) const ROLES: &[Role] = &[
     Role {
         name: "tablist",
         is_abstract: false,
-        is_deprecated: false,
         superclasses: &["composite"],
         ancestors: &["composite", "widget", "roletype"],
         required_context: &[],
@@ -2217,9 +1973,7 @@ pub(super) const ROLES: &[Role] = &[
             via: None,
         }],
         name_from: &[NameFrom::Author],
-        name_required: false,
         children_presentational: false,
-        required_attributes: &[],
         specific_attributes: &[
             "aria-activedescendant",
             "aria-multiselectable",
@@ -2238,15 +1992,12 @@ pub(super) const ROLES: &[Role] = &[
     Role {
         name: "tabpanel",
         is_abstract: false,
-        is_deprecated: false,
         superclasses: &["section"],
         ancestors: &["section", "structure", "roletype"],
         required_context: &[],
         required_owned: &[],
         name_from: &[NameFrom::Author],
-        name_required: true,
         children_presentational: false,
-        required_attributes: &[],
         specific_attributes: &[],
         prohibited_attributes: &[],
         deprecated_attributes: &[
@@ -2262,15 +2013,12 @@ pub(super) const ROLES: &[Role] = &[
     Role {
         name: "term",
         is_abstract: false,
-        is_deprecated: false,
         superclasses: &["section"],
         ancestors: &["section", "structure", "roletype"],
         required_context: &[],
         required_owned: &[],
         name_from: &[NameFrom::Author],
-        name_required: false,
         children_presentational: false,
-        required_attributes: &[],
         specific_attributes: &[],
         prohibited_attributes: &[],
         deprecated_attributes: &[
@@ -2286,15 +2034,12 @@ pub(super) const ROLES: &[Role] = &[
     Role {
         name: "textbox",
         is_abstract: false,
-        is_deprecated: false,
         superclasses: &["input"],
         ancestors: &["input", "widget", "roletype"],
         required_context: &[],
         required_owned: &[],
         name_from: &[NameFrom::Author],
-        name_required: true,
         children_presentational: false,
-        required_attributes: &[],
         specific_attributes: &[
             "aria-activedescendant",
             "aria-autocomplete",
@@ -2310,15 +2055,12 @@ pub(super) const ROLES: &[Role] = &[
     Role {
         name: "time",
         is_abstract: false,
-        is_deprecated: false,
         superclasses: &["section"],
         ancestors: &["section", "structure", "roletype"],
         required_context: &[],
         required_owned: &[],
         name_from: &[NameFrom::Author],
-        name_required: false,
         children_presentational: false,
-        required_attributes: &[],
         specific_attributes: &[],
         prohibited_attributes: &[],
         deprecated_attributes: &[
@@ -2334,15 +2076,12 @@ pub(super) const ROLES: &[Role] = &[
     Role {
         name: "timer",
         is_abstract: false,
-        is_deprecated: false,
         superclasses: &["status"],
         ancestors: &["status", "section", "structure", "roletype"],
         required_context: &[],
         required_owned: &[],
         name_from: &[NameFrom::Author],
-        name_required: false,
         children_presentational: false,
-        required_attributes: &[],
         specific_attributes: &[],
         prohibited_attributes: &[],
         deprecated_attributes: &[
@@ -2358,15 +2097,12 @@ pub(super) const ROLES: &[Role] = &[
     Role {
         name: "toolbar",
         is_abstract: false,
-        is_deprecated: false,
         superclasses: &["group"],
         ancestors: &["group", "section", "structure", "roletype"],
         required_context: &[],
         required_owned: &[],
         name_from: &[NameFrom::Author],
-        name_required: false,
         children_presentational: false,
-        required_attributes: &[],
         specific_attributes: &["aria-activedescendant", "aria-orientation"],
         prohibited_attributes: &[],
         deprecated_attributes: &[
@@ -2381,15 +2117,12 @@ pub(super) const ROLES: &[Role] = &[
     Role {
         name: "tooltip",
         is_abstract: false,
-        is_deprecated: false,
         superclasses: &["section"],
         ancestors: &["section", "structure", "roletype"],
         required_context: &[],
         required_owned: &[],
         name_from: &[NameFrom::Author, NameFrom::Contents],
-        name_required: true,
         children_presentational: false,
-        required_attributes: &[],
         specific_attributes: &[],
         prohibited_attributes: &[],
         deprecated_attributes: &[
@@ -2405,7 +2138,6 @@ pub(super) const ROLES: &[Role] = &[
     Role {
         name: "tree",
         is_abstract: false,
-        is_deprecated: false,
         superclasses: &["select"],
         ancestors: &[
             "select",
@@ -2428,9 +2160,7 @@ pub(super) const ROLES: &[Role] = &[
             },
         ],
         name_from: &[NameFrom::Author],
-        name_required: true,
         children_presentational: false,
-        required_attributes: &[],
         specific_attributes: &[
             "aria-activedescendant",
             "aria-multiselectable",
@@ -2444,7 +2174,6 @@ pub(super) const ROLES: &[Role] = &[
     Role {
         name: "treegrid",
         is_abstract: false,
-        is_deprecated: false,
         superclasses: &["grid", "tree"],
         ancestors: &[
             "grid",
@@ -2470,9 +2199,7 @@ pub(super) const ROLES: &[Role] = &[
             },
         ],
         name_from: &[NameFrom::Author],
-        name_required: true,
         children_presentational: false,
-        required_attributes: &[],
         specific_attributes: &[
             "aria-activedescendant",
             "aria-colcount",
@@ -2495,7 +2222,6 @@ pub(super) const ROLES: &[Role] = &[
     Role {
         name: "treeitem",
         is_abstract: false,
-        is_deprecated: false,
         superclasses: &["listitem", "option"],
         ancestors: &[
             "listitem",
@@ -2509,9 +2235,7 @@ pub(super) const ROLES: &[Role] = &[
         required_context: &["group", "tree"],
         required_owned: &[],
         name_from: &[NameFrom::Author, NameFrom::Contents],
-        name_required: true,
         children_presentational: false,
-        required_attributes: &["aria-selected"],
         specific_attributes: &[
             "aria-checked",
             "aria-expanded",
@@ -2533,15 +2257,12 @@ pub(super) const ROLES: &[Role] = &[
     Role {
         name: "widget",
         is_abstract: true,
-        is_deprecated: false,
         superclasses: &["roletype"],
         ancestors: &["roletype"],
         required_context: &[],
         required_owned: &[],
         name_from: &[],
-        name_required: false,
         children_presentational: false,
-        required_attributes: &[],
         specific_attributes: &[],
         prohibited_attributes: &[],
         deprecated_attributes: &[
@@ -2557,15 +2278,12 @@ pub(super) const ROLES: &[Role] = &[
     Role {
         name: "window",
         is_abstract: true,
-        is_deprecated: false,
         superclasses: &["roletype"],
         ancestors: &["roletype"],
         required_context: &[],
         required_owned: &[],
         name_from: &[NameFrom::Author],
-        name_required: false,
         children_presentational: false,
-        required_attributes: &[],
         specific_attributes: &["aria-modal"],
         prohibited_attributes: &[],
         deprecated_attributes: &[

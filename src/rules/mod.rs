@@ -4,8 +4,6 @@
 
 mod act;
 mod aria12;
-// Until the aria12, html_aria and act rules that share it are written.
-#[allow(dead_code, unused_imports)]
 mod aria_spec;
 mod finding;
 mod html_aria;

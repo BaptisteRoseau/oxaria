@@ -41,13 +41,10 @@ pub enum Scope {
 #[derive(Debug)]
 pub struct Attribute {
     pub name: &'static str,
-    /// A state rather than a property.
-    pub is_state: bool,
     pub value_type: ValueType,
     /// The spec's values table: the allowed tokens of token types, and the
     /// literal values of true/false, tristate and true/false/undefined.
     pub values: &'static [&'static str],
-    pub default: Option<&'static str>,
     pub scope: Scope,
     pub is_deprecated: bool,
 }
@@ -80,7 +77,6 @@ mod tests {
         let live = attribute("aria-live").unwrap();
         assert_eq!(live.value_type, ValueType::Token);
         assert_eq!(live.values, ["assertive", "off", "polite"]);
-        assert_eq!(live.default, Some("off"));
         assert_eq!(
             attribute("aria-checked").unwrap().value_type,
             ValueType::Tristate

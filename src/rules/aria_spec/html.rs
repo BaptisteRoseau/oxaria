@@ -1,6 +1,6 @@
 //! ARIA in HTML (W3C Recommendation of 11 August 2026, w3c/html-aria commit
-//! `e277aa3`): each element's implicit role, the roles and `aria-*`
-//! attributes authors may set on it, and the native attributes with an
+//! `e277aa3`): each element's implicit role, the `aria-*` attributes
+//! authors may set on it, and the native attributes with an
 //! `aria-*` equivalent. Conditional rows ("`a` with `href`", "`img` with
 //! `alt=""`", ...) are resolved against the element.
 
@@ -11,7 +11,7 @@ use super::roles::{Role, role};
 
 /// "No `role` or `aria-*` attributes" in the document conformance table
 /// (plus `input type=hidden`, which [`allowed_aria`] handles).
-pub const NO_ROLE_OR_ARIA_ELEMENTS: &[&str] = &[
+const NO_ROLE_OR_ARIA_ELEMENTS: &[&str] = &[
     "base", "col", "colgroup", "head", "link", "map", "meta", "noscript", "param", "script",
     "slot", "source", "style", "template", "title", "track",
 ];
@@ -20,93 +20,62 @@ pub const NO_ROLE_OR_ARIA_ELEMENTS: &[&str] = &[
 /// deprecated `directory` and DPub-ARIA's deprecated ones.
 pub const DEPRECATED_ROLES: &[&str] = &["directory", "doc-biblioentry", "doc-endnote"];
 
-/// A native attribute and the `aria-*` attribute with the same implicit
-/// semantics, on the elements that allow the native one (`None`: any).
+/// A native attribute with an `aria-*` equivalent, on the elements that
+/// allow it (`None`: any).
 #[derive(Debug)]
 pub struct NativeEquivalent {
     pub native: &'static str,
-    pub aria: &'static str,
     pub elements: Option<&'static [&'static str]>,
 }
 
 pub const NATIVE_EQUIVALENTS: &[NativeEquivalent] = &[
     NativeEquivalent {
         native: "checked",
-        aria: "aria-checked",
         elements: Some(&["input"]),
     },
     NativeEquivalent {
         native: "disabled",
-        aria: "aria-disabled",
         elements: Some(&[
             "button", "fieldset", "input", "optgroup", "option", "select", "textarea",
         ]),
     },
     NativeEquivalent {
         native: "hidden",
-        aria: "aria-hidden",
         elements: None,
     },
     NativeEquivalent {
         native: "placeholder",
-        aria: "aria-placeholder",
         elements: Some(&["input", "textarea"]),
     },
     NativeEquivalent {
         native: "max",
-        aria: "aria-valuemax",
         elements: Some(&["input", "meter", "progress"]),
     },
     NativeEquivalent {
         native: "min",
-        aria: "aria-valuemin",
         elements: Some(&["input", "meter"]),
     },
     NativeEquivalent {
         native: "readonly",
-        aria: "aria-readonly",
         elements: Some(&["input", "textarea"]),
     },
     NativeEquivalent {
         native: "contenteditable",
-        aria: "aria-readonly",
         elements: None,
     },
     NativeEquivalent {
         native: "required",
-        aria: "aria-required",
         elements: Some(&["input", "select", "textarea"]),
     },
     NativeEquivalent {
         native: "colspan",
-        aria: "aria-colspan",
         elements: Some(&["td", "th"]),
     },
     NativeEquivalent {
         native: "rowspan",
-        aria: "aria-rowspan",
         elements: Some(&["td", "th"]),
     },
 ];
-
-/// The roles an author may set on an element. Its implicit role is always
-/// allowed too, but NOT RECOMMENDED, so it isn't listed.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum AllowedRoles {
-    Any,
-    Only(&'static [&'static str]),
-    NoRole,
-}
-
-impl AllowedRoles {
-    pub fn allows(&self, role: &str) -> bool {
-        match self {
-            AllowedRoles::Any => true,
-            AllowedRoles::Only(roles) => roles.contains(&role),
-            AllowedRoles::NoRole => false,
-        }
-    }
-}
 
 /// The `aria-*` attributes an author may set on an element. Prohibited
 /// attributes of the role stay prohibited in every case.
@@ -149,234 +118,6 @@ const INPUT_TYPES: &[&str] = &[
     "week",
 ];
 
-const A_WITH_HREF_ROLES: &[&str] = &[
-    "button",
-    "checkbox",
-    "menuitem",
-    "menuitemcheckbox",
-    "menuitemradio",
-    "option",
-    "radio",
-    "switch",
-    "tab",
-    "treeitem",
-    "doc-backlink",
-    "doc-biblioref",
-    "doc-glossref",
-    "doc-noteref",
-];
-const ARTICLE_ROLES: &[&str] = &[
-    "application",
-    "document",
-    "feed",
-    "main",
-    "none",
-    "presentation",
-    "region",
-];
-const ASIDE_ROLES: &[&str] = &[
-    "feed",
-    "none",
-    "note",
-    "presentation",
-    "region",
-    "search",
-    "doc-dedication",
-    "doc-example",
-    "doc-footnote",
-    "doc-glossary",
-    "doc-pullquote",
-    "doc-tip",
-];
-const BUTTON_ROLES: &[&str] = &[
-    "checkbox",
-    "combobox",
-    "gridcell",
-    "link",
-    "menuitem",
-    "menuitemcheckbox",
-    "menuitemradio",
-    "option",
-    "radio",
-    "separator",
-    "slider",
-    "switch",
-    "tab",
-    "treeitem",
-];
-const INPUT_IMAGE_ROLES: &[&str] = &[
-    "button",
-    "checkbox",
-    "gridcell",
-    "link",
-    "menuitem",
-    "menuitemcheckbox",
-    "menuitemradio",
-    "option",
-    "radio",
-    "separator",
-    "slider",
-    "switch",
-    "tab",
-    "treeitem",
-];
-const INPUT_RESET_SUBMIT_ROLES: &[&str] = &[
-    "button",
-    "checkbox",
-    "combobox",
-    "gridcell",
-    "link",
-    "menuitem",
-    "menuitemcheckbox",
-    "menuitemradio",
-    "option",
-    "radio",
-    "separator",
-    "slider",
-    "switch",
-    "tab",
-    "treeitem",
-];
-const EMBED_ROLES: &[&str] = &[
-    "application",
-    "document",
-    "img",
-    "image",
-    "none",
-    "presentation",
-];
-const IMG_WITH_NAME_ROLES: &[&str] = &[
-    "button",
-    "checkbox",
-    "link",
-    "math",
-    "menuitem",
-    "menuitemcheckbox",
-    "menuitemradio",
-    "meter",
-    "option",
-    "progressbar",
-    "radio",
-    "scrollbar",
-    "separator",
-    "slider",
-    "switch",
-    "tab",
-    "treeitem",
-    "doc-cover",
-];
-const LIST_ROLES: &[&str] = &[
-    "group",
-    "listbox",
-    "menu",
-    "menubar",
-    "none",
-    "presentation",
-    "radiogroup",
-    "tablist",
-    "toolbar",
-    "tree",
-];
-const NAV_ROLES: &[&str] = &[
-    "menu",
-    "menubar",
-    "none",
-    "presentation",
-    "tablist",
-    "doc-index",
-    "doc-pagelist",
-    "doc-toc",
-];
-const SECTION_ROLES: &[&str] = &[
-    "alert",
-    "alertdialog",
-    "application",
-    "banner",
-    "complementary",
-    "contentinfo",
-    "dialog",
-    "document",
-    "feed",
-    "group",
-    "log",
-    "main",
-    "marquee",
-    "navigation",
-    "none",
-    "note",
-    "presentation",
-    "search",
-    "status",
-    "tabpanel",
-    "doc-abstract",
-    "doc-acknowledgments",
-    "doc-afterword",
-    "doc-appendix",
-    "doc-bibliography",
-    "doc-chapter",
-    "doc-colophon",
-    "doc-conclusion",
-    "doc-credit",
-    "doc-credits",
-    "doc-dedication",
-    "doc-endnotes",
-    "doc-epigraph",
-    "doc-epilogue",
-    "doc-errata",
-    "doc-example",
-    "doc-foreword",
-    "doc-glossary",
-    "doc-index",
-    "doc-introduction",
-    "doc-notice",
-    "doc-pagelist",
-    "doc-part",
-    "doc-preface",
-    "doc-prologue",
-    "doc-pullquote",
-    "doc-qna",
-    "doc-toc",
-];
-const PRESENTATIONAL_ROLES: &[&str] = &["none", "presentation"];
-
-const NAMING_PROHIBITED_ELEMENTS: &[&str] = &[
-    "abbr",
-    "b",
-    "bdi",
-    "bdo",
-    "body",
-    "caption",
-    "cite",
-    "code",
-    "data",
-    "del",
-    "div",
-    "em",
-    "figcaption",
-    "i",
-    "ins",
-    "kbd",
-    "label",
-    "legend",
-    "mark",
-    "p",
-    "pre",
-    "q",
-    "rp",
-    "rt",
-    "s",
-    "samp",
-    "selectedcontent",
-    "small",
-    "span",
-    "strong",
-    "sub",
-    "sup",
-    "time",
-    "u",
-    "var",
-];
-
 /// `None` for "No corresponding role", for `summary` (which varies by user
 /// agent) and for `svg`, whose `graphics-document` isn't a WAI-ARIA 1.2 role.
 pub fn implicit_role(el: ElementRef) -> Option<&'static Role> {
@@ -393,57 +134,6 @@ pub fn input_type(el: ElementRef) -> &'static str {
         })
         .copied()
         .unwrap_or("text")
-}
-
-pub fn allowed_roles(el: ElementRef) -> AllowedRoles {
-    use AllowedRoles::{Any, NoRole, Only};
-    match el.tag() {
-        "a" if el.has_attr("href") => Only(A_WITH_HREF_ROLES),
-        "area" if el.has_attr("href") => NoRole,
-        "area" => Only(&["button", "link"]),
-        "article" => Only(ARTICLE_ROLES),
-        "aside" => Only(ASIDE_ROLES),
-        "audio" | "video" => Only(&["application"]),
-        "br" | "wbr" => Only(PRESENTATIONAL_ROLES),
-        "button" if is_first_child_of_select(el) => NoRole,
-        "button" => Only(BUTTON_ROLES),
-        "dialog" => Only(&["alertdialog"]),
-        "div" if el.parent().is_some_and(|parent| parent.tag() == "dl") => {
-            Only(PRESENTATIONAL_ROLES)
-        }
-        "dl" => Only(&["group", "list", "none", "presentation"]),
-        "dt" => Only(&["listitem"]),
-        "embed" | "iframe" => Only(EMBED_ROLES),
-        "fieldset" => Only(&["none", "presentation", "radiogroup"]),
-        "figcaption" => Only(&["group", "none", "presentation"]),
-        "figure" if el.descendants().any(|d| d.tag() == "figcaption") => Only(&["doc-example"]),
-        "footer" => Only(&["group", "none", "presentation", "doc-footnote"]),
-        "form" => Only(&["none", "presentation", "search"]),
-        "h1" | "h2" | "h3" | "h4" | "h5" | "h6" => {
-            Only(&["none", "presentation", "tab", "doc-subtitle"])
-        }
-        "header" => Only(&["group", "none", "presentation"]),
-        "hr" => Only(&["none", "presentation", "doc-pagebreak"]),
-        "html" => Only(&["document"]),
-        "img" => img_allowed_roles(el),
-        "input" => input_allowed_roles(el),
-        "label" if is_associated_label(el) => NoRole,
-        "li" if parent_is_list(el) => NoRole,
-        "menu" | "ol" | "ul" => Only(LIST_ROLES),
-        "nav" => Only(NAV_ROLES),
-        "object" => Only(&["application", "document", "img", "image"]),
-        "search" => Only(&["form", "group", "none", "presentation", "region"]),
-        "section" => Only(SECTION_ROLES),
-        "select" if is_list_box_select(el) => NoRole,
-        "select" => Only(&["menu"]),
-        "selectedcontent" if has_ancestor(el, "select") => NoRole,
-        "summary" if is_details_summary(el) => NoRole,
-        "td" | "th" | "tr" if table_role(el).is_some() => NoRole,
-        "caption" | "datalist" | "dd" | "details" | "legend" | "main" | "math" | "meter"
-        | "optgroup" | "option" | "picture" | "progress" | "textarea" | "body" => NoRole,
-        tag if NO_ROLE_OR_ARIA_ELEMENTS.contains(&tag) => NoRole,
-        _ => Any,
-    }
 }
 
 pub fn allowed_aria(el: ElementRef) -> AllowedAria {
@@ -466,18 +156,6 @@ pub fn allowed_aria(el: ElementRef) -> AllowedAria {
         "input" => input_allowed_aria(el),
         tag if NO_ROLE_OR_ARIA_ELEMENTS.contains(&tag) => NoAria,
         _ => GlobalAndEffectiveRole,
-    }
-}
-
-/// Whether the element's implicit semantics make it "Naming Prohibited":
-/// no `aria-label`/`aria-labelledby` unless an allowed explicit role that
-/// can be named overrides them.
-pub fn naming_prohibited(el: ElementRef) -> bool {
-    match el.tag() {
-        "a" | "area" => !el.has_attr("href"),
-        "header" | "footer" => is_scoped_to_sectioning_content(el),
-        tag if is_custom_element(tag) => true,
-        tag => NAMING_PROHIBITED_ELEMENTS.contains(&tag),
     }
 }
 
@@ -570,22 +248,6 @@ fn input_implicit_role(el: ElementRef) -> Option<&'static str> {
     }
 }
 
-fn input_allowed_roles(el: ElementRef) -> AllowedRoles {
-    use AllowedRoles::{NoRole, Only};
-    match input_type(el) {
-        "button" => Only(BUTTON_ROLES),
-        "checkbox" if el.has_attr("aria-pressed") => {
-            Only(&["menuitemcheckbox", "option", "switch", "button"])
-        }
-        "checkbox" => Only(&["menuitemcheckbox", "option", "switch"]),
-        "image" => Only(INPUT_IMAGE_ROLES),
-        "reset" | "submit" => Only(INPUT_RESET_SUBMIT_ROLES),
-        "radio" => Only(&["menuitemradio"]),
-        "text" if !el.has_attr("list") => Only(&["combobox", "searchbox", "spinbutton"]),
-        _ => NoRole,
-    }
-}
-
 fn input_allowed_aria(el: ElementRef) -> AllowedAria {
     use AllowedAria::{GlobalAnd, GlobalAndEffectiveRole, GlobalAndRole};
     match input_type(el) {
@@ -595,15 +257,6 @@ fn input_allowed_aria(el: ElementRef) -> AllowedAria {
             GlobalAndRole("textbox")
         }
         _ => GlobalAndEffectiveRole,
-    }
-}
-
-fn img_allowed_roles(el: ElementRef) -> AllowedRoles {
-    match (is_decorative_img(el), el.attr("alt"), has_author_name(el)) {
-        (true, _, _) => AllowedRoles::NoRole,
-        (_, Some(alt), _) if !alt.trim().is_empty() => AllowedRoles::Only(IMG_WITH_NAME_ROLES),
-        (_, _, true) => AllowedRoles::Only(IMG_WITH_NAME_ROLES),
-        _ => AllowedRoles::Only(PRESENTATIONAL_ROLES),
     }
 }
 
@@ -702,27 +355,6 @@ pub(super) fn is_details_summary(el: ElementRef) -> bool {
     })
 }
 
-fn is_associated_label(label: ElementRef) -> bool {
-    let target = label
-        .attr("for")
-        .and_then(|id| label.page().element_by_id(id));
-    match target {
-        Some(target) => is_labelable(target),
-        None if label.has_attr("for") => false,
-        None => label.descendants().any(is_labelable),
-    }
-}
-
-fn is_labelable(el: ElementRef) -> bool {
-    match el.tag() {
-        "input" => input_type(el) != "hidden",
-        tag => matches!(
-            tag,
-            "button" | "meter" | "output" | "progress" | "select" | "textarea"
-        ),
-    }
-}
-
 fn has_ancestor(el: ElementRef, tag: &str) -> bool {
     el.ancestors().any(|ancestor| ancestor.tag() == tag)
 }
@@ -746,8 +378,6 @@ mod tests {
 
     use super::*;
     use crate::page::testutil::page_from_html;
-    use crate::rules::aria_spec::attributes::attribute;
-    use crate::rules::aria_spec::roles::concrete_role;
 
     fn implicit_of(html: &str, tag: &str) -> Option<&'static str> {
         let page = page_from_html(html);
@@ -824,62 +454,6 @@ mod tests {
         assert_eq!(implicit_of(html, tag), expected);
     }
 
-    fn allowed_of(html: &str, tag: &str) -> AllowedRoles {
-        let page = page_from_html(html);
-        allowed_roles(page.by_tag(tag).next().unwrap())
-    }
-
-    #[test]
-    fn allowed_roles_follow_the_conditional_rows() {
-        assert!(allowed_of(r#"<a href="/">x</a>"#, "a").allows("tab"));
-        assert!(!allowed_of(r#"<a href="/">x</a>"#, "a").allows("heading"));
-        assert_eq!(allowed_of("<a>x</a>", "a"), AllowedRoles::Any);
-        assert_eq!(
-            allowed_of(r#"<area href="/">"#, "area"),
-            AllowedRoles::NoRole
-        );
-        assert_eq!(
-            allowed_of(r#"<img src="a" alt="">"#, "img"),
-            AllowedRoles::NoRole
-        );
-        assert!(allowed_of(r#"<img src="a" alt="A">"#, "img").allows("button"));
-        assert!(allowed_of(r#"<img src="a">"#, "img").allows("presentation"));
-        assert!(!allowed_of(r#"<img src="a">"#, "img").allows("button"));
-        assert!(allowed_of("<embed>", "embed").allows("image"));
-        assert_eq!(
-            allowed_of(r#"<input type="email">"#, "input"),
-            AllowedRoles::NoRole
-        );
-        assert!(!allowed_of(r#"<input type="checkbox">"#, "input").allows("button"));
-        assert!(
-            allowed_of(r#"<input type="checkbox" aria-pressed="true">"#, "input").allows("button")
-        );
-        assert!(allowed_of("<dl><div>x</div></dl>", "div").allows("none"));
-        assert!(!allowed_of("<dl><div>x</div></dl>", "div").allows("button"));
-        assert_eq!(
-            allowed_of("<ul><li>a</li></ul>", "li"),
-            AllowedRoles::NoRole
-        );
-        assert_eq!(allowed_of("<div><li>a</li></div>", "li"), AllowedRoles::Any);
-        assert_eq!(
-            allowed_of(r#"<label for="i">L</label><input id="i">"#, "label"),
-            AllowedRoles::NoRole
-        );
-        assert_eq!(allowed_of("<label>L</label>", "label"), AllowedRoles::Any);
-        assert_eq!(
-            allowed_of("<details><summary>s</summary></details>", "summary"),
-            AllowedRoles::NoRole
-        );
-        assert_eq!(
-            allowed_of("<select><button>b</button></select>", "button"),
-            AllowedRoles::NoRole
-        );
-        assert_eq!(
-            allowed_of("<meta charset=utf-8>", "meta"),
-            AllowedRoles::NoRole
-        );
-    }
-
     fn aria_of(html: &str, tag: &str) -> AllowedAria {
         let page = page_from_html(html);
         allowed_aria(page.by_tag(tag).next().unwrap())
@@ -917,52 +491,5 @@ mod tests {
             aria_of("<button>x</button>", "button"),
             AllowedAria::GlobalAndEffectiveRole
         );
-    }
-
-    #[rstest]
-    #[case("<span>x</span>", "span", true)]
-    #[case("<a>x</a>", "a", true)]
-    #[case(r#"<a href="/">x</a>"#, "a", false)]
-    #[case("<article><footer>x</footer></article>", "footer", true)]
-    #[case("<footer>x</footer>", "footer", false)]
-    #[case("<button>x</button>", "button", false)]
-    fn naming_prohibited_elements(#[case] html: &str, #[case] tag: &str, #[case] expected: bool) {
-        let page = page_from_html(html);
-        assert_eq!(
-            naming_prohibited(page.by_tag(tag).next().unwrap()),
-            expected
-        );
-    }
-
-    #[test]
-    fn every_listed_role_is_known() {
-        let lists = [
-            A_WITH_HREF_ROLES,
-            ARTICLE_ROLES,
-            ASIDE_ROLES,
-            BUTTON_ROLES,
-            INPUT_IMAGE_ROLES,
-            INPUT_RESET_SUBMIT_ROLES,
-            EMBED_ROLES,
-            IMG_WITH_NAME_ROLES,
-            LIST_ROLES,
-            NAV_ROLES,
-            SECTION_ROLES,
-            PRESENTATIONAL_ROLES,
-        ];
-        for name in lists
-            .into_iter()
-            .flatten()
-            .filter(|name| !name.starts_with("doc-"))
-        {
-            assert!(concrete_role(name).is_some(), "{name}");
-        }
-    }
-
-    #[test]
-    fn native_equivalents_name_real_aria_attributes() {
-        for equivalent in NATIVE_EQUIVALENTS {
-            assert!(attribute(equivalent.aria).is_some());
-        }
     }
 }

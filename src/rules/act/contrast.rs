@@ -1,4 +1,4 @@
-//! ACT text contrast rules. Spectrum rules, like G18: findings are warnings.
+//! ACT text contrast rule. A spectrum rule, like G18: findings are warnings.
 //! The contrast computation is WCAG's (`wcag22::contrast`); what ACT adds is
 //! its applicability, which leaves out text of disabled widgets and their
 //! labels.
@@ -13,63 +13,28 @@ use crate::rules::wcag22::{
 };
 use crate::rules::{CheckOptions, Finding};
 
-/// Level AAA has no CLI threshold: CLAUDE.md keeps the thresholds to the
-/// two Level AA ones.
-const ENHANCED_THRESHOLD: f64 = 7.0;
-const ENHANCED_LARGE_TEXT_THRESHOLD: f64 = 4.5;
-
-struct Thresholds {
-    normal: f64,
-    large: f64,
-}
-
 /// afw4f7: text needs a contrast ratio of at least 4.5:1, or 3:1 when large
 /// (the configured Level AA thresholds).
 pub fn check_contrast_minimum(page: &RenderedPage, options: &CheckOptions) -> Vec<Finding> {
-    let thresholds = Thresholds {
-        normal: options.contrast_threshold,
-        large: options.large_text_contrast_threshold,
-    };
-    contrast_findings(page, "afw4f7", &thresholds)
-}
-
-/// 09o5cg: text needs a contrast ratio of at least 7:1, or 4.5:1 when large.
-pub fn check_contrast_enhanced(page: &RenderedPage, _options: &CheckOptions) -> Vec<Finding> {
-    let thresholds = Thresholds {
-        normal: ENHANCED_THRESHOLD,
-        large: ENHANCED_LARGE_TEXT_THRESHOLD,
-    };
-    contrast_findings(page, "09o5cg", &thresholds)
-}
-
-fn contrast_findings(
-    page: &RenderedPage,
-    rule_id: &'static str,
-    thresholds: &Thresholds,
-) -> Vec<Finding> {
     let disabled_label_ids = disabled_widget_label_ids(page);
     page.all()
         .filter(|el| renders_own_text(*el) && !is_not_rendered(*el))
         .filter(|el| !is_in_disabled_widget(*el) && !is_in_disabled_label(*el, &disabled_label_ids))
-        .filter_map(|el| contrast_finding(el, rule_id, thresholds))
+        .filter_map(|el| contrast_finding(el, options))
         .collect()
 }
 
-fn contrast_finding(
-    el: ElementRef,
-    rule_id: &'static str,
-    thresholds: &Thresholds,
-) -> Option<Finding> {
+fn contrast_finding(el: ElementRef, options: &CheckOptions) -> Option<Finding> {
     let foreground = el.color();
     let background = el.background_color().unwrap_or(DEFAULT_CANVAS_BACKGROUND);
     let ratio = color_contrast(foreground, background);
     let threshold = match is_large_text(el) {
-        true => thresholds.large,
-        false => thresholds.normal,
+        true => options.large_text_contrast_threshold,
+        false => options.contrast_threshold,
     };
     (ratio < threshold).then(|| {
         Finding::warning(
-            rule_id,
+            "afw4f7",
             format!(
                 "<{}> text {} on {} has a contrast ratio of {ratio:.2}:1, below {threshold:.2}:1",
                 el.tag(),
@@ -194,27 +159,6 @@ mod tests {
     fn contrast_minimum_afw4f7(#[case] html: &str, #[case] expected: usize) {
         assert_eq!(
             findings(check_contrast_minimum, html).len(),
-            expected,
-            "{html}"
-        );
-    }
-
-    #[rstest]
-    #[case(
-        r#"<p style="color: #666666; background-color: white">Some text in English</p>"#,
-        1
-    )]
-    #[case(
-        r#"<p style="color: #000000; font-size: 24px; background-color: #666666">Large</p>"#,
-        1
-    )]
-    #[case(
-        r#"<p style="color: #333333; background-color: #FFFFFF">Some text</p>"#,
-        0
-    )]
-    fn contrast_enhanced_09o5cg(#[case] html: &str, #[case] expected: usize) {
-        assert_eq!(
-            findings(check_contrast_enhanced, html).len(),
             expected,
             "{html}"
         );

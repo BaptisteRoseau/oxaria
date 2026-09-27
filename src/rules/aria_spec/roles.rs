@@ -1,6 +1,6 @@
 //! Lookup over the WAI-ARIA 1.2 role table in [`super::role_data`].
 
-use super::attributes::{Scope, attribute, attributes};
+use super::attributes::{Scope, attribute};
 use super::role_data::ROLES;
 
 /// ARIA in HTML accepts `image` (a WAI-ARIA 1.3 name) for `img`; see C3 in
@@ -26,18 +26,13 @@ pub struct OwnedElement {
 pub struct Role {
     pub name: &'static str,
     pub is_abstract: bool,
-    pub is_deprecated: bool,
     pub superclasses: &'static [&'static str],
     /// Every superclass, transitively.
     pub ancestors: &'static [&'static str],
     pub required_context: &'static [&'static str],
     pub required_owned: &'static [OwnedElement],
     pub name_from: &'static [NameFrom],
-    pub name_required: bool,
     pub children_presentational: bool,
-    /// Including inherited ones. `separator` requires `aria-valuenow` only
-    /// when focusable, which the table can't express.
-    pub required_attributes: &'static [&'static str],
     /// Supported non-global states and properties, including inherited ones;
     /// [`Role::supports`] adds the global ones.
     pub specific_attributes: &'static [&'static str],
@@ -53,16 +48,6 @@ impl Role {
     pub fn supports(&self, attribute: &str) -> bool {
         self.specific_attributes.contains(&attribute)
             || (is_global(attribute) && !self.prohibits(attribute))
-    }
-
-    pub fn supported_attributes(&self) -> impl Iterator<Item = &'static str> {
-        attributes()
-            .map(|attribute| attribute.name)
-            .filter(|name| self.supports(name))
-    }
-
-    pub fn requires(&self, attribute: &str) -> bool {
-        self.required_attributes.contains(&attribute)
     }
 
     pub fn prohibits(&self, attribute: &str) -> bool {
@@ -147,22 +132,6 @@ mod tests {
     }
 
     #[test]
-    fn required_attributes_of_widgets() {
-        assert_eq!(named("checkbox").required_attributes, ["aria-checked"]);
-        assert_eq!(named("slider").required_attributes, ["aria-valuenow"]);
-        assert_eq!(
-            named("combobox").required_attributes,
-            ["aria-controls", "aria-expanded"]
-        );
-    }
-
-    #[test]
-    fn required_attributes_are_inherited() {
-        assert!(named("menuitemradio").requires("aria-checked"));
-        assert!(named("treeitem").requires("aria-selected"));
-    }
-
-    #[test]
     fn default_values_cover_some_required_attributes() {
         assert_eq!(
             named("option").default_value("aria-selected"),
@@ -227,16 +196,8 @@ mod tests {
 
     #[test]
     fn naming_characteristics() {
-        assert!(named("button").name_required);
         assert!(named("button").children_presentational);
         assert_eq!(named("generic").name_from, [NameFrom::Prohibited]);
-    }
-
-    #[test]
-    fn directory_is_the_only_deprecated_role() {
-        let deprecated: Vec<_> = roles().filter(|role| role.is_deprecated).collect();
-        assert_eq!(deprecated.len(), 1);
-        assert_eq!(deprecated[0].name, "directory");
     }
 
     #[test]
@@ -256,9 +217,8 @@ mod tests {
                 assert!(super::role(name).is_some(), "{}: {name}", role.name);
             }
             let referenced_attributes = role
-                .required_attributes
+                .specific_attributes
                 .iter()
-                .chain(role.specific_attributes)
                 .chain(role.prohibited_attributes)
                 .chain(role.deprecated_attributes)
                 .chain(role.default_values.iter().map(|(name, _)| name));
