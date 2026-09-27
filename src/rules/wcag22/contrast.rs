@@ -9,9 +9,9 @@ use crate::page::{ElementRef, RenderedPage};
 
 use crate::rules::{CheckOptions, Finding};
 
-type Rgb = (u8, u8, u8);
+pub(crate) type Rgb = (u8, u8, u8);
 
-const DEFAULT_CANVAS_BACKGROUND: Rgb = (255, 255, 255);
+pub(crate) const DEFAULT_CANVAS_BACKGROUND: Rgb = (255, 255, 255);
 const BLACK: Rgb = (0, 0, 0);
 const WHITE: Rgb = (255, 255, 255);
 
@@ -22,7 +22,7 @@ pub fn check_text_contrast(page: &RenderedPage, options: &CheckOptions) -> Vec<F
         .collect()
 }
 
-fn renders_own_text(el: ElementRef) -> bool {
+pub(crate) fn renders_own_text(el: ElementRef) -> bool {
     el.children()
         .any(|child| child.node().is_text() && !child.node().own_text.trim().is_empty())
 }
@@ -75,7 +75,11 @@ fn contrast_help(
 
 /// The color closest to `foreground`, on the way to black or white (whichever contrasts more
 /// with `background`), that reaches `threshold`.
-fn passing_color(foreground: Rgb, background: Rgb, threshold: f64) -> Option<(&'static str, Rgb)> {
+pub(crate) fn passing_color(
+    foreground: Rgb,
+    background: Rgb,
+    threshold: f64,
+) -> Option<(&'static str, Rgb)> {
     let (verb, extreme) =
         match color_contrast(BLACK, background) >= color_contrast(WHITE, background) {
             true => ("darken", BLACK),
@@ -103,11 +107,11 @@ fn mix((r1, g1, b1): Rgb, (r2, g2, b2): Rgb, amount: f64) -> Rgb {
     (channel(r1, r2), channel(g1, g2), channel(b1, b2))
 }
 
-fn hex((r, g, b): Rgb) -> String {
+pub(crate) fn hex((r, g, b): Rgb) -> String {
     format!("#{r:02x}{g:02x}{b:02x}")
 }
 
-fn color_contrast(first: Rgb, second: Rgb) -> f64 {
+pub(crate) fn color_contrast(first: Rgb, second: Rgb) -> f64 {
     contrast_ratio(relative_luminance(first), relative_luminance(second))
 }
 
@@ -127,7 +131,7 @@ fn required_threshold(el: ElementRef, options: &CheckOptions) -> f64 {
 }
 
 /// WCAG defines "large scale" text as at least 18pt (24px), or at least 14pt (18.66px) bold.
-fn is_large_text(el: ElementRef) -> bool {
+pub(crate) fn is_large_text(el: ElementRef) -> bool {
     let size = el.font_size_px();
     size >= 24.0 || (el.font_weight() >= 700 && size >= 18.66)
 }

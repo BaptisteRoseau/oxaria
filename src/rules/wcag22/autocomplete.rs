@@ -103,7 +103,7 @@ fn is_autofillable(el: ElementRef) -> bool {
 
 /// `[section-*] [shipping|billing] [home|work|mobile|fax|pager] <field> [webauthn]`, or a
 /// lone `on`/`off`, per the HTML autofill grammar.
-fn is_valid_autocomplete(value: &str) -> bool {
+pub(crate) fn is_valid_autocomplete(value: &str) -> bool {
     let lower = value.to_ascii_lowercase();
     let mut tokens: Vec<&str> = lower.split_ascii_whitespace().collect();
     if matches!(tokens.as_slice(), [] | ["on"] | ["off"]) {
