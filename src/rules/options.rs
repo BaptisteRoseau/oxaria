@@ -1,3 +1,6 @@
+use std::collections::BTreeSet;
+
+use super::Standard;
 use crate::cli::CliConfig;
 
 pub const DEFAULT_CONTRAST_THRESHOLD: f64 = 4.5;
@@ -8,6 +11,7 @@ pub struct CheckOptions {
     pub contrast_threshold: f64,
     pub large_text_contrast_threshold: f64,
     pub target_size_threshold: f64,
+    pub standards: BTreeSet<Standard>,
 }
 
 impl Default for CheckOptions {
@@ -16,6 +20,7 @@ impl Default for CheckOptions {
             contrast_threshold: DEFAULT_CONTRAST_THRESHOLD,
             large_text_contrast_threshold: DEFAULT_LARGE_TEXT_CONTRAST_THRESHOLD,
             target_size_threshold: DEFAULT_TARGET_SIZE_THRESHOLD,
+            standards: BTreeSet::from(Standard::ALL),
         }
     }
 }
@@ -26,6 +31,7 @@ impl From<&CliConfig> for CheckOptions {
             contrast_threshold: config.contrast_threshold,
             large_text_contrast_threshold: config.large_text_contrast_threshold,
             target_size_threshold: config.target_size_threshold,
+            standards: config.standards.iter().copied().collect(),
         }
     }
 }

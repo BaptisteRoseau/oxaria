@@ -4,7 +4,7 @@ use clap::Parser;
 
 use crate::rules::{
     DEFAULT_CONTRAST_THRESHOLD, DEFAULT_LARGE_TEXT_CONTRAST_THRESHOLD,
-    DEFAULT_TARGET_SIZE_THRESHOLD,
+    DEFAULT_TARGET_SIZE_THRESHOLD, Standard,
 };
 
 /// Check a web page against a subset of WCAG 2.2, WAI-ARIA 1.2, ARIA in HTML and ACT rules.
@@ -34,6 +34,10 @@ pub struct CliConfig {
     /// Minimum pointer target size in CSS pixels (WCAG 2.5.8 default: 24.0)
     #[arg(long, default_value_t = DEFAULT_TARGET_SIZE_THRESHOLD)]
     pub target_size_threshold: f64,
+
+    /// Comma-separated standards whose rules are checked
+    #[arg(long, value_enum, value_delimiter = ',', default_values_t = Standard::ALL)]
+    pub standards: Vec<Standard>,
 
     /// When given a URL, also scan every same-domain page reachable through its links
     #[arg(long)]

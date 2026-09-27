@@ -8,20 +8,26 @@ use crate::page::RenderedPage;
 
 pub type RuleCheck = fn(&RenderedPage, &CheckOptions) -> Vec<Finding>;
 
-fn rule_checks_by_standard() -> [(Standard, Vec<RuleCheck>); 4] {
-    [
-        (Standard::Wcag22, wcag22::rule_checks()),
-        (Standard::Aria12, aria12::rule_checks()),
-        (Standard::HtmlAria, html_aria::rule_checks()),
-        (Standard::Act, act::rule_checks()),
-    ]
+fn rule_checks(standard: Standard) -> Vec<RuleCheck> {
+    match standard {
+        Standard::Wcag22 => wcag22::rule_checks(),
+        Standard::Aria12 => aria12::rule_checks(),
+        Standard::HtmlAria => html_aria::rule_checks(),
+        Standard::Act => act::rule_checks(),
+    }
 }
 
-/// Runs every rule in its own blocking task, sharing one `Arc<RenderedPage>`.
+/// Runs every rule of the selected standards in its own blocking task, sharing one
+/// `Arc<RenderedPage>`.
 pub async fn run_all(page: Arc<RenderedPage>, options: Arc<CheckOptions>) -> Vec<Finding> {
-    let tasks: Vec<_> = rule_checks_by_standard()
-        .into_iter()
-        .flat_map(|(standard, checks)| checks.into_iter().map(move |check| (standard, check)))
+    let tasks: Vec<_> = options
+        .standards
+        .iter()
+        .flat_map(|&standard| {
+            rule_checks(standard)
+                .into_iter()
+                .map(move |check| (standard, check))
+        })
         .map(|(standard, check)| {
             let task = spawn_rule(standard, check, Arc::clone(&page), Arc::clone(&options));
             (standard, task)
@@ -91,6 +97,21 @@ pub(crate) mod tests {
         );
         let without_help: Vec<_> = findings.iter().filter(|f| f.help.is_none()).collect();
         assert!(without_help.is_empty(), "{without_help:?}");
+    }
+
+    #[tokio::test]
+    async fn run_all_runs_only_the_selected_standards() {
+        let page = Arc::new(page_from_html("<p>Nothing here</p>"));
+        let options = Arc::new(CheckOptions {
+            standards: BTreeSet::from([Standard::Act]),
+            ..CheckOptions::default()
+        });
+        let findings = run_all(page, options).await;
+        assert!(!findings.is_empty());
+        assert!(
+            findings.iter().all(|f| f.standard == Some(Standard::Act)),
+            "{findings:?}"
+        );
     }
 
     #[tokio::test]

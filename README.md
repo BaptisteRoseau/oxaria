@@ -55,6 +55,8 @@ Options:
           Minimum contrast ratio for large-scale text (WCAG 1.4.3 default: 3.0) [default: 3]
       --target-size-threshold <TARGET_SIZE_THRESHOLD>
           Minimum pointer target size in CSS pixels (WCAG 2.5.8 default: 24.0) [default: 24]
+      --standards <STANDARDS>
+          Comma-separated standards whose rules are checked [default: wcag2.2 aria1.2 html-aria act] [possible values: wcag2.2, aria1.2, html-aria, act]
       --full-site-scan
           When given a URL, also scan every same-domain page reachable through its links
       --full-site-scan-max-pages <FULL_SITE_SCAN_MAX_PAGES>
@@ -87,6 +89,9 @@ wcag-checker page.html --contrast-threshold 3.0
 
 # Tighten the target size to the enhanced (AAA) 44px guidance
 wcag-checker page.html --target-size-threshold 44
+
+# Only check the WCAG 2.2 and ACT rules
+wcag-checker page.html --standards wcag2.2,act
 
 # Crawl and check every page of a site, capped at 200 checked HTML pages
 wcag-checker https://example.com --full-site-scan --full-site-scan-max-pages 200
@@ -204,7 +209,7 @@ src/
 │
 └── rules/                   # one directory per standard, one rule fn per rule
     ├── finding.rs             # Finding / Severity
-    ├── options.rs             # CheckOptions (CLI thresholds)
+    ├── options.rs             # CheckOptions (CLI thresholds, selected standards)
     ├── standard.rs            # Standard: display name, per-standard reference URL
     ├── registry.rs            # pairs each standard with its rules, parallel dispatch via spawn_blocking
     ├── wcag22/                # WCAG 2.2: checks.rs (rule list), reference.rs, one module per rule area

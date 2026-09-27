@@ -229,6 +229,26 @@ fn full_site_scan_on_a_local_file_scans_just_that_file() {
 }
 
 #[test]
+fn standards_restricts_the_rules_that_run() {
+    let output = run("tests/assets/errors.html", &["--standards", "act,aria1.2"]);
+    let out = stdout(&output);
+    assert!(out.contains("ACT:"), "stdout:\n{out}");
+    assert!(out.contains("WAI-ARIA 1.2:"), "stdout:\n{out}");
+    assert!(!out.contains("WCAG 2.2:"), "stdout:\n{out}");
+}
+
+#[rstest::rstest]
+#[case("")]
+#[case(",")]
+#[case("wcag2.2,,act")]
+#[case("wcag")]
+fn standards_rejects_empty_or_unknown_values(#[case] value: &str) {
+    let output = run("tests/assets/clean.html", &["--standards", value]);
+    assert_ne!(exit_code(&output), 0);
+    assert!(String::from_utf8_lossy(&output.stderr).contains("--standards"));
+}
+
+#[test]
 fn max_pages_requires_full_site_scan() {
     let output = run(
         "tests/assets/clean.html",

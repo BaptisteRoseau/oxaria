@@ -1,16 +1,29 @@
 use std::fmt;
 
+use clap::ValueEnum;
+
 use super::{act, aria12, html_aria, wcag22};
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, ValueEnum)]
 pub enum Standard {
+    #[value(name = "wcag2.2")]
     Wcag22,
+    #[value(name = "aria1.2")]
     Aria12,
+    #[value(name = "html-aria")]
     HtmlAria,
+    #[value(name = "act")]
     Act,
 }
 
 impl Standard {
+    pub const ALL: [Standard; 4] = [
+        Standard::Wcag22,
+        Standard::Aria12,
+        Standard::HtmlAria,
+        Standard::Act,
+    ];
+
     pub fn name(self) -> &'static str {
         match self {
             Standard::Wcag22 => "WCAG 2.2",
