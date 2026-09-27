@@ -1564,6 +1564,23 @@ void lh_element_get_attr(lh_element_t* el, const char* name,
     }
 }
 
+void lh_element_for_each_attr(lh_element_t* el,
+                              void (*cb)(void* ctx, const char* name,
+                                         const char* value),
+                              void* ctx)
+{
+    try {
+        if (!el || !cb) return;
+        auto* elem = reinterpret_cast<litehtml::element*>(el);
+        auto* tag = dynamic_cast<litehtml::html_tag*>(elem);
+        if (!tag) return;
+        for (const auto& attr : tag->attrs()) {
+            cb(ctx, attr.first.c_str(), attr.second.c_str());
+        }
+    } catch (...) {
+    }
+}
+
 static lh_web_color_t to_c_color(const litehtml::web_color& color)
 {
     lh_web_color_t out;

@@ -110,9 +110,19 @@ pub struct ElementRef<'a> {
     index: usize,
 }
 
+impl PartialEq for ElementRef<'_> {
+    fn eq(&self, other: &Self) -> bool {
+        std::ptr::eq(self.page, other.page) && self.index == other.index
+    }
+}
+
 impl<'a> ElementRef<'a> {
     pub fn node(&self) -> &'a RenderedElement {
         &self.page.elements[self.index]
+    }
+
+    pub fn page(&self) -> &'a RenderedPage {
+        self.page
     }
 
     pub fn tag(&self) -> &'a str {

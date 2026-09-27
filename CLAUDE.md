@@ -113,7 +113,7 @@ the exact list). Categories deliberately **not** implemented, and why:
   cancelling paste into a password/code field (AUT001).
 - **Inline event handlers are the only script the rules see** (F42, F54, F55, F59, AUT001):
   they read `on*="..."` attributes, never `addEventListener` calls, which would need JS
-  execution. Each handler name must be in `ATTRIBUTES_OF_INTEREST` to be visible at all.
+  execution.
 - **Failures that need interaction are listed in `standards/wcag2.2-rules.md` but not implemented**:
   F95 (hover content), F97 (orientation), F99 (single-key shortcuts), F101 (down-event),
   F103 (status messages), F105 (path gestures), F108 (dragging), F109 (split code fields),
@@ -149,10 +149,21 @@ See [README.md](./README.md#architecture) for the module tree. Notes beyond what
   else (`page/model.rs`, all of `rules/`) only ever sees `RenderedPage`/`RenderedElement`/
   `ElementRef` -- plain data, no engine types leak out. Keep it that way; it's what makes the
   data model renderer-agnostic and the unit tests engine-free.
-- **`ATTRIBUTES_OF_INTEREST`** in `render.rs` is a fixed allowlist of HTML attribute names probed
-  per element (since litehtml only exposes single-attribute lookup by name, not enumeration --
-  see PATCHES.md). If you add a rule that needs an attribute not already in that list, add it
-  there or the attribute will silently read as absent.
+- **Every source attribute reaches `RenderedElement::attrs`**: `render.rs` enumerates each
+  element's attributes through a patched accessor (`Element::attrs()`, see PATCHES.md), names
+  lowercased. Before that, litehtml only allowed lookup by name and a fixed
+  `ATTRIBUTES_OF_INTEREST` allowlist was probed, so unknown names (`aria-labeledby`) were
+  invisible. The one engine-set attribute, `list_index` on `li`, is filtered out.
+- **`src/rules/aria_spec/`** holds the WAI-ARIA 1.2 and ARIA in HTML data shared by the
+  `aria12`, `html_aria` and `act` rules, and the helpers built on it (`effective_role`,
+  `implicit_role`, `allowed_roles`/`allowed_aria`, `is_focusable`, `is_hidden`, `aria_value`,
+  ...). `role_data.rs`/`attribute_data.rs` were extracted by script from w3c/aria's
+  `index.html` (`2023-06_REC` branch, commit `66caad8`), inheritance resolved like the spec's
+  own `common/script/aria.js`, and checked against the tables in
+  `standards/wai-aria-1.2-rules.md`; `html.rs` follows the document conformance table of
+  w3c/html-aria at `e277aa3` (`REC-html-aria-20260811`). Re-check against those repos (cloned)
+  before changing any entry. Rules use this module rather than their own copies; the `wcag22`
+  rules predate it and keep theirs.
 - **Font weight** isn't exposed as a queryable computed-style property by litehtml at all.
   It's captured a different way: litehtml calls back into `Container::create_font` once per
   distinct font description (including weight) and hands back a `FontHandle`; `render.rs` records

@@ -2099,6 +2099,37 @@ impl<'a> Element<'a> {
         result
     }
 
+    /// Every HTML attribute of this element as `(name, value)`, names
+    /// lowercased, in name order. Empty for text and comment nodes.
+    pub fn attrs(&self) -> Vec<(String, String)> {
+        unsafe extern "C" fn attr_callback(
+            ctx: *mut c_void,
+            name: *const c_char,
+            value: *const c_char,
+        ) {
+            if name.is_null() || value.is_null() || ctx.is_null() {
+                return;
+            }
+            let result = &mut *(ctx as *mut Vec<(String, String)>);
+            if let (Ok(name), Ok(value)) = (
+                CStr::from_ptr(name).to_str(),
+                CStr::from_ptr(value).to_str(),
+            ) {
+                result.push((name.to_string(), value.to_string()));
+            }
+        }
+
+        let mut result: Vec<(String, String)> = Vec::new();
+        unsafe {
+            sys::lh_element_for_each_attr(
+                self.ptr,
+                Some(attr_callback),
+                &mut result as *mut Vec<(String, String)> as *mut c_void,
+            );
+        }
+        result
+    }
+
     /// Computed CSS `color`, resolved through inheritance.
     pub fn color(&self) -> Color {
         let mut out = sys::lh_web_color_t::default();

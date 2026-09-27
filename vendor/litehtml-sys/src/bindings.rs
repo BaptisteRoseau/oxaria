@@ -822,6 +822,19 @@ unsafe extern "C" {
     );
 }
 unsafe extern "C" {
+    pub fn lh_element_for_each_attr(
+        el: *mut lh_element_t,
+        cb: ::std::option::Option<
+            unsafe extern "C" fn(
+                ctx: *mut ::std::os::raw::c_void,
+                name: *const ::std::os::raw::c_char,
+                value: *const ::std::os::raw::c_char,
+            ),
+        >,
+        ctx: *mut ::std::os::raw::c_void,
+    );
+}
+unsafe extern "C" {
     pub fn lh_element_get_color(el: *mut lh_element_t, out: *mut lh_web_color_t);
 }
 unsafe extern "C" {

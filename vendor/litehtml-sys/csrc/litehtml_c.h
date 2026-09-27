@@ -380,6 +380,15 @@ void lh_element_get_attr(lh_element_t* el, const char* name,
                          void (*cb)(void* ctx, const char* value),
                          void* ctx);
 
+/* Enumerate every HTML attribute of the element via callback, once per
+   attribute, in name order: the name lowercased, the value as parsed from
+   the source. Nothing is called for nodes without attributes (text,
+   comments) or if el/cb is NULL. */
+void lh_element_for_each_attr(lh_element_t* el,
+                              void (*cb)(void* ctx, const char* name,
+                                         const char* value),
+                              void* ctx);
+
 /* Get the element's computed CSS `color`, resolved through inheritance.
    Writes black (0,0,0,255) to *out if el is NULL. */
 void lh_element_get_color(lh_element_t* el, lh_web_color_t* out);

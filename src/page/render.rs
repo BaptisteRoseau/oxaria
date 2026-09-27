@@ -21,50 +21,9 @@ const MASTER_CSS: &str = include_str!("master.css");
 const VIEWPORT_WIDTH: f32 = 1280.0;
 const VIEWPORT_HEIGHT: f32 = 1024.0;
 
-const ATTRIBUTES_OF_INTEREST: &[&str] = &[
-    "id",
-    "href",
-    "alt",
-    "src",
-    "type",
-    "role",
-    "required",
-    "aria-required",
-    "aria-label",
-    "aria-labelledby",
-    "aria-describedby",
-    "aria-invalid",
-    "title",
-    "value",
-    "for",
-    "scope",
-    "headers",
-    "kind",
-    "autoplay",
-    "controls",
-    "lang",
-    "autocomplete",
-    "http-equiv",
-    "content",
-    "summary",
-    "muted",
-    "hidden",
-    "aria-hidden",
-    "onclick",
-    "ondblclick",
-    "onmousedown",
-    "onmouseup",
-    "onpointerdown",
-    "onpointerup",
-    "ontouchstart",
-    "ontouchend",
-    "onkeydown",
-    "onkeyup",
-    "onkeypress",
-    "onfocus",
-    "onblur",
-    "onpaste",
-];
+/// Set by litehtml itself on `li` elements while laying out numbered lists,
+/// so it's the one enumerated attribute that never came from the source.
+const ENGINE_ATTRIBUTES: &[&str] = &["list_index"];
 
 pub fn render(html: &str) -> Result<RenderedPage, CheckerError> {
     // `document` holds an exclusive `&mut` borrow of `container` for its entire lifetime, so
@@ -228,10 +187,9 @@ fn rendered_element(
 }
 
 fn attributes(node: &Element) -> Vec<(String, String)> {
-    ATTRIBUTES_OF_INTEREST
-        .iter()
-        .filter_map(|name| node.attr(name).map(|value| (name.to_string(), value)))
-        .collect()
+    let mut attrs = node.attrs();
+    attrs.retain(|(name, _)| !ENGINE_ATTRIBUTES.contains(&name.as_str()));
+    attrs
 }
 
 /// Walks up through ancestors (litehtml's own tree, not our arena, since
@@ -283,6 +241,36 @@ mod tests {
         assert_eq!(img.attr("id"), Some("pic"));
         assert_eq!(img.attr("src"), Some("a.jpg"));
         assert_eq!(img.attr("alt"), Some("A red bicycle"));
+    }
+
+    #[test]
+    fn renders_every_source_attribute_with_lowercased_names() {
+        let page =
+            render(r#"<div ARIA-LabeledBy="x" data-state="open" aria-role="button">x</div>"#)
+                .unwrap();
+        let div = page.by_tag("div").next().unwrap();
+        assert_eq!(div.attr("aria-labeledby"), Some("x"));
+        assert_eq!(div.attr("data-state"), Some("open"));
+        assert_eq!(div.attr("aria-role"), Some("button"));
+    }
+
+    #[test]
+    fn engine_set_attributes_are_not_rendered() {
+        let page =
+            render(r#"<ol style="list-style-type:decimal"><li>a</li><li>b</li></ol>"#).unwrap();
+        let li = page.by_tag("li").nth(1).unwrap();
+        assert!(li.node().attrs.is_empty(), "{:?}", li.node().attrs);
+    }
+
+    #[test]
+    fn text_nodes_have_no_attributes() {
+        let page = render("<p>Text</p>").unwrap();
+        assert!(
+            page.elements
+                .iter()
+                .filter(|el| el.is_text())
+                .all(|el| el.attrs.is_empty())
+        );
     }
 
     #[test]
