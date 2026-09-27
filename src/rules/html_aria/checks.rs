@@ -1,6 +1,21 @@
 use super::{attributes, content_model, deprecated, native_attributes, roles, syntax};
 use crate::rules::RuleCheck;
 
+pub const RULE_IDS: &[&str] = &[
+    "HTMLARIA002",
+    "HTMLARIA003",
+    "HTMLARIA004",
+    "HTMLARIA007",
+    "HTMLARIA009",
+    "HTMLARIA010",
+    "HTMLARIA011",
+    "HTMLARIA013",
+    "HTMLARIA014",
+    "HTMLARIA015",
+    "HTMLARIA016",
+    "HTMLARIA017",
+];
+
 pub fn rule_checks() -> Vec<RuleCheck> {
     vec![
         roles::check_redundant_semantics,
@@ -34,6 +49,6 @@ mod tests {
                    <button disabled aria-disabled="true">Save</button>
                    <ul role="directory"><li>D</li></ul><div role="MAIN">M</div>
                    <div role="button"><button>B</button></div>"#;
-        assert_every_rule_has_help(Standard::HtmlAria, &[page], 12).await;
+        assert_every_rule_has_help(Standard::HtmlAria, &[page]).await;
     }
 }

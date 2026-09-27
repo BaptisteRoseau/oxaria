@@ -22,6 +22,10 @@ use rules::{CheckOptions, Finding};
 async fn main() -> ExitCode {
     let config = CliConfig::parse();
     logging::init_logger(config.verbose, config.quiet);
+    if config.list_rules {
+        list_rules(&config);
+        return ExitCode::SUCCESS;
+    }
 
     // Validated before checking, so a destination conflict fails immediately
     // instead of after a possibly long full-site scan.
@@ -42,6 +46,14 @@ async fn main() -> ExitCode {
         Err(errors) => {
             errors.iter().for_each(|err| error!("{err}"));
             ExitCode::from(1)
+        }
+    }
+}
+
+fn list_rules(config: &CliConfig) {
+    for standard in CheckOptions::from(config).standards {
+        for (rule_id, title) in rules::rule_titles(standard) {
+            println!("{standard} {rule_id}: {title}");
         }
     }
 }

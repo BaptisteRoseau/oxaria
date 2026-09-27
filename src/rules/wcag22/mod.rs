@@ -23,7 +23,7 @@ mod target_size;
 mod timing;
 
 pub(crate) use autocomplete::is_valid_autocomplete;
-pub use checks::rule_checks;
+pub use checks::{RULE_IDS, rule_checks};
 pub(crate) use contrast::{
     DEFAULT_CANVAS_BACKGROUND, Rgb, color_contrast, hex, is_large_text, passing_color,
     renders_own_text,

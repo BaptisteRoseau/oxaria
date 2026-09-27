@@ -17,6 +17,41 @@ fn rule_checks(standard: Standard) -> Vec<RuleCheck> {
     }
 }
 
+fn rule_ids(standard: Standard) -> &'static [&'static str] {
+    match standard {
+        Standard::Wcag22 => wcag22::RULE_IDS,
+        Standard::Aria12 => aria12::RULE_IDS,
+        Standard::HtmlAria => html_aria::RULE_IDS,
+        Standard::Act => act::RULE_IDS,
+    }
+}
+
+fn rules_file(standard: Standard) -> &'static str {
+    match standard {
+        Standard::Wcag22 => include_str!("../../standards/wcag2.2-rules.md"),
+        Standard::Aria12 => include_str!("../../standards/wai-aria-1.2-rules.md"),
+        Standard::HtmlAria => include_str!("../../standards/html-aria-rules.md"),
+        Standard::Act => include_str!("../../standards/act-rules.md"),
+    }
+}
+
+/// `(rule ID, title)` of every rule of `standard`, each title taken from the
+/// `### <ID> - <title>` heading of its rule file under `standards/`.
+pub fn rule_titles(standard: Standard) -> Vec<(&'static str, &'static str)> {
+    rule_ids(standard)
+        .iter()
+        .map(|&id| (id, title(rules_file(standard), id).unwrap_or_default()))
+        .collect()
+}
+
+fn title(rules_file: &'static str, rule_id: &str) -> Option<&'static str> {
+    rules_file
+        .lines()
+        .filter_map(|line| line.strip_prefix("### ")?.split_once(" - "))
+        .find(|(ids, _)| ids.split(" / ").any(|id| id == rule_id))
+        .map(|(_, title)| title)
+}
+
 /// Runs every rule of the selected standards in its own blocking task, sharing one
 /// `Arc<RenderedPage>`.
 pub async fn run_all(page: Arc<RenderedPage>, options: Arc<CheckOptions>) -> Vec<Finding> {
@@ -77,13 +112,9 @@ pub(crate) mod tests {
         assert!(findings.iter().any(|f| f.rule_id == "H42"));
     }
 
-    /// Fails unless the pages make exactly `rule_count` distinct rule IDs of
-    /// `standard` fire, each finding with a help line.
-    pub(crate) async fn assert_every_rule_has_help(
-        standard: Standard,
-        pages: &[&str],
-        rule_count: usize,
-    ) {
+    /// Fails unless the pages make exactly the rule IDs of `standard` fire,
+    /// each finding with a help line.
+    pub(crate) async fn assert_every_rule_has_help(standard: Standard, pages: &[&str]) {
         let mut findings = Vec::new();
         for html in pages {
             findings.extend(run_all(Arc::new(page_from_html(html)), options()).await);
@@ -91,12 +122,31 @@ pub(crate) mod tests {
         findings.retain(|f| f.standard == Some(standard));
         let rule_ids: BTreeSet<_> = findings.iter().map(|f| f.rule_id).collect();
         assert_eq!(
-            rule_ids.len(),
-            rule_count,
-            "not every {standard} rule fired: {rule_ids:?}"
+            rule_ids,
+            super::rule_ids(standard).iter().copied().collect(),
+            "not every {standard} rule fired"
         );
         let without_help: Vec<_> = findings.iter().filter(|f| f.help.is_none()).collect();
         assert!(without_help.is_empty(), "{without_help:?}");
+    }
+
+    #[test]
+    fn every_rule_has_a_title() {
+        for standard in Standard::ALL {
+            let untitled: Vec<_> = rule_titles(standard)
+                .into_iter()
+                .filter(|(_, title)| title.is_empty())
+                .collect();
+            assert!(untitled.is_empty(), "{standard}: {untitled:?}");
+        }
+    }
+
+    #[test]
+    fn title_is_found_under_a_shared_heading() {
+        assert_eq!(
+            title(rules_file(Standard::Wcag22), "F41"),
+            Some("Don't redirect or reload the page with a timed meta refresh")
+        );
     }
 
     #[tokio::test]

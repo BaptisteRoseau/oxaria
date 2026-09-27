@@ -4,6 +4,12 @@ use super::{
 };
 use crate::rules::RuleCheck;
 
+pub const RULE_IDS: &[&str] = &[
+    "2779a5", "b5c3f8", "bf051a", "de46e4", "23a2a8", "46ca7f", "59796f", "7d6734", "8fc3b6",
+    "97a4e1", "c487ae", "m6b1q3", "2t702h", "e086e5", "73f2c2", "a25f45", "5f99a7", "6a7281",
+    "674b10", "307n5z", "afw4f7", "bc659a", "bisz58", "b4f0c3", "24afc2", "9e45ec", "b33eff",
+];
+
 pub fn rule_checks() -> Vec<RuleCheck> {
     vec![
         language::check_page_title,
@@ -61,6 +67,6 @@ mod tests {
                    <p role="checkbox" aria-checked="false" tabindex="0">I agree <a href="/t">terms</a></p>
                    <p style="color: #999999; letter-spacing: 0.1em !important; word-spacing: 0 !important">Low contrast</p>
                    </body></html>"#;
-        assert_every_rule_has_help(Standard::Act, &[page, "<p>No title</p>"], 27).await;
+        assert_every_rule_has_help(Standard::Act, &[page, "<p>No title</p>"]).await;
     }
 }

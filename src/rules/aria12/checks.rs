@@ -4,6 +4,45 @@ use super::{
 };
 use crate::rules::RuleCheck;
 
+pub const RULE_IDS: &[&str] = &[
+    "ARIA-ROLE002",
+    "ARIA-ROLE003",
+    "ARIA-ATTR001",
+    "ARIA-ATTR003",
+    "ARIA-ATTR004",
+    "ARIA-ATTR005",
+    "ARIA-ATTR007",
+    "ARIA-ATTR008",
+    "ARIA-ATTR009",
+    "ARIA-VAL001",
+    "ARIA-VAL002",
+    "ARIA-VAL003",
+    "ARIA-VAL005",
+    "ARIA-IDREF001",
+    "ARIA-IDREF002",
+    "ARIA-IDREF003",
+    "ARIA-STRUCT001",
+    "ARIA-STRUCT002",
+    "ARIA-STRUCT003",
+    "ARIA-STRUCT004",
+    "ARIA-PRES001",
+    "ARIA-PRES002",
+    "ARIA-PRES003",
+    "ARIA-WIDGET001",
+    "ARIA-WIDGET002",
+    "ARIA-WIDGET003",
+    "ARIA-WIDGET006",
+    "ARIA-WIDGET007",
+    "ARIA-FOCUS001",
+    "ARIA-FOCUS006",
+    "ARIA-LMK001",
+    "ARIA-USAGE002",
+    "ARIA-USAGE003",
+    "ARIA-DEPR001",
+    "ARIA-DEPR002",
+    "ARIA-DEPR003",
+];
+
 pub fn rule_checks() -> Vec<RuleCheck> {
     vec![
         roles::check_abstract_role,
@@ -97,7 +136,6 @@ mod tests {
                 structure,
                 widgets,
             ],
-            36,
         )
         .await;
     }

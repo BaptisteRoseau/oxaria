@@ -4,6 +4,13 @@ use super::{
 };
 use crate::rules::RuleCheck;
 
+pub const RULE_IDS: &[&str] = &[
+    "H25", "F25", "H64", "F30", "F65", "F89", "H44", "H90", "F68", "F96", "F107", "H42", "G141",
+    "F92", "H57", "H30", "LNK001", "G18", "H63", "F91", "F46", "F90", "ARIA1", "IDS001", "F59",
+    "G87", "G186", "F93", "F16", "F54", "F42", "F55", "G195", "G1", "F40", "F41", "TGT001",
+    "AUT001",
+];
+
 pub fn rule_checks() -> Vec<RuleCheck> {
     vec![
         images::check_missing_alt,
@@ -68,6 +75,6 @@ mod tests {
                    <div onclick="go()">D</div><img src="n.png" alt="Next" onmousedown="next()">
                    <input type="submit" onfocus="this.blur()"><marquee>M</marquee>
                    <input type="password" onpaste="return false">"##;
-        assert_every_rule_has_help(Standard::Wcag22, &[page, "<p>No title</p>"], 38).await;
+        assert_every_rule_has_help(Standard::Wcag22, &[page, "<p>No title</p>"]).await;
     }
 }

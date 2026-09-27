@@ -237,6 +237,24 @@ fn standards_restricts_the_rules_that_run() {
     assert!(!out.contains("WCAG 2.2:"), "stdout:\n{out}");
 }
 
+#[test]
+fn list_rules_prints_the_selected_standards_rules_without_a_page() {
+    let output = run("--list-rules", &["--standards", "act,wcag2.2"]);
+    assert_eq!(exit_code(&output), 0);
+    let out = stdout(&output);
+    assert!(
+        out.lines()
+            .any(|line| line == "ACT 2779a5: Give every page a non-empty title element"),
+        "stdout:\n{out}"
+    );
+    assert!(
+        out.lines()
+            .any(|line| line == "WCAG 2.2 H25: Give every page a non-empty title element"),
+        "stdout:\n{out}"
+    );
+    assert!(!out.contains("WAI-ARIA 1.2"), "stdout:\n{out}");
+}
+
 #[rstest::rstest]
 #[case("")]
 #[case(",")]

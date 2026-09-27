@@ -12,6 +12,11 @@ use crate::rules::{
 #[command(author, version, about, long_about = None)]
 pub struct CliConfig {
     /// HTML source: an http(s) URL, or a path to a local HTML file
+    #[arg(
+        required_unless_present = "list_rules",
+        default_value = "",
+        hide_default_value = true
+    )]
     pub path_or_url: String,
 
     /// Also log info-level messages
@@ -38,6 +43,10 @@ pub struct CliConfig {
     /// Comma-separated standards whose rules are checked
     #[arg(long, value_enum, value_delimiter = ',', default_values_t = Standard::ALL)]
     pub standards: Vec<Standard>,
+
+    /// Print the rules of the selected standards instead of checking anything
+    #[arg(long)]
+    pub list_rules: bool,
 
     /// When given a URL, also scan every same-domain page reachable through its links
     #[arg(long)]

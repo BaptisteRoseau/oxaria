@@ -39,10 +39,10 @@ The binary is written to `target/release/wcag-checker`.
 ```cmd
 Check a web page against a subset of WCAG 2.2, WAI-ARIA 1.2, ARIA in HTML and ACT rules
 
-Usage: wcag-checker [OPTIONS] <PATH_OR_URL>
+Usage: wcag-checker [OPTIONS] [PATH_OR_URL]
 
 Arguments:
-  <PATH_OR_URL>  HTML source: an http(s) URL, or a path to a local HTML file
+  [PATH_OR_URL]  HTML source: an http(s) URL, or a path to a local HTML file
 
 Options:
   -v, --verbose
@@ -57,6 +57,8 @@ Options:
           Minimum pointer target size in CSS pixels (WCAG 2.5.8 default: 24.0) [default: 24]
       --standards <STANDARDS>
           Comma-separated standards whose rules are checked [default: wcag2.2 aria1.2 html-aria act] [possible values: wcag2.2, aria1.2, html-aria, act]
+      --list-rules
+          Print the rules of the selected standards instead of checking anything
       --full-site-scan
           When given a URL, also scan every same-domain page reachable through its links
       --full-site-scan-max-pages <FULL_SITE_SCAN_MAX_PAGES>
@@ -92,6 +94,9 @@ wcag-checker page.html --target-size-threshold 44
 
 # Only check the WCAG 2.2 and ACT rules
 wcag-checker page.html --standards wcag2.2,act
+
+# List the rules that would be checked, without checking anything
+wcag-checker --list-rules --standards wcag2.2,act
 
 # Crawl and check every page of a site, capped at 200 checked HTML pages
 wcag-checker https://example.com --full-site-scan --full-site-scan-max-pages 200
