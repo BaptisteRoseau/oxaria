@@ -114,7 +114,7 @@ Overlaps: F92 in wcag2.2-rules.md (this table allows `role=presentation` on `h1`
 
 Prevailing rule: F92 in wcag2.2-rules.md (see C5 in [overlap.md](./overlap.md#conflicts)). A role allowed by this table is still a failure when `none`/`presentation` removes structure the content conveys (e.g. a data table).
 
-Source: https://www.w3.org/TR/html-aria/#docconformance
+Source: <https://www.w3.org/TR/html-aria/#docconformance>
 
 #### DON'T
 
@@ -136,7 +136,7 @@ Don't set a `role` or `aria-*` value matching the element's implicit semantics (
 
 Automation: partial. Whether a redundant role is justified (e.g. a `ul` without markers) needs AI review.
 
-Source: https://www.w3.org/TR/html-aria/#rules-wd
+Source: <https://www.w3.org/TR/html-aria/#rules-wd>
 
 #### DON'T
 
@@ -164,7 +164,7 @@ Source: https://www.w3.org/TR/html-aria/#rules-wd
 
 Don't set `role="generic"` on any element, nor `generic` or `document` on `html`. Use a `div`, or `role="none"`/`role="presentation"`, instead. ([Document conformance requirements](https://www.w3.org/TR/html-aria/#docconformance); SHOULD NOT)
 
-Source: https://www.w3.org/TR/html-aria/#docconformance
+Source: <https://www.w3.org/TR/html-aria/#docconformance>
 
 #### DON'T
 
@@ -184,7 +184,7 @@ Source: https://www.w3.org/TR/html-aria/#docconformance
 
 Don't set an abstract role (listed in [WAI-ARIA 1.2](https://www.w3.org/TR/wai-aria-1.2/#isAbstract)), such as `role="select"`, on any element. ([Conformance checking requirements](https://www.w3.org/TR/html-aria/#conformance); MUST NOT)
 
-Source: https://www.w3.org/TR/html-aria/#conformance
+Source: <https://www.w3.org/TR/html-aria/#conformance>
 
 #### DON'T
 
@@ -206,7 +206,7 @@ Don't set any `role` on `input type=image`, `reset` or `submit`; use an element 
 
 Prevailing rule: ARIA-USAGE001 in wai-aria-1.2-rules.md (see C6 in [overlap.md](./overlap.md#conflicts)). The `button role="switch"` DO example shows the allowed role, not the recommended control; prefer a native `input type="checkbox"` where it fits.
 
-Source: https://www.w3.org/TR/html-aria/#el-input-submit
+Source: <https://www.w3.org/TR/html-aria/#el-input-submit>
 
 #### DON'T
 
@@ -228,7 +228,7 @@ Source: https://www.w3.org/TR/html-aria/#el-input-submit
 
 Automation: none. Whether a page is publishing content, or was tested with users, needs AI review.
 
-Source: https://www.w3.org/TR/html-aria/#dpub-usage-note
+Source: <https://www.w3.org/TR/html-aria/#dpub-usage-note>
 
 #### DON'T
 
@@ -265,7 +265,7 @@ Only use global `aria-*` attributes and those supported by the element's role (e
 | `input type=date`, `datetime-local`, `month`, `password`, `time`, `week` | global and those of the `textbox` role |
 | every other element | global and those of its allowed roles |
 
-Source: https://www.w3.org/TR/html-aria/#docconformance
+Source: <https://www.w3.org/TR/html-aria/#docconformance>
 
 #### DON'T
 
@@ -297,7 +297,7 @@ Automation: partial. A custom element's role set through `ElementInternals` come
 
 Prevailing rule: ARIA-USAGE001 in wai-aria-1.2-rules.md (see C6 in [overlap.md](./overlap.md#conflicts)). The `p role="link"` and `span role="button"` DO examples show how naming becomes allowed, not the recommended controls; prefer native `a href` and `button` elements.
 
-Source: https://www.w3.org/TR/html-aria/#docconformance-naming
+Source: <https://www.w3.org/TR/html-aria/#docconformance-naming>
 
 #### DON'T
 
@@ -323,7 +323,7 @@ Don't set `aria-hidden` on `body` or on any focusable element, including one wit
 
 Automation: partial. Elements made focusable by script at runtime need AI review.
 
-Source: https://www.w3.org/TR/html-aria/#att-hidden
+Source: <https://www.w3.org/TR/html-aria/#att-hidden>
 
 #### DON'T
 
@@ -347,7 +347,7 @@ Source: https://www.w3.org/TR/html-aria/#att-hidden
 
 Don't set `aria-hidden="true"` on an element with `hidden` (NOT RECOMMENDED), and never on one with `hidden="until-found"` (MUST NOT). ([`hidden` attribute](https://www.w3.org/TR/html-aria/#att-hidden))
 
-Source: https://www.w3.org/TR/html-aria/#att-hidden
+Source: <https://www.w3.org/TR/html-aria/#att-hidden>
 
 #### DON'T
 
@@ -372,7 +372,7 @@ Don't use these attributes on the native elements that handle them. ([Document c
 - `aria-selected` on `option`
 - `aria-multiselectable` on `select`
 
-Source: https://www.w3.org/TR/html-aria/#docconformance
+Source: <https://www.w3.org/TR/html-aria/#docconformance>
 
 #### DON'T
 
@@ -400,7 +400,7 @@ Automation: partial. Whether a custom widget serves the intent better needs AI r
 
 Prevailing rule: ARIA-USAGE001 in wai-aria-1.2-rules.md (see C6 in [overlap.md](./overlap.md#conflicts)). A custom widget is the fallback when the native element can't express the state, not the default; first check whether a native control (e.g. `input type="checkbox"`) fits.
 
-Source: https://www.w3.org/TR/html-aria/#aria-semantics-that-extend-and-diverge-from-html
+Source: <https://www.w3.org/TR/html-aria/#aria-semantics-that-extend-and-diverge-from-html>
 
 #### DON'T
 
@@ -437,7 +437,7 @@ Don't combine these native attributes with the `aria-*` attribute listed; use th
 | `colspan` (`td`, `th`) | `aria-colspan` with a different value |
 | `rowspan` (`td`, `th`) | `aria-rowspan` with a different value |
 
-Source: https://www.w3.org/TR/html-aria/#docconformance-attr
+Source: <https://www.w3.org/TR/html-aria/#docconformance-attr>
 
 #### DON'T
 
@@ -469,7 +469,7 @@ Don't set both a native attribute and its `aria-*` equivalent, even with matchin
 
 Overlaps: H90 in wcag2.2-rules.md (its DO example uses `required aria-required="true"`, which this rule advises against)
 
-Source: https://www.w3.org/TR/html-aria/#docconformance-attr
+Source: <https://www.w3.org/TR/html-aria/#docconformance-attr>
 
 #### DON'T
 
@@ -497,7 +497,7 @@ Don't use deprecated roles or attributes on any element. ([Requirements for depr
 - `role="doc-biblioentry"`, `role="doc-endnote"`: use a plain `li`
 - `aria-dropeffect`, `aria-grabbed`: no replacement
 
-Source: https://www.w3.org/TR/html-aria/#docconformance-deprecated
+Source: <https://www.w3.org/TR/html-aria/#docconformance-deprecated>
 
 #### DON'T
 
@@ -527,7 +527,7 @@ Write `role` tokens and token values of `aria-*` attributes in ASCII lowercase. 
 
 Automation: partial. The spec's advice to test with browsers and assistive technologies needs manual or AI review.
 
-Source: https://www.w3.org/TR/html-aria/#case-sensitivity
+Source: <https://www.w3.org/TR/html-aria/#case-sensitivity>
 
 #### DON'T
 
@@ -551,7 +551,7 @@ Source: https://www.w3.org/TR/html-aria/#case-sensitivity
 
 *Informative.* Don't put interactive content or elements with `tabindex` inside roles `button`, `checkbox`, `link`, `menuitem`, `menuitemcheckbox`, `menuitemradio`, `option`, `radio`, `switch` or `tab`, nor interactive content inside `img`/`image`. Also avoid `main` inside roles such as `article`, `navigation` or `textbox`, `form` inside `role=form`, `meter` inside `role=meter` and `progress` inside `role=progressbar`. ("Allowed descendants of ARIA roles")
 
-Source: https://www.w3.org/TR/html-aria/#allowed-descendants-of-aria-roles
+Source: <https://www.w3.org/TR/html-aria/#allowed-descendants-of-aria-roles>
 
 #### DON'T
 
@@ -584,7 +584,7 @@ Source: https://www.w3.org/TR/html-aria/#allowed-descendants-of-aria-roles
 
 Automation: none. The HTML parser repairs the nesting before the DOM exists, so it needs source inspection or AI review.
 
-Source: https://www.w3.org/TR/html-aria/#adhere-to-the-rules-of-html
+Source: <https://www.w3.org/TR/html-aria/#adhere-to-the-rules-of-html>
 
 #### DON'T
 

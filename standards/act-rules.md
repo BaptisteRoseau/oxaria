@@ -28,7 +28,7 @@ The page must have a `title` element whose text is not empty or only whitespace.
 
 Overlaps: H25 in wcag2.2-rules.md
 
-Source: https://www.w3.org/WAI/standards-guidelines/act/rules/2779a5/
+Source: <https://www.w3.org/WAI/standards-guidelines/act/rules/2779a5/>
 
 #### DON'T
 
@@ -58,7 +58,7 @@ The page's first `title` must describe the page's topic or purpose; a generic ti
 
 Automation: whether the title describes the page needs manual / AI review.
 
-Source: https://www.w3.org/WAI/standards-guidelines/act/rules/c4a8a4/
+Source: <https://www.w3.org/WAI/standards-guidelines/act/rules/c4a8a4/>
 
 #### DON'T
 
@@ -98,7 +98,7 @@ The `html` element of a top-level HTML page must have a `lang` attribute that is
 
 Overlaps: H57 in wcag2.2-rules.md
 
-Source: https://www.w3.org/WAI/standards-guidelines/act/rules/b5c3f8/
+Source: <https://www.w3.org/WAI/standards-guidelines/act/rules/b5c3f8/>
 
 #### DON'T
 
@@ -136,7 +136,7 @@ Automation: needs a copy of the registry's primary language subtags.
 
 Overlaps: H57 in wcag2.2-rules.md
 
-Source: https://www.w3.org/WAI/standards-guidelines/act/rules/bf051a/
+Source: <https://www.w3.org/WAI/standards-guidelines/act/rules/bf051a/>
 
 #### DON'T
 
@@ -158,7 +158,7 @@ Source: https://www.w3.org/WAI/standards-guidelines/act/rules/bf051a/
 
 Every `lang` attribute on an element in the `body` that contains text must have a known primary language subtag, as for `bf051a`; a value of only whitespace fails. (SC 3.1.2)
 
-Source: https://www.w3.org/WAI/standards-guidelines/act/rules/de46e4/
+Source: <https://www.w3.org/WAI/standards-guidelines/act/rules/de46e4/>
 
 #### DON'T
 
@@ -194,7 +194,7 @@ Every `img` and `role="img"` element that isn't hidden must have a non-empty acc
 
 Overlaps: H37, F65 in wcag2.2-rules.md
 
-Source: https://www.w3.org/WAI/standards-guidelines/act/rules/23a2a8/
+Source: <https://www.w3.org/WAI/standards-guidelines/act/rules/23a2a8/>
 
 #### DON'T
 
@@ -218,7 +218,7 @@ The accessible name of a visible `img`, `canvas` or `svg` must serve the same pu
 
 Automation: judging whether the name describes the image needs manual / AI review, and litehtml never loads images.
 
-Source: https://www.w3.org/WAI/standards-guidelines/act/rules/qt1vmo/
+Source: <https://www.w3.org/WAI/standards-guidelines/act/rules/qt1vmo/>
 
 #### DON'T
 
@@ -240,7 +240,7 @@ Don't use images (`img`, `input type="image"`, images in `svg`, CSS background i
 
 Automation: finding text in an image and judging the exceptions needs manual / AI review; litehtml never loads images.
 
-Source: https://www.w3.org/WAI/standards-guidelines/act/rules/0va7u6/
+Source: <https://www.w3.org/WAI/standards-guidelines/act/rules/0va7u6/>
 
 #### DON'T
 
@@ -268,7 +268,7 @@ Don't give an element marked decorative (`role="none"`/`"presentation"`, or an `
 
 Overlaps: H67 in wcag2.2-rules.md
 
-Source: https://www.w3.org/WAI/standards-guidelines/act/rules/46ca7f/
+Source: <https://www.w3.org/WAI/standards-guidelines/act/rules/46ca7f/>
 
 #### DON'T
 
@@ -295,7 +295,7 @@ Every `input type="image"` must have an accessible name (from `alt`, `aria-label
 
 Overlaps: H36 in wcag2.2-rules.md
 
-Source: https://www.w3.org/WAI/standards-guidelines/act/rules/59796f/
+Source: <https://www.w3.org/WAI/standards-guidelines/act/rules/59796f/>
 
 #### DON'T
 
@@ -316,7 +316,7 @@ Source: https://www.w3.org/WAI/standards-guidelines/act/rules/59796f/
 
 Every `svg` element with a `role` of `img`, `graphics-document` or `graphics-symbol` must have a non-empty accessible name, from a `title` child, `aria-label` or `aria-labelledby`. (SC 1.1.1)
 
-Source: https://www.w3.org/WAI/standards-guidelines/act/rules/7d6734/
+Source: <https://www.w3.org/WAI/standards-guidelines/act/rules/7d6734/>
 
 #### DON'T
 
@@ -348,7 +348,7 @@ Every `object` element with no explicit role that embeds an image, audio or vide
 
 Automation: the embedded resource's MIME type isn't in the render, so it has to come from the `type` attribute, the `data` URL's extension, or a separate request.
 
-Source: https://www.w3.org/WAI/standards-guidelines/act/rules/8fc3b6/
+Source: <https://www.w3.org/WAI/standards-guidelines/act/rules/8fc3b6/>
 
 #### DON'T
 
@@ -374,7 +374,7 @@ Every element with a `button` role, except `input type="image"` (see `59796f`), 
 
 Overlaps: F68 in wcag2.2-rules.md
 
-Source: https://www.w3.org/WAI/standards-guidelines/act/rules/97a4e1/
+Source: <https://www.w3.org/WAI/standards-guidelines/act/rules/97a4e1/>
 
 #### DON'T
 
@@ -400,7 +400,7 @@ Every link (`a` or `area` with an `href`, or `role="link"`) must have a non-empt
 
 Overlaps: H30, F89 in wcag2.2-rules.md
 
-Source: https://www.w3.org/WAI/standards-guidelines/act/rules/c487ae/
+Source: <https://www.w3.org/WAI/standards-guidelines/act/rules/c487ae/>
 
 #### DON'T
 
@@ -423,7 +423,7 @@ Every element with a `menuitem` role must have a non-empty accessible name; a de
 
 Overlaps: F68 in wcag2.2-rules.md
 
-Source: https://www.w3.org/WAI/standards-guidelines/act/rules/m6b1q3/
+Source: <https://www.w3.org/WAI/standards-guidelines/act/rules/m6b1q3/>
 
 #### DON'T
 
@@ -453,7 +453,7 @@ The first `summary` of every `details` element, including one with `role="none"`
 
 Overlaps: F68 in wcag2.2-rules.md
 
-Source: https://www.w3.org/WAI/standards-guidelines/act/rules/2t702h/
+Source: <https://www.w3.org/WAI/standards-guidelines/act/rules/2t702h/>
 
 #### DON'T
 
@@ -486,7 +486,7 @@ Every form field must have a non-empty accessible name, disabled ones included: 
 
 Overlaps: H44, F68 in wcag2.2-rules.md
 
-Source: https://www.w3.org/WAI/standards-guidelines/act/rules/e086e5/
+Source: <https://www.w3.org/WAI/standards-guidelines/act/rules/e086e5/>
 
 #### DON'T
 
@@ -520,7 +520,7 @@ An `autocomplete` value other than `on` or `off` must be, case-insensitively and
 
 Overlaps: F107, H98 in wcag2.2-rules.md
 
-Source: https://www.w3.org/WAI/standards-guidelines/act/rules/73f2c2/
+Source: <https://www.w3.org/WAI/standards-guidelines/act/rules/73f2c2/>
 
 #### DON'T
 
@@ -547,7 +547,7 @@ Every token in a table cell's `headers` attribute must be the `id` of another ce
 
 Overlaps: F90 in wcag2.2-rules.md
 
-Source: https://www.w3.org/WAI/standards-guidelines/act/rules/a25f45/
+Source: <https://www.w3.org/WAI/standards-guidelines/act/rules/a25f45/>
 
 #### DON'T
 
@@ -591,7 +591,7 @@ Source: https://www.w3.org/WAI/standards-guidelines/act/rules/a25f45/
 
 Every `aria-*` attribute must be defined in WAI-ARIA 1.2, the Graphics module or the DPub module; misspelled or invented names fail. (SC 1.3.1, 4.1.2 secondary)
 
-Source: https://www.w3.org/WAI/standards-guidelines/act/rules/5f99a7/
+Source: <https://www.w3.org/WAI/standards-guidelines/act/rules/5f99a7/>
 
 #### DON'T
 
@@ -611,7 +611,7 @@ Source: https://www.w3.org/WAI/standards-guidelines/act/rules/5f99a7/
 
 Every non-empty ARIA state or property must have a value that is valid for its type (`true/false`, `tristate`, token, number, ...); ID references don't have to resolve. (WAI-ARIA 1.2, 6.2.4 Value; SC 1.3.1, 4.1.2 secondary)
 
-Source: https://www.w3.org/WAI/standards-guidelines/act/rules/6a7281/
+Source: <https://www.w3.org/WAI/standards-guidelines/act/rules/6a7281/>
 
 #### DON'T
 
@@ -633,7 +633,7 @@ Source: https://www.w3.org/WAI/standards-guidelines/act/rules/6a7281/
 
 Every non-empty `role` attribute on an element that isn't hidden must contain at least one valid, non-abstract WAI-ARIA role; the other tokens are fallbacks. (SC 1.3.1, 4.1.2 secondary)
 
-Source: https://www.w3.org/WAI/standards-guidelines/act/rules/674b10/
+Source: <https://www.w3.org/WAI/standards-guidelines/act/rules/674b10/>
 
 #### DON'T
 
@@ -658,7 +658,7 @@ Overlaps: ARIA5 in wcag2.2-rules.md (which covers keeping the state in sync by s
 
 Prevailing rule: ARIA-USAGE001 in wai-aria-1.2-rules.md (see C6 in [overlap.md](./overlap.md#conflicts)). The custom `div role="checkbox"` DO example shows valid ARIA, not the recommended control; prefer a native `input type="checkbox"`.
 
-Source: https://www.w3.org/WAI/standards-guidelines/act/rules/4e8ab6/
+Source: <https://www.w3.org/WAI/standards-guidelines/act/rules/4e8ab6/>
 
 #### DON'T
 
@@ -688,7 +688,7 @@ Source: https://www.w3.org/WAI/standards-guidelines/act/rules/4e8ab6/
 
 Neither an element with `aria-hidden="true"` nor its descendants may be in the sequential focus order. `display:none` or `disabled` is fine; moving the content off screen, `aria-disabled`, or a nested `aria-hidden="false"` is not. (SC 4.1.2)
 
-Source: https://www.w3.org/WAI/standards-guidelines/act/rules/6cfa84/
+Source: <https://www.w3.org/WAI/standards-guidelines/act/rules/6cfa84/>
 
 #### DON'T
 
@@ -720,7 +720,7 @@ Source: https://www.w3.org/WAI/standards-guidelines/act/rules/6cfa84/
 
 Elements whose role makes their children presentational (`button`, `checkbox`, `img`, `meter`, `menuitemcheckbox`, `menuitemradio`, `option`, `progressbar`, `radio`, `scrollbar`, `separator`, `slider`, `switch`, `tab`) must not contain anything in the sequential focus order. (SC 4.1.2)
 
-Source: https://www.w3.org/WAI/standards-guidelines/act/rules/307n5z/
+Source: <https://www.w3.org/WAI/standards-guidelines/act/rules/307n5z/>
 
 #### DON'T
 
@@ -749,7 +749,7 @@ Every element in the sequential focus order must change at least one visible pix
 
 Automation: needs each element rendered focused and unfocused, which litehtml can't do.
 
-Source: https://www.w3.org/WAI/standards-guidelines/act/rules/oj04fd/
+Source: <https://www.w3.org/WAI/standards-guidelines/act/rules/oj04fd/>
 
 #### DON'T
 
@@ -775,7 +775,7 @@ Automation: needs the nested document, which the renderer doesn't load (parse `s
 
 Overlaps: G202 in wcag2.2-rules.md
 
-Source: https://www.w3.org/WAI/standards-guidelines/act/rules/akn7bn/
+Source: <https://www.w3.org/WAI/standards-guidelines/act/rules/akn7bn/>
 
 #### DON'T
 
@@ -800,7 +800,7 @@ Automation: overflow caused by text wrapping is only an estimate, since text mea
 
 Overlaps: G202 in wcag2.2-rules.md
 
-Source: https://www.w3.org/WAI/standards-guidelines/act/rules/0ssw9k/
+Source: <https://www.w3.org/WAI/standards-guidelines/act/rules/0ssw9k/>
 
 #### DON'T
 
@@ -838,7 +838,7 @@ Automation: the decorative / human-language exception needs human judgement, and
 
 Overlaps: G18, G145 in wcag2.2-rules.md
 
-Source: https://www.w3.org/WAI/standards-guidelines/act/rules/afw4f7/
+Source: <https://www.w3.org/WAI/standards-guidelines/act/rules/afw4f7/>
 
 #### DON'T
 
@@ -866,7 +866,7 @@ Automation: the same as for `afw4f7`.
 
 Overlaps: G18, G145 in wcag2.2-rules.md (at the lower Level AA thresholds)
 
-Source: https://www.w3.org/WAI/standards-guidelines/act/rules/09o5cg/
+Source: <https://www.w3.org/WAI/standards-guidelines/act/rules/09o5cg/>
 
 #### DON'T
 
@@ -898,7 +898,7 @@ The first valid `meta http-equiv="refresh"` must have a delay of 0 or more than 
 
 Overlaps: F40 / F41 in wcag2.2-rules.md
 
-Source: https://www.w3.org/WAI/standards-guidelines/act/rules/bc659a/
+Source: <https://www.w3.org/WAI/standards-guidelines/act/rules/bc659a/>
 
 #### DON'T
 
@@ -933,7 +933,7 @@ The first valid `meta http-equiv="refresh"` must have a delay of 0; unlike `bc65
 
 Overlaps: F40 / F41 in wcag2.2-rules.md
 
-Source: https://www.w3.org/WAI/standards-guidelines/act/rules/bisz58/
+Source: <https://www.w3.org/WAI/standards-guidelines/act/rules/bisz58/>
 
 #### DON'T
 
@@ -959,7 +959,7 @@ Source: https://www.w3.org/WAI/standards-guidelines/act/rules/bisz58/
 
 In a viewport `meta` element, `user-scalable` must be absent, `yes`, `device-width`, `device-height` or a number not between -1 and 1, and `maximum-scale` must be absent, `device-width`, `device-height`, negative, or at least 2. (SC 1.4.4; SC 1.4.10 secondary)
 
-Source: https://www.w3.org/WAI/standards-guidelines/act/rules/b4f0c3/
+Source: <https://www.w3.org/WAI/standards-guidelines/act/rules/b4f0c3/>
 
 #### DON'T
 
@@ -985,7 +985,7 @@ Automation: parse the `style` attribute's declarations and compare them with the
 
 Overlaps: C35 in wcag2.2-rules.md
 
-Source: https://www.w3.org/WAI/standards-guidelines/act/rules/24afc2/
+Source: <https://www.w3.org/WAI/standards-guidelines/act/rules/24afc2/>
 
 #### DON'T
 
@@ -1011,7 +1011,7 @@ The same as `24afc2` for `word-spacing`: at least 0.16 times the font size. (SC 
 
 Overlaps: C35 in wcag2.2-rules.md
 
-Source: https://www.w3.org/WAI/standards-guidelines/act/rules/9e45ec/
+Source: <https://www.w3.org/WAI/standards-guidelines/act/rules/9e45ec/>
 
 #### DON'T
 
@@ -1039,7 +1039,7 @@ Automation: whether the text wraps is an estimate, since text measurement is app
 
 Overlaps: C35 in wcag2.2-rules.md
 
-Source: https://www.w3.org/WAI/standards-guidelines/act/rules/78fd32/
+Source: <https://www.w3.org/WAI/standards-guidelines/act/rules/78fd32/>
 
 #### DON'T
 
@@ -1067,7 +1067,7 @@ Automation: the renderer lays out one viewport, so orientation media queries hav
 
 Overlaps: F97 in wcag2.2-rules.md
 
-Source: https://www.w3.org/WAI/standards-guidelines/act/rules/b33eff/
+Source: <https://www.w3.org/WAI/standards-guidelines/act/rules/b33eff/>
 
 #### DON'T
 
