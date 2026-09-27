@@ -7,7 +7,7 @@ use crate::rules::{
     DEFAULT_TARGET_SIZE_THRESHOLD,
 };
 
-/// Check a web page against a subset of WCAG 2.2 rules.
+/// Check a web page against a subset of WCAG 2.2, WAI-ARIA 1.2, ARIA in HTML and ACT rules.
 #[derive(Parser, Debug, Clone)]
 #[command(author, version, about, long_about = None)]
 pub struct CliConfig {

@@ -1,7 +1,8 @@
 # wcag-checker
 
 Rust CLI that fetches a URL or reads a local HTML file, renders it through an embedded
-rendering engine, and checks the result against a curated set of WCAG 2.2 rules in parallel,
+rendering engine, and checks the result against a curated set of WCAG 2.2, WAI-ARIA 1.2, ARIA
+in HTML and ACT rules in parallel,
 exiting 0/1/2 for clean/error/warning-only results.
 
 ## Usage
@@ -96,7 +97,9 @@ continuous quantity against a configurable WCAG threshold (contrast ratio, point
 px) produce `Severity::Warning` and respect a `--*-threshold` CLI flag; every other rule is a
 binary pass/fail and always produces `Severity::Error`. Don't add more CLI thresholds or promote
 another rule to "spectrum" status without confirming that's actually wanted -- it changes exit
-code semantics (`0` clean / `1` any error / `2` warnings only).
+code semantics (`0` clean / `1` any error / `2` warnings only). ACT's afw4f7 is the same
+spectrum rule as G18 and reads the same two contrast flags; its Level AAA sibling 09o5cg was
+dropped because those flags only express Level AA, so its warnings could never be cleared.
 
 ## Rule scope: what's implemented and why the rest isn't
 
@@ -127,6 +130,46 @@ the exact list). Categories deliberately **not** implemented, and why:
   alternative indicator. This is the one rule that does *not* use `RenderedPage`'s computed
   style, because there is nothing to compute -- litehtml never enters a focused state.
 
+### WAI-ARIA 1.2, ARIA in HTML and ACT
+
+The same criterion applies. A rule with a `Prevailing rule:` line in its standard's file lost a
+conflict in `standards/overlap.md` and is not implemented, since reporting both sides would give
+contradictory advice. Everything else that overlaps *is* reported by every standard under its own
+ID (explicitly requested: e.g. a missing `aria-describedby` target is ARIA1 and ARIA-IDREF001, an
+invalid `aria-expanded` value is ARIA-VAL001 and ACT 6a7281). These duplicates are intended; don't
+deduplicate across standards.
+
+**WAI-ARIA 1.2** not implemented:
+- Losers: ROLE001, ATTR002, ATTR006, VAL004, IDREF004, NAME001, STATE002, STATE003, USAGE004.
+- Need JS, interaction or human judgement: ROLE004, WIDGET004, WIDGET005, FOCUS002-005,
+  FOCUS007, STATE001, STATE004, STATE005, LIVE001 (not reported, per overlap C12), LIVE002,
+  USAGE001.
+- IDREF005: whether a tooltip is displayed depends on CSS/JS state litehtml doesn't show.
+- Partial, checking only their reliable part: ATTR009, VAL002, VAL005, USAGE002, USAGE003,
+  WIDGET006, WIDGET007, FOCUS001, FOCUS006.
+- ATTR001 accepts the WAI-ARIA 1.3-only names in `aria_spec::ARIA_1_3_ATTRIBUTES` (overlap S7):
+  browsers already support some, so rejecting them would be a false positive.
+
+**ARIA in HTML** not implemented: losers HTMLARIA001, 005, 008, 012; `Automation: none`
+HTMLARIA006 (needs to know the page's audience) and 018 (the parser repairs the nesting before
+any DOM exists).
+
+**ACT** not implemented:
+- Loser: 4e8ab6.
+- Human judgement: c4a8a4, qt1vmo, 0va7u6.
+- Rendering litehtml can't give: oj04fd (focus state), akn7bn (nested iframe documents), 0ssw9k
+  (computed overflow), 78fd32 (real text wrapping), 6cfa84 (no computed `display`/`visibility`,
+  so menus hidden by CSS would be false positives).
+- 09o5cg: see the spectrum-rule section above.
+- b33eff is partial: only quarter turns inside `orientation` media queries.
+
+ACT has its own accessible-name computation (`act/name.rs`), more complete than
+`ElementRef::accessible_name`, because its rules are defined against the full accname algorithm.
+`act/language_subtags.rs` is the IANA language subtag registry (File-Date 2025-08-25), taken from
+the mattcg/language-subtag-registry mirror because iana.org was blocked; refresh it from IANA
+when possible. `aria_spec/` holds the WAI-ARIA 1.2 and ARIA in HTML tables all three standards
+share; it keeps only the columns some rule reads, so an implemented loser may need data re-added.
+
 If you're asked to add a new rule, check `standards/wcag2.2-rules.md` first for its ID/wording, then check
 whether it's actually derivable from `RenderedPage` (DOM structure/attributes + computed
 color/background/font metrics + layout box) before starting -- if it needs JS, multi-page state,
@@ -138,7 +181,7 @@ heuristic bolted onto `RenderedPage`.
 See [README.md](./README.md#architecture) for the module tree. Notes beyond what's there:
 
 - **One module directory per standard under `src/rules/`** (`wcag22/`, `aria12/`, `html_aria/`,
-  `act/`), each exposing `rule_checks()` and `reference_url()`, so rules of different standards
+  `act/`, plus their shared `aria_spec/` data), each exposing `rule_checks()` and `reference_url()`, so rules of different standards
   can be added without touching shared files. Rule functions don't know their standard: the
   registry (`rules/registry.rs`) pairs each list with its `Standard` and stamps it on every
   finding. Failures of the checker itself (`FETCH`, `HTTP`, `SCAN`, ...) have no standard. In

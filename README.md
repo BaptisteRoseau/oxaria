@@ -1,6 +1,6 @@
 # wcag-checker
 
-Check a web page against a curated set of WCAG 2.2 rules — fetch a URL or read a local HTML file, render it through an embedded rendering engine, and report errors/warnings.
+Check a web page against a curated set of WCAG 2.2, WAI-ARIA 1.2, ARIA in HTML and ACT rules — fetch a URL or read a local HTML file, render it through an embedded rendering engine, and report errors/warnings.
 
 Built in Rust. No headless browser process, no runtime download — the rendering engine is vendored and statically compiled directly into the binary.
 
@@ -13,7 +13,16 @@ Built in Rust. No headless browser process, no runtime download — the renderin
 - **Parallel by design** — every rule runs as its own `tokio::task` against a shared, immutable snapshot of the rendered page.
 - **Two exit-code tiers** — binary pass/fail rules are errors; spectrum rules (contrast, target size) fall back to warnings below a configurable threshold instead of a hard failure.
 
-See [standards/wcag2.2-rules.md](./standards/wcag2.2-rules.md) for the full list of rules and the WCAG 2.2 success criteria they check.
+Rules come from four standards, each listed with the rules it defines (implemented or not) in `standards/`:
+
+| Standard                              | Rules checked | Rule list                                                           |
+| ------------------------------------- | ------------- | ------------------------------------------------------------------- |
+| WCAG 2.2 techniques and failures      | 38            | [wcag2.2-rules.md](./standards/wcag2.2-rules.md)                    |
+| WAI-ARIA 1.2                          | 37            | [wai-aria-1.2-rules.md](./standards/wai-aria-1.2-rules.md)          |
+| ARIA in HTML                          | 12            | [html-aria-rules.md](./standards/html-aria-rules.md)                |
+| ACT rules (W3C accessibility testing) | 27            | [act-rules.md](./standards/act-rules.md)                            |
+
+The standards overlap: the same markup can fail a rule of each, and every standard reports it under its own rule ID (see [standards/overlap.md](./standards/overlap.md)). Where two rules conflict, only the prevailing one is implemented.
 
 ## Installation
 
@@ -28,7 +37,7 @@ The binary is written to `target/release/wcag-checker`.
 ## Usage
 
 ```cmd
-Check a web page against a subset of WCAG 2.2 rules
+Check a web page against a subset of WCAG 2.2, WAI-ARIA 1.2, ARIA in HTML and ACT rules
 
 Usage: wcag-checker [OPTIONS] <PATH_OR_URL>
 
@@ -85,6 +94,23 @@ wcag-checker https://example.com --full-site-scan --full-site-scan-max-pages 200
 # CI: GitLab Code Quality + JUnit reports, nothing on stdout
 wcag-checker page.html -q --report-gitlab gl-code-quality.json --report-junit junit.xml
 ```
+
+**Output** (`tests/assets/aria.html`, abridged):
+
+```text
+[ERROR] WAI-ARIA 1.2 ARIA-ROLE002: role="widget" is an abstract role, which content must not use (at main#main-content > div:nth-of-type(2))
+  = help: replace role="widget" with button, checkbox, link, slider or another concrete widget role
+  = note: see https://www.w3.org/TR/wai-aria-1.2/#isAbstract
+[ERROR] ARIA in HTML HTMLARIA014: <input type="text" required aria-required="true">: aria-required duplicates the native required attribute (at input#nickname)
+  = help: remove aria-required and keep required
+  = note: see https://www.w3.org/TR/html-aria/#docconformance-attr
+[ERROR] ACT 674b10: <div role="lnik"> contains no valid WAI-ARIA role (at main#main-content > div:nth-of-type(3))
+  = help: did you mean role="link"?
+  = note: see https://www.w3.org/WAI/standards-guidelines/act/rules/674b10/
+11 error(s), 0 warning(s) (WAI-ARIA 1.2: 3 error(s), 0 warning(s); ARIA in HTML: 5 error(s), 0 warning(s); ACT: 3 error(s), 0 warning(s))
+```
+
+Each finding gives its standard and rule ID, the element it is about, a `help` hint, and a link to the rule in its specification.
 
 **Full-site scan** (`--full-site-scan`, URLs only -- ignored for local files):
 
@@ -182,9 +208,12 @@ src/
     ├── standard.rs            # Standard: display name, per-standard reference URL
     ├── registry.rs            # pairs each standard with its rules, parallel dispatch via spawn_blocking
     ├── wcag22/                # WCAG 2.2: checks.rs (rule list), reference.rs, one module per rule area
-    ├── aria12/                # WAI-ARIA 1.2: checks.rs, reference.rs
-    ├── html_aria/             # ARIA in HTML: checks.rs, reference.rs
-    └── act/                   # ACT rules: checks.rs, reference.rs
+    ├── aria12/                # WAI-ARIA 1.2: checks.rs, reference.rs (spec anchors), one module per rule area
+    ├── html_aria/             # ARIA in HTML: checks.rs, reference.rs (spec anchors), one module per rule area
+    ├── act/                   # ACT rules: checks.rs, reference.rs, name.rs (accessible name),
+    │                          #   language_subtags.rs (IANA registry), one module per rule area
+    └── aria_spec/             # shared WAI-ARIA 1.2 / ARIA in HTML data (roles, attributes, implicit
+                               #   roles, allowed aria-*) and role/focus/visibility helpers
 
 vendor/
 ├── litehtml-sys/            # vendored, patched raw FFI bindings (see vendor/PATCHES.md)
@@ -196,6 +225,6 @@ Every rule has the same shape — `fn(&RenderedPage, &CheckOptions) -> Vec<Findi
 ## Tests
 
 - Unit tests build `RenderedPage` fixtures from plain HTML via `page::testutil::page_from_html`, without invoking the real rendering engine.
-- Integration tests (`tests/integration.rs`) run the compiled binary against real fixtures under `tests/assets/` through the actual embedded engine.
+- Integration tests (`tests/integration.rs`) run the compiled binary against real fixtures under `tests/assets/` through the actual embedded engine: `clean.html` (no finding in any standard), `errors.html`, `warnings_only.html`, and `aria.html` (WAI-ARIA 1.2, ARIA in HTML and ACT violations).
 
 Run: `cargo test`
