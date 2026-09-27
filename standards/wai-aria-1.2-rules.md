@@ -6,7 +6,7 @@ Rule IDs follow the scheme `ARIA-<CATEGORY><NNN>`, where `<CATEGORY>` is one of 
 
 Every author requirement (MUST, MUST NOT, SHOULD, SHOULD NOT) is listed, including those that can't be tested automatically and are left to AI review. Requirements aimed only at user agents, the IDL section, MAY statements and features that exist only in the 1.3 draft (e.g. `aria-description`) are left out. Implicit roles of HTML elements (e.g. `div` is `generic`) come from ARIA in HTML / HTML-AAM.
 
-An `Automation:` line says what a static check can't cover, an `Overlaps:` line names matching entries in `wcag2.2-rules.md`, and a `Prevailing rule:` line says which rule wins a conflict recorded in [overlap.md](./overlap.md).
+An `Automation:` line says what a static check can't cover, an `Overlaps:` line names matching entries in `wcag2.2-rules.md`, and a `Prevailing rule:` line says which rule wins a conflict recorded in [overlap.md](./overlap.md). A `Source:` line links the spec section the rule comes from.
 
 ## Table of Contents
 
@@ -45,6 +45,8 @@ Use a `role` whose value is one of the 82 non-abstract WAI-ARIA 1.2 roles below;
 
 Prevailing rule: HTMLARIA001 in html-aria-rules.md (see C3 in [overlap.md](./overlap.md#conflicts)). In HTML documents, `image` is accepted as a synonym of `img`, even though it is not a WAI-ARIA 1.2 role.
 
+Source: https://www.w3.org/TR/wai-aria-1.2/#introroles
+
 #### DON'T
 
 ```html
@@ -65,6 +67,8 @@ Prevailing rule: HTMLARIA001 in html-aria-rules.md (see C3 in [overlap.md](./ove
 
 Don't use abstract roles in content: `command`, `composite`, `input`, `landmark`, `range`, `roletype`, `section`, `sectionhead`, `select`, `structure`, `widget`, `window`. ([Abstract Roles](https://www.w3.org/TR/wai-aria-1.2/#isAbstract))
 
+Source: https://www.w3.org/TR/wai-aria-1.2/#isAbstract
+
 #### DON'T
 
 ```html
@@ -84,6 +88,8 @@ Don't use abstract roles in content: `command`, `composite`, `input`, `landmark`
 ### ARIA-ROLE003 - Don't set role="generic" explicitly
 
 Don't set `role="generic"`. Use `none`/`presentation` to remove semantics, or a role such as `group` to group and name content. ([generic](https://www.w3.org/TR/wai-aria-1.2/#generic))
+
+Source: https://www.w3.org/TR/wai-aria-1.2/#generic
 
 #### DON'T
 
@@ -106,6 +112,8 @@ Don't set `role="generic"`. Use `none`/`presentation` to remove semantics, or a 
 Inside `role="application"`, make every non-decorative text and image reachable: reference it from a focusable element with `aria-labelledby`/`aria-describedby`, put it in a focusable `document` or `article`, or manage focus with `aria-activedescendant`. ([application](https://www.w3.org/TR/wai-aria-1.2/#application))
 
 Automation: The `aria-activedescendant` technique needs JS execution and interaction.
+
+Source: https://www.w3.org/TR/wai-aria-1.2/#application
 
 #### DON'T
 
@@ -132,6 +140,8 @@ Automation: The `aria-activedescendant` technique needs JS execution and interac
 ### ARIA-ATTR001 - Use only aria-* attribute names defined in WAI-ARIA 1.2
 
 Use only the 48 `aria-*` attributes defined in 1.2; any other name (e.g. the typo `aria-labeledby`) does nothing: `aria-activedescendant`, `aria-atomic`, `aria-autocomplete`, `aria-busy`, `aria-checked`, `aria-colcount`, `aria-colindex`, `aria-colspan`, `aria-controls`, `aria-current`, `aria-describedby`, `aria-details`, `aria-disabled`, `aria-dropeffect`, `aria-errormessage`, `aria-expanded`, `aria-flowto`, `aria-grabbed`, `aria-haspopup`, `aria-hidden`, `aria-invalid`, `aria-keyshortcuts`, `aria-label`, `aria-labelledby`, `aria-level`, `aria-live`, `aria-modal`, `aria-multiline`, `aria-multiselectable`, `aria-orientation`, `aria-owns`, `aria-placeholder`, `aria-posinset`, `aria-pressed`, `aria-readonly`, `aria-relevant`, `aria-required`, `aria-roledescription`, `aria-rowcount`, `aria-rowindex`, `aria-rowspan`, `aria-selected`, `aria-setsize`, `aria-sort`, `aria-valuemax`, `aria-valuemin`, `aria-valuenow`, `aria-valuetext`. ([State and Property Attributes](https://www.w3.org/TR/wai-aria-1.2/#host_general_attrs))
+
+Source: https://www.w3.org/TR/wai-aria-1.2/#host_general_attrs
 
 #### DON'T
 
@@ -164,6 +174,8 @@ Give each role below a non-empty value for its required states and properties (s
 | `separator` (only when focusable) | `aria-valuenow` |
 
 Prevailing rule: 4e8ab6 in act-rules.md (see C2 in [overlap.md](./overlap.md#conflicts)). A required attribute with a default value (`aria-selected` on `option`, and on `treeitem` through inheritance) need not be set. Also, for the custom-widget DO example, ARIA-USAGE001 prevails (see C6 in [overlap.md](./overlap.md#conflicts)): prefer a native `input type="checkbox"`.
+
+Source: https://www.w3.org/TR/wai-aria-1.2/#requiredState
 
 #### DON'T
 
@@ -208,6 +220,8 @@ Use non-global states and properties only on elements whose explicit or implicit
 | `aria-valuemax`, `aria-valuemin`, `aria-valuetext` | meter, progressbar, scrollbar, separator, slider, spinbutton |
 | `aria-valuenow` | meter\*, progressbar, scrollbar\*, separator\* (if focusable), slider\*, spinbutton |
 
+Source: https://www.w3.org/TR/wai-aria-1.2/#supportedState
+
 #### DON'T
 
 ```html
@@ -233,6 +247,8 @@ Don't use a state or property the role prohibits, including on elements with an 
 | `caption`, `code`, `deletion`, `emphasis`, `insertion`, `paragraph`, `presentation` / `none`, `strong`, `subscript`, `superscript` | `aria-label`, `aria-labelledby` |
 | `generic` | `aria-label`, `aria-labelledby`, `aria-roledescription` |
 
+Source: https://www.w3.org/TR/wai-aria-1.2/#prohibitedattributes
+
 #### DON'T
 
 ```html
@@ -252,6 +268,8 @@ Don't use a state or property the role prohibits, including on elements with an 
 ### ARIA-ATTR005 - Don't use hierarchy or editing attributes on rows and headers of static tables
 
 Don't put `aria-expanded`, `aria-posinset`, `aria-setsize` or `aria-level` on a `row` inside a `table` or `grid`, or `aria-readonly`/`aria-required` on a `columnheader`/`rowheader` inside a `table`. In a native table, use `colspan`/`rowspan`, not `aria-colspan`/`aria-rowspan`. ([row](https://www.w3.org/TR/wai-aria-1.2/#row))
+
+Source: https://www.w3.org/TR/wai-aria-1.2/#row
 
 #### DON'T
 
@@ -279,6 +297,8 @@ Don't use `aria-checked="mixed"` on `radio`, `menuitemradio` or `switch`; `mixed
 
 Prevailing rule: ARIA-USAGE001 (see C6 in [overlap.md](./overlap.md#conflicts)). The custom `div role="checkbox"` DO example shows valid ARIA, not the recommended control; prefer a native `input type="checkbox"` with its `indeterminate` state.
 
+Source: https://www.w3.org/TR/wai-aria-1.2/#aria-checked
+
 #### DON'T
 
 ```html
@@ -298,6 +318,8 @@ Prevailing rule: ARIA-USAGE001 (see C6 in [overlap.md](./overlap.md#conflicts)).
 Write each `aria-keyshortcuts` shortcut as exact modifier names first (`Alt`, `Control`, `Shift`, `Meta`, `AltGraph`), then exactly one non-modifier key, joined by `+`, with shortcuts separated by spaces (e.g. `Shift+Space`, `Alt+Shift+P Control+F`). Write a key produced by a modifier as the physical key (`Shift+5`, not `%`). ([aria-keyshortcuts](https://www.w3.org/TR/wai-aria-1.2/#aria-keyshortcuts))
 
 Automation: Whether a character comes from a modifier depends on the keyboard layouts supported, so it needs manual or AI review.
+
+Source: https://www.w3.org/TR/wai-aria-1.2/#aria-keyshortcuts
 
 #### DON'T
 
@@ -321,6 +343,8 @@ Use `aria-roledescription` only to clarify a container such as `group` or `regio
 
 Automation: Whether the description is appropriate needs manual or AI review.
 
+Source: https://www.w3.org/TR/wai-aria-1.2/#aria-roledescription
+
 #### DON'T
 
 ```html
@@ -343,6 +367,8 @@ Automation: Whether the description is appropriate needs manual or AI review.
 Mark only one element per set with `aria-current` (and don't use it in place of `aria-selected`), and set `aria-sort` on only one header per table or grid. ([aria-current](https://www.w3.org/TR/wai-aria-1.2/#aria-current))
 
 Automation: What makes up a set, and whether `aria-current` stands in for `aria-selected`, needs manual or AI review.
+
+Source: https://www.w3.org/TR/wai-aria-1.2/#aria-current
 
 #### DON'T
 
@@ -393,6 +419,8 @@ Give each state and property a value of its type, and each token attribute one o
 | `aria-relevant` (token list) | `additions`, `removals`, `text`, `all` |
 | `aria-sort` | `ascending`, `descending`, `none`, `other` |
 
+Source: https://www.w3.org/TR/wai-aria-1.2/#propcharacteristic_value
+
 #### DON'T
 
 ```html
@@ -428,6 +456,8 @@ Keep integer attributes within the constraints below. ([aria-posinset](https://w
 
 Automation: Whether counts and indexes match the full data set, and whether spans overlap, needs manual or AI review.
 
+Source: https://www.w3.org/TR/wai-aria-1.2/#aria-posinset
+
 #### DON'T
 
 ```html
@@ -451,6 +481,8 @@ Automation: Whether counts and indexes match the full data set, and whether span
 ### ARIA-VAL003 - Keep range widget values consistent
 
 Keep `aria-valuemax` >= `aria-valuemin` and `aria-valuenow` between them (they default to `0` and `100` on `meter`, `progressbar`, `scrollbar`, `slider` and focusable `separator`). Set `aria-valuenow` whenever `aria-valuetext` is set, unless the value is unknown. ([aria-valuenow](https://www.w3.org/TR/wai-aria-1.2/#aria-valuenow))
+
+Source: https://www.w3.org/TR/wai-aria-1.2/#aria-valuenow
 
 #### DON'T
 
@@ -480,6 +512,8 @@ Make range attributes describe the rendered value:
 Automation: Whether a value is known, bounded or better shown as text needs manual or AI review.
 
 Prevailing rule: HTMLARIA014 in html-aria-rules.md (see C11 in [overlap.md](./overlap.md#conflicts)). This rule applies to explicit range roles only; native `meter`, `progress` and `input` use `min`/`max`, never `aria-valuemin`/`aria-valuemax`.
+
+Source: https://www.w3.org/TR/wai-aria-1.2/#aria-valuenow
 
 #### DON'T
 
@@ -511,6 +545,8 @@ Set position and hierarchy attributes when the DOM doesn't convey them:
 
 Automation: Whether the DOM already represents the level needs manual or AI review.
 
+Source: https://www.w3.org/TR/wai-aria-1.2/#aria-posinset
+
 #### DON'T
 
 ```html
@@ -539,6 +575,8 @@ Point every ID reference at an existing element in the same document, and keep I
 
 Overlaps: ARIA1, ARIA16, IDS001 in wcag2.2-rules.md
 
+Source: https://www.w3.org/TR/wai-aria-1.2/#mapping_additional_relations_error_processing
+
 #### DON'T
 
 ```html
@@ -564,6 +602,8 @@ Overlaps: ARIA1, ARIA16, IDS001 in wcag2.2-rules.md
 
 Don't list an element's ID in more than one element's `aria-owns`, and don't create circular ownership. ([aria-owns](https://www.w3.org/TR/wai-aria-1.2/#aria-owns))
 
+Source: https://www.w3.org/TR/wai-aria-1.2/#aria-owns
+
 #### DON'T
 
 ```html
@@ -588,6 +628,8 @@ Don't list an element's ID in more than one element's `aria-owns`, and don't cre
 Point `aria-activedescendant` at an element its element owns (a DOM descendant or through `aria-owns`), or, on a `combobox`, `textbox` or `searchbox`, at an element owned by the element its `aria-controls` references. ([aria-activedescendant](https://www.w3.org/TR/wai-aria-1.2/#aria-activedescendant))
 
 Automation: The requirement applies while the element has DOM focus, which a static render can't observe.
+
+Source: https://www.w3.org/TR/wai-aria-1.2/#aria-activedescendant
 
 #### DON'T
 
@@ -621,6 +663,8 @@ Automation: Showing and hiding the message as validity changes needs JS executio
 
 Prevailing rule: ARIA-LIVE001 (see C12 in [overlap.md](./overlap.md#conflicts)). The spec example's `aria-live="assertive"` is kept as written but is not a default to copy; a validation message is usually polite unless the interruption is imperative.
 
+Source: https://www.w3.org/TR/wai-aria-1.2/#aria-errormessage
+
 #### DON'T
 
 ```html
@@ -644,6 +688,8 @@ Reference every `role="tooltip"` element from an `aria-describedby`, at the late
 Automation: Whether the reference exists by the time the tooltip is displayed needs JS execution and interaction.
 
 Overlaps: ARIA1 in wcag2.2-rules.md
+
+Source: https://www.w3.org/TR/wai-aria-1.2/#tooltip
 
 #### DON'T
 
@@ -678,6 +724,8 @@ Place each role below inside (or owned by) an element with its required context 
 | `rowgroup` | `grid`, `table`, `treegrid` |
 | `tab` | `tablist` |
 | `treeitem` | `tree`, `group` |
+
+Source: https://www.w3.org/TR/wai-aria-1.2/#scope
 
 #### DON'T
 
@@ -720,6 +768,8 @@ Give each container role below at least one owned element with a listed role (su
 
 Automation: Whether a container is missing owned elements only while loading needs JS execution; see ARIA-STATE005.
 
+Source: https://www.w3.org/TR/wai-aria-1.2/#mustContain
+
 #### DON'T
 
 ```html
@@ -743,6 +793,8 @@ Automation: Whether a container is missing owned elements only while loading nee
 ### ARIA-STRUCT003 - Limit what listbox groups and spinbuttons contain
 
 Limit a `group` inside a `listbox` to `option` children, and a `spinbutton`'s children to a `textbox` and/or two buttons. ([group](https://www.w3.org/TR/wai-aria-1.2/#group))
+
+Source: https://www.w3.org/TR/wai-aria-1.2/#group
 
 #### DON'T
 
@@ -771,6 +823,8 @@ Limit a `group` inside a `listbox` to `option` children, and a `spinbutton`'s ch
 ### ARIA-STRUCT004 - Make a caption the first child of its table, and name the table from it
 
 Make a `caption` the first child of its `table`, `grid` or `treegrid`, or the first or last child of its `figure`, and reference it from the parent with `aria-labelledby`. ([caption](https://www.w3.org/TR/wai-aria-1.2/#caption))
+
+Source: https://www.w3.org/TR/wai-aria-1.2/#caption
 
 #### DON'T
 
@@ -812,6 +866,8 @@ Overlaps: F68, ARIA14, ARIA16 in wcag2.2-rules.md
 
 Prevailing rules: H51, H63, F91 in wcag2.2-rules.md and a25f45 in act-rules.md (see C4 in [overlap.md](./overlap.md#conflicts)). The name requirement applies to explicit roles only; a native `table` without a name is not a failure (a name is a suggestion for AI review).
 
+Source: https://www.w3.org/TR/wai-aria-1.2/#namecalculation
+
 #### DON'T
 
 ```html
@@ -844,6 +900,8 @@ Prevailing rules: H51, H63, F91 in wcag2.2-rules.md and a25f45 in act-rules.md (
 
 Don't put `role="none"`/`"presentation"` on a focusable element or on one with global ARIA attributes; user agents ignore the role there. ([Presentational Roles Conflict Resolution](https://www.w3.org/TR/wai-aria-1.2/#conflict_resolution_presentation_none))
 
+Source: https://www.w3.org/TR/wai-aria-1.2/#conflict_resolution_presentation_none
+
 #### DON'T
 
 ```html
@@ -872,6 +930,8 @@ Automation: Whether the alt text is meaningful needs manual or AI review.
 
 Overlaps: H67 in wcag2.2-rules.md
 
+Source: https://www.w3.org/TR/wai-aria-1.2/#presentation
+
 #### DON'T
 
 ```html
@@ -892,6 +952,8 @@ Overlaps: H67 in wcag2.2-rules.md
 ### ARIA-PRES003 - Don't put structural or interactive content inside roles with presentational children
 
 Don't put semantic roles (headings, lists, tables, links) or focusable elements inside roles whose children are presentational: `button`, `checkbox`, `img`, `menuitemcheckbox`, `menuitemradio`, `meter`, `option`, `progressbar`, `radio`, `scrollbar`, `separator`, `slider`, `switch`, `tab`. ([Presentational Children](https://www.w3.org/TR/wai-aria-1.2/#childrenArePresentational))
+
+Source: https://www.w3.org/TR/wai-aria-1.2/#childrenArePresentational
 
 #### DON'T
 
@@ -920,6 +982,8 @@ Don't put focusable or functional content inside `aria-hidden="true"`, and don't
 
 Automation: Whether the hidden content's meaning is exposed some other way needs manual or AI review.
 
+Source: https://www.w3.org/TR/wai-aria-1.2/#aria-hidden
+
 #### DON'T
 
 ```html
@@ -946,6 +1010,8 @@ Automation: Whether the hidden content's meaning is exposed some other way needs
 Put `role="combobox"` on the input itself, reference its popup with `aria-controls` (not `aria-owns`), give the popup role `listbox`, `tree`, `grid` or `dialog`, set `aria-haspopup` for any popup other than `listbox`, and always set `aria-expanded`. ([combobox](https://www.w3.org/TR/wai-aria-1.2/#combobox))
 
 Automation: Whether `aria-expanded` matches the popup's visibility needs JS execution and interaction; see ARIA-WIDGET004.
+
+Source: https://www.w3.org/TR/wai-aria-1.2/#combobox
 
 #### DON'T
 
@@ -977,6 +1043,8 @@ Give a popup container role `menu`, `listbox`, `tree`, `grid` or `dialog`, and m
 
 Automation: When the trigger has no `aria-controls`, finding the popup needs JS execution and interaction.
 
+Source: https://www.w3.org/TR/wai-aria-1.2/#aria-haspopup
+
 #### DON'T
 
 ```html
@@ -996,6 +1064,8 @@ Automation: When the trigger has no `aria-controls`, finding the popup needs JS 
 ### ARIA-WIDGET003 - Connect list-style autocomplete to its suggestions popup
 
 With `aria-autocomplete="list"` or `"both"`, set `aria-controls` to the suggestions container and `aria-haspopup` to match its role (implicit `listbox` on `combobox`, explicit on `textbox` and `searchbox`). ([aria-autocomplete](https://www.w3.org/TR/wai-aria-1.2/#aria-autocomplete))
+
+Source: https://www.w3.org/TR/wai-aria-1.2/#aria-autocomplete
 
 #### DON'T
 
@@ -1025,6 +1095,8 @@ Make a combobox's markup match its behavior:
 ([combobox](https://www.w3.org/TR/wai-aria-1.2/#combobox))
 
 Automation: Whether `aria-expanded` and `aria-autocomplete` match the real behavior, and the keyboard support, need JS execution and interaction.
+
+Source: https://www.w3.org/TR/wai-aria-1.2/#combobox
 
 #### DON'T
 
@@ -1059,6 +1131,8 @@ Make suggestions behave as `aria-autocomplete` says:
 
 Automation: Suggestion behavior (selection, focus, value changes) needs JS execution and interaction.
 
+Source: https://www.w3.org/TR/wai-aria-1.2/#aria-autocomplete
+
 #### DON'T
 
 ```html
@@ -1089,6 +1163,8 @@ Make popup triggers usable from the keyboard and visibly marked:
 
 Automation: The visual indicator needs manual or AI review, and keyboard opening and focus management need JS execution and interaction.
 
+Source: https://www.w3.org/TR/wai-aria-1.2/#aria-haspopup
+
 #### DON'T
 
 ```html
@@ -1118,6 +1194,8 @@ In a `feed`:
 
 Automation: Busy toggling, insertion position, scrolling, preloading and keyboard commands need JS execution and interaction.
 
+Source: https://www.w3.org/TR/wai-aria-1.2/#feed
+
 #### DON'T
 
 ```html
@@ -1146,6 +1224,8 @@ Make every interactive element focusable, and each composite widget a single Tab
 
 Automation: Arrow-key navigation and focus tracking need JS execution and interaction.
 
+Source: https://www.w3.org/TR/wai-aria-1.2/#managingfocus_authors
+
 #### DON'T
 
 ```html
@@ -1172,6 +1252,8 @@ Automation: Arrow-key navigation and focus tracking need JS execution and intera
 When removing the focused element, move focus to a logical element, and don't scroll the focused element off screen unless the user scrolled. ([Managing Focus](https://www.w3.org/TR/wai-aria-1.2/#managingfocus_authors))
 
 Automation: Nothing can be checked statically: it needs JS execution and interaction, or manual/AI review of the scripts.
+
+Source: https://www.w3.org/TR/wai-aria-1.2/#managingfocus_authors
 
 #### DON'T
 
@@ -1204,6 +1286,8 @@ With `aria-activedescendant`, style the active descendant as focused without rel
 
 Automation: Updating the value, scrolling and the visible indicator need JS execution and interaction.
 
+Source: https://www.w3.org/TR/wai-aria-1.2/#aria-activedescendant
+
 #### DON'T
 
 ```html
@@ -1232,6 +1316,8 @@ When navigating a `grid` by keyboard, focus a `gridcell`, `rowheader` or `column
 
 Automation: Whether the grid offers an interaction mode, and where focus lands, needs JS execution and interaction.
 
+Source: https://www.w3.org/TR/wai-aria-1.2/#grid
+
 #### DON'T
 
 ```html
@@ -1257,6 +1343,8 @@ Automation: Whether the grid offers an interaction mode, and where focus lands, 
 When a `spinbutton` gets focus, focus its textbox if there is one. Make Up/Down Arrow increment and decrement, and keep the increment and decrement buttons out of the Tab order. ([spinbutton](https://www.w3.org/TR/wai-aria-1.2/#spinbutton))
 
 Automation: Focus placement and arrow-key behavior need JS execution and interaction.
+
+Source: https://www.w3.org/TR/wai-aria-1.2/#spinbutton
 
 #### DON'T
 
@@ -1289,6 +1377,8 @@ Manage focus in dialogs:
 
 Automation: Initial focus, focus containment and inert content need JS execution and interaction.
 
+Source: https://www.w3.org/TR/wai-aria-1.2/#dialog
+
 #### DON'T
 
 ```html
@@ -1317,6 +1407,8 @@ Automation: Initial focus, focus containment and inert content need JS execution
 Implement every `aria-keyshortcuts` shortcut in script, make it discoverable (e.g. in a tooltip), make it unavailable when its element is disabled, and don't override operating system, browser or assistive technology keys. ([aria-keyshortcuts](https://www.w3.org/TR/wai-aria-1.2/#aria-keyshortcuts))
 
 Automation: Whether a handler exists, follows the disabled state and avoids reserved keys needs JS execution and interaction, or manual/AI review.
+
+Source: https://www.w3.org/TR/wai-aria-1.2/#aria-keyshortcuts
 
 #### DON'T
 
@@ -1352,6 +1444,8 @@ Update states and values whenever the UI changes:
 ([WAI-ARIA States and Properties](https://www.w3.org/TR/wai-aria-1.2/#introstates))
 
 Automation: Nothing can be checked statically: it needs JS execution and interaction, or manual/AI review of the event handlers.
+
+Source: https://www.w3.org/TR/wai-aria-1.2/#introstates
 
 #### DON'T
 
@@ -1391,6 +1485,8 @@ Automation: Consistency after interaction and the visual indication need JS exec
 
 Prevailing rule: ARIA-USAGE001 (see C6 in [overlap.md](./overlap.md#conflicts)). The custom `div role="radio"` examples show valid ARIA, not the recommended control; prefer native `input type="radio"` elements.
 
+Source: https://www.w3.org/TR/wai-aria-1.2/#aria-selected
+
 #### DON'T
 
 ```html
@@ -1419,6 +1515,8 @@ Automation: Blocking activation needs JS execution and interaction.
 
 Prevailing rule: HTMLARIA011 in html-aria-rules.md (see C7 in [overlap.md](./overlap.md#conflicts)). Only `aria-disabled` on an `a` with `href` is flagged; `<a role="link" aria-disabled="true">` without `href` is the documented pattern for a disabled link.
 
+Source: https://www.w3.org/TR/wai-aria-1.2/#aria-disabled
+
 #### DON'T
 
 ```html
@@ -1438,6 +1536,8 @@ Prevailing rule: HTMLARIA011 in html-aria-rules.md (see C7 in [overlap.md](./ove
 Set `aria-invalid="true"` when a value fails validation and suggest corrections when known, but don't set it on empty required fields before the user submits. ([aria-invalid](https://www.w3.org/TR/wai-aria-1.2/#aria-invalid))
 
 Automation: Validation timing and the quality of suggestions need JS execution and interaction, or manual/AI review.
+
+Source: https://www.w3.org/TR/wai-aria-1.2/#aria-invalid
 
 #### DON'T
 
@@ -1462,6 +1562,8 @@ Automation: Validation timing and the quality of suggestions need JS execution a
 Set `aria-busy="true"` on a widget while an update leaves it missing required owned elements, and on a region while it loads (pointing to its `progressbar` with `aria-describedby`). ([aria-busy](https://www.w3.org/TR/wai-aria-1.2/#aria-busy))
 
 Automation: Nothing can be checked statically: it needs JS execution to observe updates, or manual/AI review of the scripts.
+
+Source: https://www.w3.org/TR/wai-aria-1.2/#aria-busy
 
 #### DON'T
 
@@ -1492,6 +1594,8 @@ Use `aria-live="assertive"` and `role="alert"` only when the interruption is imp
 
 Automation: Whether the interruption is imperative needs manual or AI review.
 
+Source: https://www.w3.org/TR/wai-aria-1.2/#aria-live
+
 #### DON'T
 
 ```html
@@ -1514,6 +1618,8 @@ Automation: Whether the interruption is imperative needs manual or AI review.
 Don't move focus to a `role="status"` element when it changes, and reference it with `aria-controls` from whatever controls it. ([status](https://www.w3.org/TR/wai-aria-1.2/#status))
 
 Automation: Whether script moves focus to the status needs JS execution and interaction.
+
+Source: https://www.w3.org/TR/wai-aria-1.2/#status
 
 #### DON'T
 
@@ -1543,6 +1649,8 @@ Automation: Whether script moves focus to the status needs JS execution and inte
 
 Mark at most one `banner`, one `main` and one `contentinfo` per document (explicit or implicit role); a nested `document` or `application` may have its own. ([main](https://www.w3.org/TR/wai-aria-1.2/#main))
 
+Source: https://www.w3.org/TR/wai-aria-1.2/#main
+
 #### DON'T
 
 ```html
@@ -1566,6 +1674,8 @@ Mark at most one `banner`, one `main` and one `contentinfo` per document (explic
 Use a native host-language element (e.g. `<input type="checkbox">`, `<table>`) instead of repurposing another element with a role, unless there is a compelling reason. ([Conflicts with Host Language Semantics](https://www.w3.org/TR/wai-aria-1.2/#host_general_conflict))
 
 Automation: Whether there is a compelling reason needs manual or AI review.
+
+Source: https://www.w3.org/TR/wai-aria-1.2/#host_general_conflict
 
 #### DON'T
 
@@ -1599,6 +1709,8 @@ Pick the role that matches the content's purpose. ([table](https://www.w3.org/TR
 
 Automation: Every choice except `term` and `time` depends on purpose and behavior, so it needs manual or AI review.
 
+Source: https://www.w3.org/TR/wai-aria-1.2/#table
+
 #### DON'T
 
 ```html
@@ -1629,6 +1741,8 @@ Name and describe elements with the right mechanism:
 ([aria-labelledby](https://www.w3.org/TR/wai-aria-1.2/#aria-labelledby))
 
 Automation: Placeholder display needs interaction, and label quality, spoken math labels and figure references need manual or AI review.
+
+Source: https://www.w3.org/TR/wai-aria-1.2/#aria-labelledby
 
 #### DON'T
 
@@ -1667,6 +1781,8 @@ Automation: Whether gridcell headers can be derived from the DOM needs manual or
 
 Prevailing rule: H71 in wcag2.2-rules.md (see C10 in [overlap.md](./overlap.md#conflicts)). The `radiogroup` requirement applies to explicit `role="radio"` elements only; native radio buttons grouped with `fieldset`/`legend` pass.
 
+Source: https://www.w3.org/TR/wai-aria-1.2/#aria-owns
+
 #### DON'T
 
 ```html
@@ -1697,6 +1813,8 @@ Prevailing rule: H71 in wcag2.2-rules.md (see C10 in [overlap.md](./overlap.md#c
 
 Don't use the deprecated `directory` role; use `list` or a native list instead. ([directory](https://www.w3.org/TR/wai-aria-1.2/#directory))
 
+Source: https://www.w3.org/TR/wai-aria-1.2/#directory
+
 #### DON'T
 
 ```html
@@ -1720,6 +1838,8 @@ Don't use the deprecated `directory` role; use `list` or a native list instead. 
 Don't use the deprecated `aria-grabbed` and `aria-dropeffect`. Where they remain, update the drop targets' `aria-dropeffect` while an element is grabbed (back to `none` afterwards) and show the drop targets visually. ([aria-grabbed](https://www.w3.org/TR/wai-aria-1.2/#aria-grabbed))
 
 Automation: The drop-target behavior needs JS execution and interaction.
+
+Source: https://www.w3.org/TR/wai-aria-1.2/#aria-grabbed
 
 #### DON'T
 
@@ -1748,6 +1868,8 @@ Don't use `aria-disabled`, `aria-errormessage`, `aria-haspopup` or `aria-invalid
 | `aria-disabled` | application, button, checkbox, columnheader, combobox, grid, gridcell, group, link, listbox, menu, menubar, menuitem, menuitemcheckbox, menuitemradio, option, radio, radiogroup, row, rowheader, scrollbar, searchbox, separator, slider, spinbutton, switch, tab, tablist, textbox, toolbar, tree, treegrid, treeitem |
 | `aria-errormessage`, `aria-invalid` | application, checkbox, columnheader, combobox, gridcell, listbox, radiogroup, rowheader, searchbox, slider, spinbutton, switch, textbox, tree, treegrid |
 | `aria-haspopup` | application, button, columnheader, combobox, gridcell, link, menuitem, menuitemcheckbox, menuitemradio, rowheader, searchbox, slider, tab, textbox, treeitem |
+
+Source: https://www.w3.org/TR/wai-aria-1.2/#aria-disabled
 
 #### DON'T
 

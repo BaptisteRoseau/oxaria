@@ -2,7 +2,7 @@
 
 This document lists automatable/semi-automatable accessibility rules derived from the [WCAG 2.2](https://www.w3.org/TR/WCAG22/) success criteria and their associated [Techniques](https://www.w3.org/WAI/WCAG22/Techniques/) and [Failures](https://www.w3.org/WAI/WCAG22/Techniques/failures/) as published in this repository. Each rule maps to a WCAG Technique/Failure ID where one exists in the repo; where no published WCAG 2.2 technique or failure covers the rule (a success criterion new in WCAG 2.2, a best practice stated only in an Understanding document, or a failure made obsolete in WCAG 2.2), a custom three-letter category code is used instead (e.g. `TGT001`).
 
-Rules are grouped by category. Each entry cites the WCAG Success Criterion(s) (SC) it supports.
+Rules are grouped by category. Each entry cites the WCAG Success Criterion(s) (SC) it supports, and a `Source:` line links its Technique, Failure or, for custom IDs, Understanding page.
 
 The list was last compared against the w3c/wcag repository at commit `71c891a` (September 2026), covering every non-obsolete technique and failure under `techniques/html`, `techniques/aria`, `techniques/css`, `techniques/client-side-script`, `techniques/general` and `techniques/failures` (Flash and Silverlight techniques are obsolete, and PDF, SMIL and plain-text techniques don't apply to HTML pages). A technique or failure is listed when its test procedure has a signal in the page's markup, styles, or behavior that a checker can look for, fully or partially. Techniques that only describe one way of meeting a criterion (e.g. H40 "Using description lists", G64 "Providing a Table of Contents"), or whose test is purely a human judgement (e.g. G130 "Providing descriptive headings"), are not listed.
 
@@ -33,6 +33,8 @@ The list was last compared against the w3c/wcag repository at commit `71c891a` (
 
 Every HTML document needs a `title` element in its `head` that says in a simple phrase what the page is for, so users can orient themselves (and tell tabs and windows apart) without reading the page. The `title` element is different from the `title` attribute. (SC 2.4.2)
 
+Source: https://www.w3.org/WAI/WCAG22/Techniques/html/H25
+
 #### DON'T
 
 ```html
@@ -57,6 +59,8 @@ Every HTML document needs a `title` element in its `head` that says in a simple 
 
 Authoring-tool defaults ("Untitled Document", "New Page 1", "Enter the title of your HTML document here"), non-descriptive filenames (`report.html`, `spk12.html`), filler text, or one template title shared by every page do not identify the page's content or purpose. (SC 2.4.2)
 
+Source: https://www.w3.org/WAI/WCAG22/Techniques/failures/F25
+
 #### DON'T
 
 ```html
@@ -74,6 +78,8 @@ Authoring-tool defaults ("Untitled Document", "New Page 1", "Enter the title of 
 ### H64 - Give every iframe a title attribute
 
 The `title` attribute of an `iframe` labels the frame, so users can decide which frame to enter and explore. It is not interchangeable with `name`, which is only for scripting and window targeting and is never presented to the user. (SC 4.1.2)
+
+Source: https://www.w3.org/WAI/WCAG22/Techniques/html/H64
 
 #### DON'T
 
@@ -95,6 +101,8 @@ The `title` attribute of an `iframe` labels the frame, so users can decide which
 
 Every `img` that conveys meaning must have an `alt` attribute whose text serves the same purpose as the image. (SC 1.1.1)
 
+Source: https://www.w3.org/WAI/WCAG22/Techniques/html/H37
+
 #### DON'T
 
 ```html
@@ -112,6 +120,8 @@ Every `img` that conveys meaning must have an `alt` attribute whose text serves 
 ### H67 - Use empty alt (and no title) for purely decorative images
 
 Images that add no information (borders, spacers, background flourishes) must have `alt=""` and no `title` attribute so assistive technology skips them instead of announcing noise. (SC 1.1.1)
+
+Source: https://www.w3.org/WAI/WCAG22/Techniques/html/H67
 
 #### DON'T
 
@@ -131,6 +141,8 @@ Images that add no information (borders, spacers, background flourishes) must ha
 
 `input type="image"` elements must have `alt` text describing the action the button performs, since the image itself is the only visible label. (SC 1.1.1)
 
+Source: https://www.w3.org/WAI/WCAG22/Techniques/html/H36
+
 #### DON'T
 
 ```html
@@ -148,6 +160,8 @@ Images that add no information (borders, spacers, background flourishes) must ha
 ### H24 - Provide text alternatives for image map areas
 
 Each `area` element inside a `map` used for an image map must carry its own `alt` text describing where that region links to. (SC 1.1.1)
+
+Source: https://www.w3.org/WAI/WCAG22/Techniques/html/H24
 
 #### DON'T
 
@@ -173,6 +187,8 @@ Each `area` element inside a `map` used for an image map must carry its own `alt
 
 Text alternatives such as "image", "spacer", "picture1.jpg", or "DSC_0042" carry no meaning and fail as substitutes for the image content. (SC 1.1.1, 1.2.1)
 
+Source: https://www.w3.org/WAI/WCAG22/Techniques/failures/F30
+
 #### DON'T
 
 ```html
@@ -191,6 +207,8 @@ Text alternatives such as "image", "spacer", "picture1.jpg", or "DSC_0042" carry
 
 Leaving off `alt` on `img`, `area`, or `input type="image"` elements causes assistive technology to fall back to announcing the filename or URL. Always include the attribute, even if empty. (SC 1.1.1)
 
+Source: https://www.w3.org/WAI/WCAG22/Techniques/failures/F65
+
 #### DON'T
 
 ```html
@@ -208,6 +226,8 @@ Leaving off `alt` on `img`, `area`, or `input type="image"` elements causes assi
 ### F89 - Don't leave an image that is a link's only content without a text alternative
 
 When a link contains only an image (or other non-text content) that assistive technology is told to ignore (`alt=""`, `role="presentation"`), and the link has no `aria-label`/`aria-labelledby`, the link has no accessible name. Screen readers then guess, e.g. announcing the image's filename. For an image link placed next to a text link to the same place, combine the two into one link (H2). (SC 2.4.4, 2.4.9, 4.1.2)
+
+Source: https://www.w3.org/WAI/WCAG22/Techniques/failures/F89
 
 #### DON'T
 
@@ -235,6 +255,8 @@ When a link contains only an image (or other non-text content) that assistive te
 
 Every text input, textarea, select, checkbox, and radio button needs a programmatically associated `label` so assistive technology can announce its purpose. (SC 1.3.1, 4.1.2)
 
+Source: https://www.w3.org/WAI/WCAG22/Techniques/html/H44
+
 #### DON'T
 
 ```html
@@ -257,6 +279,8 @@ When a form control genuinely cannot have a visible `label` (e.g. a single searc
 
 Prevailing rule: ARIA-USAGE003 in wai-aria-1.2-rules.md (see C9 in [overlap.md](./overlap.md#conflicts)). `title` still meets the criterion and is never reported as an error, but `aria-label` is the recommended fix when no visible label is possible.
 
+Source: https://www.w3.org/WAI/WCAG22/Techniques/html/H65
+
 #### DON'T
 
 ```html
@@ -276,6 +300,8 @@ Prevailing rule: ARIA-USAGE003 in wai-aria-1.2-rules.md (see C9 in [overlap.md](
 ### H71 - Group related radio buttons/checkboxes with fieldset and legend
 
 When several controls form one logical question (e.g. a set of radio buttons), wrap them in `fieldset` with a `legend` describing the group, so the relationship is announced. (SC 1.3.1, 4.1.2)
+
+Source: https://www.w3.org/WAI/WCAG22/Techniques/html/H71
 
 #### DON'T
 
@@ -303,6 +329,8 @@ Required fields must be identified in a way that is exposed to assistive technol
 
 Prevailing rule: HTMLARIA014 in html-aria-rules.md (see C1 in [overlap.md](./overlap.md#conflicts)). `required` alone indicates the field is required; the DO example should not add `aria-required="true"`.
 
+Source: https://www.w3.org/WAI/WCAG22/Techniques/html/H90
+
 #### DON'T
 
 ```html
@@ -322,6 +350,8 @@ Prevailing rule: HTMLARIA014 in html-aria-rules.md (see C1 in [overlap.md](./ove
 ### F68 - Never leave an interactive control without a determinable accessible name
 
 Custom widgets (buttons, toggles, comboboxes built from `div`/`span`) must expose a name via visible text, `aria-label`, or `aria-labelledby` — an icon or empty element alone is not enough. (SC 4.1.2)
+
+Source: https://www.w3.org/WAI/WCAG22/Techniques/failures/F68
 
 #### DON'T
 
@@ -345,6 +375,8 @@ Speech input users activate a control by speaking the label they see. If `aria-l
 
 Prevailing rule: ARIA-USAGE003 in wai-aria-1.2-rules.md (see C8 in [overlap.md](./overlap.md#conflicts)). When the label text is visible, name the control from it; extra context such as "search this site" belongs in `aria-describedby`, not in an `aria-label`.
 
+Source: https://www.w3.org/WAI/WCAG22/Techniques/failures/F96
+
 #### DON'T
 
 ```html
@@ -365,6 +397,8 @@ Prevailing rule: ARIA-USAGE003 in wai-aria-1.2-rules.md (see C8 in [overlap.md](
 
 Common input fields (name, email, address, etc.) should declare their purpose via the `autocomplete` attribute so users can rely on browser/AT autofill. (SC 1.3.5)
 
+Source: https://www.w3.org/WAI/WCAG22/Techniques/html/H98
+
 #### DON'T
 
 ```html
@@ -384,6 +418,8 @@ Common input fields (name, email, address, etc.) should declare their purpose vi
 ### F107 - Don't use incorrect autocomplete attribute values
 
 An `autocomplete` value that isn't one of the input purposes listed in WCAG 2.2 (based on HTML's autofill field names, e.g. `birthday` instead of `bday`), or that names the wrong purpose for the field (`email` on a name field), gives user agents and assistive technology wrong or no information about the input. (SC 1.3.5)
+
+Source: https://www.w3.org/WAI/WCAG22/Techniques/failures/F107
 
 #### DON'T
 
@@ -411,6 +447,8 @@ When a submitted value is missing, invalid, or outside the allowed range, provid
 
 Prevailing rule: ARIA-LIVE001 in wai-aria-1.2-rules.md (see C12 in [overlap.md](./overlap.md#conflicts)). `role="alert"` in the DO example is not the default for a validation message; `aria-errormessage` or `role="status"` fits unless the interruption is imperative (AI review, not reported).
 
+Source: https://www.w3.org/WAI/WCAG22/Techniques/general/G83
+
 #### DON'T
 
 ```html
@@ -434,6 +472,8 @@ Prevailing rule: ARIA-LIVE001 in wai-aria-1.2-rules.md (see C12 in [overlap.md](
 
 Section headings must use real heading elements, not styled paragraphs or bold text, so assistive technology can build a navigable outline of the page. (SC 1.3.1)
 
+Source: https://www.w3.org/WAI/WCAG22/Techniques/html/H42
+
 #### DON'T
 
 ```html
@@ -452,6 +492,8 @@ Section headings must use real heading elements, not styled paragraphs or bold t
 
 Applying large/bold font styling to a line of text does not make it a heading to assistive technology if no heading element is used. (SC 1.3.1)
 
+Source: https://www.w3.org/WAI/WCAG22/Techniques/failures/F43
+
 #### DON'T
 
 ```html
@@ -469,6 +511,8 @@ Applying large/bold font styling to a line of text does not make it a heading to
 ### G141 - Keep heading levels in a logical, non-skipping order
 
 Headings should nest sequentially (h1 → h2 → h3) to reflect document structure; don't skip levels or use heading rank for visual size alone. (SC 1.3.1, 2.4.6, 2.4.10)
+
+Source: https://www.w3.org/WAI/WCAG22/Techniques/general/G141
 
 #### DON'T
 
@@ -491,6 +535,8 @@ Headings should nest sequentially (h1 → h2 → h3) to reflect document structu
 ### F92 - Don't use role="presentation" on content that conveys semantic information
 
 `role="presentation"` (or `role="none"`) removes an element's semantics from the accessibility API. On a heading, a data table, or any other element whose markup conveys structure, it hides that structure from assistive technology users. For tables, see also F46. (SC 1.3.1)
+
+Source: https://www.w3.org/WAI/WCAG22/Techniques/failures/F92
 
 #### DON'T
 
@@ -520,6 +566,8 @@ Headings should nest sequentially (h1 → h2 → h3) to reflect document structu
 
 The `html` element must carry a valid `lang` attribute so screen readers select the correct pronunciation and voice. (SC 3.1.1)
 
+Source: https://www.w3.org/WAI/WCAG22/Techniques/html/H57
+
 #### DON'T
 
 ```html
@@ -542,6 +590,8 @@ The `html` element must carry a valid `lang` attribute so screen readers select 
 
 Link text (including alt text of a linked image) must make sense out of context, describing where the link goes or what it does. (SC 2.4.4, 2.4.9)
 
+Source: https://www.w3.org/WAI/WCAG22/Techniques/html/H30
+
 #### DON'T
 
 ```html
@@ -559,6 +609,8 @@ Link text (including alt text of a linked image) must make sense out of context,
 ### LNK001 - Don't reuse identical link text for links with different destinations
 
 The same visible text ("Read more", "Learn more") used for links that go to different places is ambiguous for users navigating by a list of links. The Understanding document for SC 2.4.9 states this as best practice: links with different purposes and destinations should have different descriptions. No technique or failure covers it (F84 is about non-specific text such as "click here" itself, which H30 covers). (SC 2.4.9)
+
+Source: https://www.w3.org/WAI/WCAG22/Understanding/link-purpose-link-only
 
 #### DON'T
 
@@ -586,6 +638,8 @@ The same visible text ("Read more", "Learn more") used for links that go to diff
 
 Normal-size text and its background must meet a 4.5:1 contrast ratio so low-vision users can read it. (SC 1.4.3)
 
+Source: https://www.w3.org/WAI/WCAG22/Techniques/general/G18
+
 #### DON'T
 
 ```css
@@ -604,6 +658,8 @@ Normal-size text and its background must meet a 4.5:1 contrast ratio so low-visi
 
 Text at 18pt (24px) or 14pt bold (~19px bold) and larger only needs a 3:1 contrast ratio against its background. (SC 1.4.3)
 
+Source: https://www.w3.org/WAI/WCAG22/Techniques/general/G145
+
 #### DON'T
 
 ```css
@@ -621,6 +677,8 @@ h1 { font-size: 28px; color: #767676; background-color: #ffffff; } /* ratio ~4.5
 ### G14 / F24 - Never use color as the only means of conveying information
 
 If color is used to indicate meaning (required fields, form errors, status), pair it with text, an icon, or another visual cue so colorblind users don't miss it. (SC 1.4.1)
+
+Source: https://www.w3.org/WAI/WCAG22/Techniques/general/G14
 
 #### DON'T
 
@@ -644,6 +702,8 @@ If color is used to indicate meaning (required fields, form errors, status), pai
 ### H51 - Use table markup only for tabular data, with proper header cells
 
 Data tables must use `table`, `tr`, `td`, and `th` elements (with `scope` or `headers`/`id` for complex tables); never use tables purely for visual layout with `th`-less rows. (SC 1.3.1)
+
+Source: https://www.w3.org/WAI/WCAG22/Techniques/html/H51
 
 #### DON'T
 
@@ -669,6 +729,8 @@ Data tables must use `table`, `tr`, `td`, and `th` elements (with `scope` or `he
 
 For simple data tables, `scope="col"` or `scope="row"` on `th` elements tells assistive technology which data cells each header describes. (SC 1.3.1)
 
+Source: https://www.w3.org/WAI/WCAG22/Techniques/html/H63
+
 #### DON'T
 
 ```html
@@ -693,6 +755,8 @@ For simple data tables, `scope="col"` or `scope="row"` on `th` elements tells as
 
 Using `td` for cells that function as row/column headers means screen reader users lose the header-data relationship entirely when navigating cell by cell. (SC 1.3.1)
 
+Source: https://www.w3.org/WAI/WCAG22/Techniques/failures/F91
+
 #### DON'T
 
 ```html
@@ -716,6 +780,8 @@ Using `td` for cells that function as row/column headers means screen reader use
 ### F46 - Don't use th, caption, or a non-empty summary in layout tables
 
 A table used only to lay content out must not contain data-table markup: `th` cells, a `caption`, a non-empty `summary` attribute, or `headers`/`scope` attributes. Assistive technology announces that structure as if the table held data. (If it does hold data, `role="presentation"` is the problem instead: see F92.) (SC 1.3.1)
+
+Source: https://www.w3.org/WAI/WCAG22/Techniques/failures/F46
 
 #### DON'T
 
@@ -744,6 +810,8 @@ A table used only to lay content out must not contain data-table markup: `th` ce
 ### F90 - Don't associate data cells with the wrong header cells via headers/id
 
 Each id in a cell's `headers` attribute must reference the `th` cells that actually head that cell, in the same table. A `headers` value copied without being updated, or pointing at an id that doesn't exist or isn't a header cell, announces the wrong headers (or none). (SC 1.3.1)
+
+Source: https://www.w3.org/WAI/WCAG22/Techniques/failures/F90
 
 #### DON'T
 
@@ -775,6 +843,8 @@ Each id in a cell's `headers` attribute must reference the `th` cells that actua
 
 When a control's accessible name should come from text that isn't a `label`-compatible element, reference it with `aria-labelledby`. (SC 1.3.1, 4.1.2)
 
+Source: https://www.w3.org/WAI/WCAG22/Techniques/aria/ARIA16
+
 #### DON'T
 
 ```html
@@ -795,6 +865,8 @@ When a control's accessible name should come from text that isn't a `label`-comp
 
 When a control has no visible text label (icon-only buttons), provide an accessible name with `aria-label`. (SC 4.1.2)
 
+Source: https://www.w3.org/WAI/WCAG22/Techniques/aria/ARIA14
+
 #### DON'T
 
 ```html
@@ -812,6 +884,8 @@ When a control has no visible text label (icon-only buttons), provide an accessi
 ### ARIA1 - Use aria-describedby to attach descriptive text to controls
 
 When a control needs more information than its label (instructions, format hints), reference the element holding that text with `aria-describedby`. The referenced id must exist in the same document. (SC 1.3.1, 3.3.2)
+
+Source: https://www.w3.org/WAI/WCAG22/Techniques/aria/ARIA1
 
 #### DON'T
 
@@ -834,6 +908,8 @@ When a control needs more information than its label (instructions, format hints
 ### IDS001 - Never duplicate id attribute values on a page
 
 Duplicate `id`s break `aria-labelledby`/`aria-describedby`/`for` references and `id`-based fragment navigation, since only the first match is used reliably. This was failure F77 of SC 4.1.1 Parsing, which WCAG 2.2 removed; its Understanding document notes that such issues now fail SC 1.3.1 or 4.1.2 instead. (SC 1.3.1, 4.1.2)
+
+Source: https://www.w3.org/WAI/WCAG22/Understanding/name-role-value
 
 #### DON'T
 
@@ -861,6 +937,8 @@ Duplicate `id`s break `aria-labelledby`/`aria-describedby`/`for` references and 
 
 Widgets built with ARIA roles (`aria-expanded`, `aria-checked`, `aria-selected`, etc.) must have those attributes updated by script whenever the visual state changes. (SC 4.1.2)
 
+Source: https://www.w3.org/WAI/WCAG22/Techniques/aria/ARIA5
+
 #### DON'T
 
 ```html
@@ -887,6 +965,8 @@ function togglePanel(btn) {
 
 Attaching event handlers to generic elements like `div` and `span` makes them work as controls with no role that assistive technology can announce. Users can't tell the element is interactive, or what kind of control it is. Use a native element, or add the fitting WAI-ARIA role (plus keyboard support). (SC 4.1.2)
 
+Source: https://www.w3.org/WAI/WCAG22/Techniques/failures/F59
+
 #### DON'T
 
 ```html
@@ -906,6 +986,8 @@ Attaching event handlers to generic elements like `div` and `span` makes them wo
 ### F103 - Expose status messages through a role or live region
 
 A status message (the result of an action, a waiting state, the progress of a process, or the existence of errors) that appears without taking focus must be in an `output` element, or a container with `role="status"`, `role="alert"`, `role="log"`, or `aria-live="polite"`/`"assertive"`, set *before* the message is inserted. Otherwise screen readers never announce it. (SC 4.1.3)
+
+Source: https://www.w3.org/WAI/WCAG22/Techniques/failures/F103
 
 #### DON'T
 
@@ -929,6 +1011,8 @@ A status message (the result of an action, a waiting state, the progress of a pr
 
 Synchronized captions must be available for any prerecorded video that has a soundtrack, so deaf and hard-of-hearing users get the audio content. (SC 1.2.2)
 
+Source: https://www.w3.org/WAI/WCAG22/Techniques/general/G87
+
 #### DON'T
 
 ```html
@@ -949,6 +1033,8 @@ Synchronized captions must be available for any prerecorded video that has a sou
 
 When on-screen visual information (actions, scene changes) isn't conveyed by the existing audio, provide an audio description track or a described version of the video. (SC 1.2.5)
 
+Source: https://www.w3.org/WAI/WCAG22/Techniques/general/G93
+
 #### DON'T
 
 ```html
@@ -968,6 +1054,8 @@ When on-screen visual information (actions, scene changes) isn't conveyed by the
 ### G186 - Let users pause, stop, or hide moving, blinking, or scrolling content
 
 Any content that moves, blinks, scrolls, or auto-updates for more than 5 seconds needs a visible control to pause, stop, or hide it. (SC 2.2.2)
+
+Source: https://www.w3.org/WAI/WCAG22/Techniques/general/G186
 
 #### DON'T
 
@@ -990,6 +1078,8 @@ Any content that moves, blinks, scrolls, or auto-updates for more than 5 seconds
 
 An `audio` or `video` element with an audio track that has `autoplay` but not `muted`, with no controls or commands to pause or stop it, plays sound over screen reader speech with no way to turn it off (unless it lasts 3 seconds or less). (SC 1.4.2)
 
+Source: https://www.w3.org/WAI/WCAG22/Techniques/failures/F93
+
 #### DON'T
 
 ```html
@@ -1007,6 +1097,8 @@ An `audio` or `video` element with an audio track that has `autoplay` but not `m
 ### F16 - Don't include scrolling content that can't be paused and restarted
 
 Moving or scrolling content that is not essential to the activity, such as a news ticker, needs a mechanism to pause it and restart it from where it stopped, or low-vision users and users with cognitive disabilities can't read it. A `marquee` element scrolls with no such mechanism. (SC 2.2.2)
+
+Source: https://www.w3.org/WAI/WCAG22/Techniques/failures/F16
 
 #### DON'T
 
@@ -1027,6 +1119,8 @@ Moving or scrolling content that is not essential to the activity, such as a new
 ### G202 - Ensure all functionality is operable from the keyboard alone
 
 Interactive behavior implemented on `div`/`span` elements must respond to keyboard events (`Enter`/`Space`) and be focusable, not rely on `onclick`/`onmouseover` only. (SC 2.1.1)
+
+Source: https://www.w3.org/WAI/WCAG22/Techniques/general/G202
 
 #### DON'T
 
@@ -1055,6 +1149,8 @@ Or, if a native element truly can't be used:
 
 A function reachable only through pointer-specific handlers (`onmousedown`, `onmouseup`, `ondblclick`, `ontouchstart`, `onpointerdown`, ...) can't be used from the keyboard. `click` on a native control is device-independent; mouse-only events are not. (SC 2.1.1)
 
+Source: https://www.w3.org/WAI/WCAG22/Techniques/failures/F54
+
 #### DON'T
 
 ```html
@@ -1072,6 +1168,8 @@ A function reachable only through pointer-specific handlers (`onmousedown`, `onm
 ### F42 - Don't emulate links with script event handlers
 
 An element that navigates from a script handler (`onclick="location.href=..."`) instead of being an `a` or `area` element isn't in the links list that assistive technology generates, and usually can't be reached with the keyboard. (SC 1.3.1, 2.1.1, 4.1.2)
+
+Source: https://www.w3.org/WAI/WCAG22/Techniques/failures/F42
 
 #### DON'T
 
@@ -1091,6 +1189,8 @@ An element that navigates from a script handler (`onclick="location.href=..."`) 
 
 Calling `blur()` when an element gets focus (often to hide a focus indicator the designer finds unsightly) takes keyboard users' focus away, leaving the control operable only with a mouse. (SC 2.1.1, 2.4.7, 3.2.1)
 
+Source: https://www.w3.org/WAI/WCAG22/Techniques/failures/F55
+
 #### DON'T
 
 ```html
@@ -1108,6 +1208,8 @@ Calling `blur()` when an element gets focus (often to hide a focus indicator the
 ### F99 - Don't implement single-character key shortcuts that can't be turned off or remapped
 
 A shortcut made of a single letter, number, punctuation, or symbol key can be triggered by accident by speech input users and people who mistype. Provide a setting to turn it off or remap it to include a modifier key (Ctrl, Alt), or make it active only while the relevant component has focus. (SC 2.1.4)
+
+Source: https://www.w3.org/WAI/WCAG22/Techniques/failures/F99
 
 #### DON'T
 
@@ -1130,6 +1232,8 @@ document.addEventListener('keydown', (e) => {
 ### G21 - Never trap keyboard focus in a component
 
 A user tabbing into a widget (modal, menu, embedded player) must always be able to tab back out using only the keyboard, with no dead end. (SC 2.1.2)
+
+Source: https://www.w3.org/WAI/WCAG22/Techniques/general/G21
 
 #### DON'T
 
@@ -1156,6 +1260,8 @@ A user tabbing into a widget (modal, menu, embedded player) must always be able 
 
 Every focusable element needs a visible outline or highlight when it receives keyboard focus; never remove the default focus ring without a visible replacement. (SC 2.4.7)
 
+Source: https://www.w3.org/WAI/WCAG22/Techniques/general/G195
+
 #### DON'T
 
 ```css
@@ -1176,6 +1282,8 @@ a:focus-visible, button:focus-visible, input:focus-visible {
 ### F110 - Don't let sticky headers/footers fully hide the focused element
 
 When a `user interface component` receives keyboard focus, no author-created content (e.g. a sticky header, cookie banner, or footer) may completely obscure it. (SC 2.4.11 — Focus Not Obscured (Minimum), new in WCAG 2.2)
+
+Source: https://www.w3.org/WAI/WCAG22/Techniques/failures/F110
 
 #### DON'T
 
@@ -1198,6 +1306,8 @@ main { scroll-margin-top: 90px; } /* keeps focused elements clear of the fixed h
 ### G1 - Provide a skip link to bypass repeated content
 
 A link at the very start of the page should let keyboard users jump directly to the main content, skipping repeated navigation/header blocks. (SC 2.4.1)
+
+Source: https://www.w3.org/WAI/WCAG22/Techniques/general/G1
 
 #### DON'T
 
@@ -1224,6 +1334,8 @@ A link at the very start of the page should let keyboard users jump directly to 
 
 Navigation bars, search boxes, and other components that repeat across pages in a site must appear in the same order each time, unless the user changes it. (SC 3.2.3)
 
+Source: https://www.w3.org/WAI/WCAG22/Techniques/general/G61
+
 #### DON'T
 
 ```html
@@ -1245,6 +1357,8 @@ Navigation bars, search boxes, and other components that repeat across pages in 
 ### HLP001 - Keep help mechanisms in the same relative location across pages
 
 If a set of pages offers a help mechanism (contact link, live chat, help page link, self-help option), it must appear in the same relative order/place on every page it's provided, unless the user moves it. G220 ("Provide a contact-us link in a consistent location") is the sufficient technique for the contact-link case; this rule covers every kind of help mechanism. (SC 3.2.6 — Consistent Help, new in WCAG 2.2)
+
+Source: https://www.w3.org/WAI/WCAG22/Understanding/consistent-help
 
 #### DON'T
 
@@ -1270,6 +1384,8 @@ If a set of pages offers a help mechanism (contact link, live chat, help page li
 
 If a time limit is enforced (session expiry), users must be warned before it expires and given a simple way to extend it, unless the time limit is essential. (SC 2.2.1)
 
+Source: https://www.w3.org/WAI/WCAG22/Techniques/general/G133
+
 #### DON'T
 
 ```js
@@ -1292,6 +1408,8 @@ setTimeout(() => {
 
 `<meta http-equiv="refresh" content="{seconds}; url=...">` with a delay (F40), or `content="{seconds}"` alone to reload the page periodically (F41), changes the page under users who haven't finished reading it and gives them no way to stop it. A delay under 1 second (an instant redirect, H76) or over 20 hours (72,000 seconds) is not a failure, but redirecting on the server is preferable. (SC 2.2.1, 2.2.4, 3.2.5)
 
+Source: https://www.w3.org/WAI/WCAG22/Techniques/failures/F40
+
 #### DON'T
 
 ```html
@@ -1311,6 +1429,8 @@ setTimeout(() => {
 ### ANI001 - Provide a way to disable motion triggered by interaction
 
 Animations triggered by user interaction (parallax, sliding panels, zoom transitions) must be disable-able, and should respect the OS-level "reduce motion" preference, e.g. with the `prefers-reduced-motion` media query (C39 in CSS, SCR40 in script). (SC 2.3.3)
+
+Source: https://www.w3.org/WAI/WCAG22/Understanding/animation-from-interactions
 
 #### DON'T
 
@@ -1339,6 +1459,8 @@ Animations triggered by user interaction (parallax, sliding panels, zoom transit
 
 Any function operated by a dragging gesture (reordering a list, a slider, a carousel swipe) must also be achievable with a single pointer action that doesn't require dragging (e.g. tap-to-select buttons, up/down controls). (SC 2.5.7 — Dragging Movements, new in WCAG 2.2)
 
+Source: https://www.w3.org/WAI/WCAG22/Techniques/failures/F108
+
 #### DON'T
 
 ```html
@@ -1359,6 +1481,8 @@ Any function operated by a dragging gesture (reordering a list, a slider, a caro
 
 Functionality triggered on `mousedown`, `touchstart`, or `pointerdown` runs as soon as the pointer is pressed, so users can't abort an accidental press by moving away before releasing. Use `click`, which fires on the up-event, unless the down-event is essential (e.g. a piano keyboard) or the action can be undone or is reversed on the up-event. (SC 2.5.2)
 
+Source: https://www.w3.org/WAI/WCAG22/Techniques/failures/F101
+
 #### DON'T
 
 ```js
@@ -1376,6 +1500,8 @@ document.getElementById('close').addEventListener('click', closeDialog);
 ### F105 - Provide a simple pointer alternative to path-based gestures
 
 A function operated by a path-based gesture (swiping to reveal options, drawing a shape to undo) must also be operable with single taps or clicks, e.g. visible buttons for the same actions. (SC 2.5.1)
+
+Source: https://www.w3.org/WAI/WCAG22/Techniques/failures/F105
 
 #### DON'T
 
@@ -1401,6 +1527,8 @@ A function operated by a path-based gesture (swiping to reveal options, drawing 
 
 Interactive elements operated by pointer must have a target size of at least 24x24 CSS pixels, or sufficient spacing from neighboring targets, unless an exception (inline text, essential, or equivalent control available) applies. (SC 2.5.8 — Target Size (Minimum), new in WCAG 2.2)
 
+Source: https://www.w3.org/WAI/WCAG22/Understanding/target-size-minimum
+
 #### DON'T
 
 ```css
@@ -1421,6 +1549,8 @@ Interactive elements operated by pointer must have a target size of at least 24x
 ### RED001 - Don't make users re-enter information they already provided
 
 Information a user already entered earlier in the same process (e.g. shipping address reused for billing) must be auto-populated or selectable, not required to be typed again from scratch. G221 ("Provide data from a previous step in a process") is the sufficient technique. (SC 3.3.7 — Redundant Entry, new in WCAG 2.2)
+
+Source: https://www.w3.org/WAI/WCAG22/Understanding/redundant-entry
 
 #### DON'T
 
@@ -1447,6 +1577,8 @@ Information a user already entered earlier in the same process (e.g. shipping ad
 
 Login flows must not rely solely on remembering a password, solving a puzzle, or transcribing a CAPTCHA unless an alternative is offered (e.g. password managers/paste allowed, email magic link, biometric option, or object-recognition-free CAPTCHA). The Understanding document for 3.3.8 states that blocking paste into a password or code field fails the criterion, since it forces users to transcribe. No technique or failure covers paste blocking specifically (F109 covers codes split across fields). (SC 3.3.8 — Accessible Authentication (Minimum), new in WCAG 2.2)
 
+Source: https://www.w3.org/WAI/WCAG22/Understanding/accessible-authentication-minimum
+
 #### DON'T
 
 ```html
@@ -1468,6 +1600,8 @@ Login flows must not rely solely on remembering a password, solving a puzzle, or
 ### F109 - Don't prevent entering a password or code in the same format it was created
 
 Splitting a password or verification code across separate inputs (one per character, or "enter the 2nd, 6th and last characters"), or building it from `select` elements, prevents pasting it in one action. That rules out password managers and forces users to transcribe it: a cognitive function test. (SC 3.3.8, 3.3.9)
+
+Source: https://www.w3.org/WAI/WCAG22/Techniques/failures/F109
 
 #### DON'T
 
@@ -1495,6 +1629,8 @@ Splitting a password or verification code across separate inputs (one per charac
 
 Layouts must reflow to a single column at high zoom levels / narrow viewports so users don't need to scroll horizontally to read content. (SC 1.4.10)
 
+Source: https://www.w3.org/WAI/WCAG22/Techniques/css/C32
+
 #### DON'T
 
 ```css
@@ -1516,6 +1652,8 @@ Layouts must reflow to a single column at high zoom levels / narrow viewports so
 
 Content must remain readable (no clipped or overlapping text) when a user overrides line-height, paragraph spacing, letter spacing, and word spacing via a stylesheet override. (SC 1.4.12)
 
+Source: https://www.w3.org/WAI/WCAG22/Techniques/css/C35
+
 #### DON'T
 
 ```css
@@ -1533,6 +1671,8 @@ Content must remain readable (no clipped or overlapping text) when a user overri
 ### G142 - Support browser zoom by using relative units, not fixed pixel text
 
 Text sized in `px` can fail to scale in some browser zoom/text-only-zoom modes; use `rem`/`em`/`%` so text resizes properly up to 200% without loss of content or function. (SC 1.4.4)
+
+Source: https://www.w3.org/WAI/WCAG22/Techniques/general/G142
 
 #### DON'T
 
@@ -1555,6 +1695,8 @@ h1 { font-size: 1.5rem; }
 
 Text sized only in viewport units (`vw`, `vh`, `vmin`, `vmax`) can't be enlarged with browser zoom or text-size settings, because it depends on the viewport, not the user's preferences. Combine them with a relative unit (e.g. `calc(1rem + 1vw)`), or adjust sizes with media queries instead. (SC 1.4.4)
 
+Source: https://www.w3.org/WAI/WCAG22/Techniques/failures/F94
+
 #### DON'T
 
 ```css
@@ -1572,6 +1714,8 @@ Text sized only in viewport units (`vw`, `vh`, `vmin`, `vmax`) can't be enlarged
 ### F95 - Let users move the pointer over content shown on hover
 
 Additional content that appears on pointer hover (tooltips, pop-ups, submenus) must stay visible while the pointer moves from the trigger onto it, so screen magnifier users can bring it into view and read it. (SC 1.4.13)
+
+Source: https://www.w3.org/WAI/WCAG22/Techniques/failures/F95
 
 #### DON'T
 
@@ -1593,6 +1737,8 @@ Additional content that appears on pointer hover (tooltips, pop-ups, submenus) m
 ### F97 - Don't lock content to portrait or landscape orientation
 
 Content must work in both orientations unless one is essential. Users with devices mounted in a fixed orientation (e.g. on a wheelchair arm) can't rotate them to match the orientation the author imposed. (SC 1.3.4)
+
+Source: https://www.w3.org/WAI/WCAG22/Techniques/failures/F97
 
 #### DON'T
 
