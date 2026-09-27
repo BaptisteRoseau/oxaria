@@ -4,7 +4,7 @@ use crate::page::{ElementRef, RenderedPage};
 use crate::rules::aria_spec::{first_valid_role, is_hidden};
 use crate::rules::{CheckOptions, Finding};
 
-use super::tree::exposed_role;
+use super::tree::{exposed_role, has_presentational_children_ancestor};
 
 const UNIQUE_LANDMARKS: &[(&str, &str)] = &[
     ("banner", "the site header"),
@@ -19,7 +19,7 @@ const NESTED_DOCUMENT_ROLES: &[&str] = &["document", "application"];
 pub fn check_duplicate_landmark(page: &RenderedPage, _options: &CheckOptions) -> Vec<Finding> {
     let landmarks: Vec<(ElementRef, &str, Option<ElementRef>)> = page
         .all()
-        .filter(|el| !is_hidden(*el))
+        .filter(|el| !is_hidden(*el) && !has_presentational_children_ancestor(*el))
         .filter_map(|el| {
             let role = exposed_role(el).map(|role| role.name)?;
             let landmark = UNIQUE_LANDMARKS.iter().find(|(name, _)| *name == role)?.0;
@@ -89,6 +89,7 @@ mod tests {
     #[case("<header>Site</header><main><article><header>Post</header></article></main>")]
     #[case("<main>a</main><main hidden>b</main>")]
     #[case(r#"<main>a</main><div role="application"><div role="main">b</div></div>"#)]
+    #[case(r#"<main>a</main><div role="img" aria-label="App window"><main>b</main></div>"#)]
     fn single_landmarks_are_not_flagged(#[case] html: &str) {
         assert!(run(html).is_empty(), "{html}");
     }
