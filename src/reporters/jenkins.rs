@@ -52,7 +52,7 @@ fn warnings_issue(issue: &Issue) -> WarningsIssue<'_> {
         file_name: &issue.location.path,
         line_start: LINE,
         severity: severity(issue.severity),
-        category: issue.standard.map_or("wcag-checker", Standard::name),
+        category: issue.standard.map_or("oxaria", Standard::name),
         kind: issue.rule_id,
         message: &issue.message,
         description: description(issue),
@@ -146,7 +146,7 @@ mod tests {
     fn checker_failures_have_their_own_category() {
         assert_eq!(
             render("a.html", &[fatal("FETCH")])["issues"][0]["category"],
-            "wcag-checker"
+            "oxaria"
         );
     }
 

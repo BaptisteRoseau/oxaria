@@ -6,12 +6,12 @@ use wiremock::{Mock, MockServer, ResponseTemplate};
 /// `--report-github` defaults to `$GITHUB_STEP_SUMMARY`: without clearing it,
 /// every test run on GitHub Actions would append to the job summary.
 fn run(path: &str, extra_args: &[&str]) -> Output {
-    Command::new(env!("CARGO_BIN_EXE_wcag-checker"))
+    Command::new(env!("CARGO_BIN_EXE_oxaria"))
         .arg(path)
         .args(extra_args)
         .env_remove("GITHUB_STEP_SUMMARY")
         .output()
-        .expect("failed to run wcag-checker binary")
+        .expect("failed to run oxaria binary")
 }
 
 fn stdout(output: &Output) -> String {
@@ -346,7 +346,7 @@ fn github_summary_defaults_to_github_step_summary_and_appends() {
     let summary = dir.path().join("step_summary.md");
     std::fs::write(&summary, "previous command\n").unwrap();
 
-    let output = Command::new(env!("CARGO_BIN_EXE_wcag-checker"))
+    let output = Command::new(env!("CARGO_BIN_EXE_oxaria"))
         .args(["tests/assets/errors.html", "-q"])
         .env("GITHUB_STEP_SUMMARY", &summary)
         .output()
@@ -363,7 +363,7 @@ fn github_summary_defaults_to_github_step_summary_and_appends() {
 
 #[test]
 fn empty_github_step_summary_writes_no_summary() {
-    let output = Command::new(env!("CARGO_BIN_EXE_wcag-checker"))
+    let output = Command::new(env!("CARGO_BIN_EXE_oxaria"))
         .args(["tests/assets/clean.html", "-q"])
         .env("GITHUB_STEP_SUMMARY", "")
         .output()

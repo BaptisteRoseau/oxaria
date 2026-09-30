@@ -1,4 +1,4 @@
-# wcag-checker
+# oxaria
 
 Rust CLI that fetches a URL or reads a local HTML file, renders it through an embedded
 rendering engine, and checks the result against a curated set of WCAG 2.2, WAI-ARIA 1.2, ARIA
@@ -246,7 +246,7 @@ See [README.md](./README.md#architecture) for the module tree. Notes beyond what
   that one function instead of being split into a separate `redirect::Policy::custom` closure.
   Off-domain redirects are skipped silently, not reported.
 - **Every request goes through `page::client_builder()`** -- a browser-style `Accept`, a
-  `wcag-checker/<version>` `User-Agent` and a timeout -- from both single-page (`fetch.rs`) and
+  `oxaria/<version>` `User-Agent` and a timeout -- from both single-page (`fetch.rs`) and
   full-site (`request_helper.rs`) mode. reqwest's defaults (`Accept: */*`, no `User-Agent`) got
   github.com/marketplace answering `400` (content negotiation picked JSON) and crates.io
   answering `403` (it requires a User-Agent). Keep the `*/*;q=0.8` fallback -- without it,

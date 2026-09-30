@@ -19,7 +19,7 @@ use crate::error::CheckerError;
 pub const ACCEPT_HTML: &str = "text/html,application/xhtml+xml;q=0.9,*/*;q=0.8";
 /// reqwest sends no `User-Agent` at all by default, and some sites refuse
 /// such requests outright -- crates.io answers `403`.
-pub const CHECKER_USER_AGENT: &str = concat!("wcag-checker/", env!("CARGO_PKG_VERSION"));
+pub const CHECKER_USER_AGENT: &str = concat!("oxaria/", env!("CARGO_PKG_VERSION"));
 const REQUEST_TIMEOUT: Duration = Duration::from_secs(30);
 const RENDERABLE_CONTENT_TYPES: &[&str] = &["text/html", "application/xhtml+xml"];
 

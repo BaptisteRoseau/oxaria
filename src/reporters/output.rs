@@ -207,7 +207,7 @@ mod tests {
     /// when these tests run on GitHub Actions; only an explicit flag counts.
     fn config(args: &[&str]) -> CliConfig {
         let mut config =
-            CliConfig::parse_from(std::iter::once("wcag-checker").chain(args.iter().copied()));
+            CliConfig::parse_from(std::iter::once("oxaria").chain(args.iter().copied()));
         if !args.contains(&"--report-github") {
             config.report_github = None;
         }

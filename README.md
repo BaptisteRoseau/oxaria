@@ -1,4 +1,4 @@
-# wcag-checker
+# oxaria
 
 Check a web page against a curated set of WCAG 2.2, WAI-ARIA 1.2, ARIA in HTML and ACT rules — fetch a URL or read a local HTML file, render it through an embedded rendering engine, and report errors/warnings.
 
@@ -6,7 +6,7 @@ Built in Rust. No headless browser process, no runtime download — the renderin
 
 ## Overview
 
-`wcag-checker` fetches (or reads) a page's raw HTML, renders it through an embedded [litehtml](https://github.com/litehtml/litehtml) engine to get real computed styles and layout, and runs every rule against the result in parallel via Tokio tasks.
+`oxaria` fetches (or reads) a page's raw HTML, renders it through an embedded [litehtml](https://github.com/litehtml/litehtml) engine to get real computed styles and layout, and runs every rule against the result in parallel via Tokio tasks.
 
 - **Real rendering, not string parsing** — contrast and target-size checks use the engine's actual computed color, background, and layout box, so they catch issues regardless of how color or size was set (CSS class, cascade, padding around content), not just inline styles.
 - **No runtime download** — the rendering engine's C++ source is vendored and statically linked into the binary at build time; nothing is fetched when the tool runs.
@@ -32,14 +32,14 @@ Not published anywhere yet — build from source:
 cargo build --release
 ```
 
-The binary is written to `target/release/wcag-checker`.
+The binary is written to `target/release/oxaria`.
 
 ## Usage
 
 ```cmd
 Check a web page against a subset of WCAG 2.2, WAI-ARIA 1.2, ARIA in HTML and ACT rules
 
-Usage: wcag-checker [OPTIONS] [PATH_OR_URL]
+Usage: oxaria [OPTIONS] [PATH_OR_URL]
 
 Arguments:
   [PATH_OR_URL]  HTML source: an http(s) URL, or a path to a local HTML file
@@ -81,28 +81,28 @@ Options:
 
 ```bash
 # From a local file
-wcag-checker page.html
+oxaria page.html
 
 # From a URL
-wcag-checker https://example.com
+oxaria https://example.com
 
 # Loosen the contrast threshold to AA-large only
-wcag-checker page.html --contrast-threshold 3.0
+oxaria page.html --contrast-threshold 3.0
 
 # Tighten the target size to the enhanced (AAA) 44px guidance
-wcag-checker page.html --target-size-threshold 44
+oxaria page.html --target-size-threshold 44
 
 # Only check the WCAG 2.2 and ACT rules
-wcag-checker page.html --standards wcag2.2,act
+oxaria page.html --standards wcag2.2,act
 
 # List the rules that would be checked, without checking anything
-wcag-checker --list-rules --standards wcag2.2,act
+oxaria --list-rules --standards wcag2.2,act
 
 # Crawl and check every page of a site, capped at 200 checked HTML pages
-wcag-checker https://example.com --full-site-scan --full-site-scan-max-pages 200
+oxaria https://example.com --full-site-scan --full-site-scan-max-pages 200
 
 # CI: GitLab Code Quality + JUnit reports, nothing on stdout
-wcag-checker page.html -q --report-gitlab gl-code-quality.json --report-junit junit.xml
+oxaria page.html -q --report-gitlab gl-code-quality.json --report-junit junit.xml
 ```
 
 **Output** (`tests/assets/aria.html`, abridged):
@@ -130,7 +130,7 @@ Each finding gives its standard and rule ID, the element it is about, a `help` h
 - Pages are crawled breadth-first, level by level, so with `--full-site-scan-max-pages` the same site always yields the same set of checked pages.
 - Responses that aren't HTML (JSON, XML, PDF, images, ...) are skipped silently.
 - `4XX`/`5XX` responses are reported as `HTTP` errors, and network failures as `FETCH` errors. A scan that couldn't check any HTML page (e.g. the start URL returns JSON) reports a `SCAN` error rather than a clean pass.
-- Requests identify themselves as `wcag-checker/<version>` and ask for HTML (`Accept: text/html,…`), in both single-page and full-site mode.
+- Requests identify themselves as `oxaria/<version>` and ask for HTML (`Accept: text/html,…`), in both single-page and full-site mode.
 - Rate limits are respected: `429` (and `503` with `Retry-After`) are retried up to 3 times after the `Retry-After` delay (1s when it is `0` or missing), and `RateLimit-*`/`X-RateLimit-*` headers pause all requests once the quota runs out.
 - Each report line includes the URL path of the page it belongs to, e.g. `[ERROR] WCAG 2.2 H57 /about: ...`. In the `--report-*` files, a crawled page is located by the full URL it was actually served from (after redirects).
 
@@ -158,7 +158,7 @@ Each `--report-<kind> <FILE>` writes the findings in a format a CI platform read
 ```yaml
 # .gitlab-ci.yml
 wcag:
-  script: wcag-checker public/index.html --report-gitlab gl-code-quality.json --report-junit junit.xml
+  script: oxaria public/index.html --report-gitlab gl-code-quality.json --report-junit junit.xml
   artifacts:
     when: always
     reports:
@@ -168,12 +168,12 @@ wcag:
 
 ```yaml
 # GitHub Actions step: the job summary goes to $GITHUB_STEP_SUMMARY with no flag
-- run: wcag-checker public/index.html -q
+- run: oxaria public/index.html -q
 ```
 
 ```groovy
 // Jenkinsfile
-sh 'wcag-checker public/index.html --report-jenkins wcag.json || true'
+sh 'oxaria public/index.html --report-jenkins wcag.json || true'
 recordIssues(tool: issues(pattern: 'wcag.json', id: 'wcag', name: 'WCAG'))
 ```
 

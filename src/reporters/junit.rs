@@ -18,7 +18,7 @@ impl Reporter for JunitReporter {
             .collect();
         format!(
             "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n\
-             <testsuites name=\"wcag-checker\" tests=\"{}\" failures=\"{}\">\n{suites}</testsuites>\n",
+             <testsuites name=\"oxaria\" tests=\"{}\" failures=\"{}\">\n{suites}</testsuites>\n",
             report.issues.len(),
             report.errors(),
         )
@@ -112,7 +112,7 @@ mod tests {
         assert_eq!(
             render("a.html", &[]),
             "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n\
-             <testsuites name=\"wcag-checker\" tests=\"0\" failures=\"0\">\n</testsuites>\n"
+             <testsuites name=\"oxaria\" tests=\"0\" failures=\"0\">\n</testsuites>\n"
         );
     }
 

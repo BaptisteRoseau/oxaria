@@ -17,7 +17,7 @@ final binary with no runtime download and no external browser process.
 
 The upstream `Element` type exposes layout data (bounding box, font size,
 line height, text-align) but not tag name, attribute values, or computed
-color -- everything wcag-checker needs to read DOM/ARIA attributes and
+color -- everything oxaria needs to read DOM/ARIA attributes and
 resolve text/background color. The underlying C++ engine already has all of
 this internally (`element::get_tagName()`, `element::get_attr()` /
 `dump_get_attrs()`, `css_properties::get_color()`,
@@ -40,7 +40,7 @@ Added to `litehtml-sys/csrc/litehtml_c.h` and `.cpp`:
   the wrapper) got a one-line public getter, `attrs()`; the wrapper reaches it
   with a `dynamic_cast<html_tag*>` (text and comment nodes aren't `html_tag`s
   and yield nothing). litehtml also writes one attribute of its own there,
-  `list_index` on list items during layout, which wcag-checker filters out.
+  `list_index` on list items during layout, which oxaria filters out.
 - `lh_element_get_color` -- computed CSS `color`, resolved through inheritance.
 - `lh_element_get_background_color` -- the element's own declared
   `background-color` (backgrounds don't inherit in CSS, so callers wanting
@@ -59,11 +59,11 @@ crates.io version to `path = "../litehtml-sys"`.
 `Element<'a>` was given `#[derive(Clone, Copy)]` -- it only ever wraps a
 borrowed pointer (like any other `&_`), so duplicating it is exactly as safe
 as copying a reference; all unsafety stays contained within the methods that
-dereference it. This lets wcag-checker walk up an element's ancestor chain
+dereference it. This lets oxaria walk up an element's ancestor chain
 (`while let Some(parent) = el.parent() { el = parent; }`) without threading
 lifetimes through a recursive helper.
 
-## Known limitation carried into wcag-checker
+## Known limitation carried into oxaria
 
 litehtml has no `:focus`/`:hover`/`:active` state-simulation API, so nothing
 here can compare an element's focused vs. unfocused computed style. The
