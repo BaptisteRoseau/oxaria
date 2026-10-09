@@ -3,6 +3,7 @@
 
 use crate::page::{ElementRef, RenderedPage};
 use crate::rules::Finding;
+use crate::rules::meta::refresh_metas;
 
 /// A delay above 20 hours is considered never reached by bc659a.
 const LONGEST_TIMED_DELAY: u64 = 72_000;
@@ -47,14 +48,7 @@ fn refresh_finding(rule_id: &'static str, meta: ElementRef, delay: u64) -> Findi
 }
 
 fn first_valid_refresh(page: &RenderedPage) -> Option<(ElementRef<'_>, u64)> {
-    page.by_tag("meta")
-        .filter(|meta| is_refresh(*meta))
-        .find_map(|meta| Some((meta, refresh_delay(meta.attr("content")?)?)))
-}
-
-fn is_refresh(meta: ElementRef) -> bool {
-    meta.attr("http-equiv")
-        .is_some_and(|value| value.trim().eq_ignore_ascii_case("refresh"))
+    refresh_metas(page).find_map(|meta| Some((meta, refresh_delay(meta.attr("content")?)?)))
 }
 
 /// HTML's shared declarative refresh steps, up to the delay: `None` when

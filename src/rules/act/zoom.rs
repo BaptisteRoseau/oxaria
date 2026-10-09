@@ -2,6 +2,7 @@
 
 use crate::page::{ElementRef, RenderedPage};
 use crate::rules::Finding;
+use crate::rules::meta::viewport_metas;
 
 /// `maximum-scale` below this stops users zooming to 200%.
 const MINIMUM_MAXIMUM_SCALE: f64 = 2.0;
@@ -9,8 +10,7 @@ const MINIMUM_MAXIMUM_SCALE: f64 = 2.0;
 /// b4f0c3: a viewport `meta` must not disable zooming (`user-scalable`) or
 /// cap it below 200% (`maximum-scale`).
 pub fn check_viewport_zoom(page: &RenderedPage) -> Vec<Finding> {
-    page.by_tag("meta")
-        .filter(|meta| is_viewport(*meta))
+    viewport_metas(page)
         .filter_map(|meta| Some((meta, meta.attr("content")?)))
         .flat_map(|(meta, content)| {
             viewport_properties(content)
@@ -19,11 +19,6 @@ pub fn check_viewport_zoom(page: &RenderedPage) -> Vec<Finding> {
                 .map(move |(key, value)| zoom_finding(meta, &key, &value))
         })
         .collect()
-}
-
-fn is_viewport(meta: ElementRef) -> bool {
-    meta.attr("name")
-        .is_some_and(|name| name.trim().eq_ignore_ascii_case("viewport"))
 }
 
 /// CSS Device Adaptation's parsing: `key=value` pairs separated by commas,

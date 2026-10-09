@@ -11,6 +11,7 @@ mod css;
 mod finding;
 mod html_aria;
 mod markup;
+mod meta;
 mod options;
 mod registry;
 mod spelling;

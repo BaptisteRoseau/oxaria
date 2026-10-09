@@ -3,6 +3,7 @@
 use crate::page::{ElementRef, RenderedPage};
 
 use crate::rules::Finding;
+use crate::rules::meta::refresh_metas;
 
 /// F40/F41 treat a delay under one second as instant and one over 20 hours as never reached.
 const SHORTEST_TIMED_DELAY: f64 = 1.0;
@@ -16,17 +17,11 @@ struct Refresh {
 /// F40 (timed redirect) / F41 (periodic reload): a `meta` refresh that fires after a delay
 /// changes the page under users who may still be reading it, with no way to stop it.
 pub fn check_timed_meta_refresh(page: &RenderedPage) -> Vec<Finding> {
-    page.by_tag("meta")
-        .filter(|meta| is_refresh(*meta))
+    refresh_metas(page)
         .filter_map(|meta| parse_refresh(meta.attr("content")?).map(|refresh| (meta, refresh)))
         .filter(|(_, refresh)| is_timed(refresh.delay))
         .map(|(meta, refresh)| refresh_finding(meta, &refresh))
         .collect()
-}
-
-fn is_refresh(meta: ElementRef) -> bool {
-    meta.attr("http-equiv")
-        .is_some_and(|value| value.trim().eq_ignore_ascii_case("refresh"))
 }
 
 fn is_timed(delay: f64) -> bool {
