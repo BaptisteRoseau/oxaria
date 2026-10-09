@@ -4,7 +4,9 @@
 use super::name::accessible_name;
 use crate::page::{ElementRef, RenderedPage};
 use crate::rules::Finding;
-use crate::rules::aria_spec::{effective_role, first_valid_role, input_type, is_hidden};
+use crate::rules::aria_spec::{
+    effective_role, first_valid_role, input_type, is_details_summary, is_hidden,
+};
 use crate::rules::markup::start_tag_first;
 
 const FORM_FIELD_ROLES: &[&str] = &[
@@ -110,17 +112,6 @@ pub fn check_summary_name(page: &RenderedPage) -> Vec<Finding> {
                 .help("give the <summary> text saying what the <details> reveals, e.g. <summary>Opening times</summary>")
         })
         .collect()
-}
-
-/// The first `summary` child of a `details`: the one that toggles it.
-fn is_details_summary(el: ElementRef) -> bool {
-    el.tag() == "summary"
-        && el.parent().is_some_and(|parent| {
-            parent.tag() == "details"
-                && parent
-                    .first_child("summary")
-                    .is_some_and(|first| first == el)
-        })
 }
 
 /// A presentational role doesn't count: the summary is focusable, so

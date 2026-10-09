@@ -346,14 +346,15 @@ fn is_first_child_of_select(el: ElementRef) -> bool {
     })
 }
 
-/// The first `summary` child of a `details`.
-pub(super) fn is_details_summary(el: ElementRef) -> bool {
-    el.parent().is_some_and(|parent| {
-        parent.tag() == "details"
-            && parent
-                .first_child("summary")
-                .is_some_and(|summary| summary == el)
-    })
+/// The first `summary` child of a `details`: the one that toggles it.
+pub fn is_details_summary(el: ElementRef) -> bool {
+    el.tag() == "summary"
+        && el.parent().is_some_and(|parent| {
+            parent.tag() == "details"
+                && parent
+                    .first_child("summary")
+                    .is_some_and(|summary| summary == el)
+        })
 }
 
 fn is_custom_element(tag: &str) -> bool {

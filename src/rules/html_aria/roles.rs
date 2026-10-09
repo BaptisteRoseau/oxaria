@@ -4,8 +4,8 @@
 use crate::page::{ElementRef, RenderedPage};
 use crate::rules::Finding;
 use crate::rules::aria_spec::{
-    AriaValue, Parsed, Role, aria_value, explicit_roles, first_valid_role, implicit_role, role,
-    roles,
+    AriaValue, Parsed, Role, aria_value, explicit_roles, first_valid_role, implicit_role,
+    is_details_summary, role, roles,
 };
 
 use crate::rules::markup::start_tag;
@@ -98,16 +98,6 @@ fn heading_level(el: ElementRef) -> Option<i64> {
         .iter()
         .find(|(tag, _)| *tag == el.tag())
         .map(|(_, level)| *level)
-}
-
-fn is_details_summary(el: ElementRef) -> bool {
-    el.tag() == "summary"
-        && el.parent().is_some_and(|parent| {
-            parent.tag() == "details"
-                && parent
-                    .first_child("summary")
-                    .is_some_and(|summary| summary == el)
-        })
 }
 
 /// HTMLARIA003: `role="generic"` anywhere, or `generic`/`document` on

@@ -17,7 +17,7 @@ pub use element::{
 };
 pub use html::{
     AllowedAria, DEPRECATED_ROLES, NATIVE_EQUIVALENTS, allowed_aria, has_author_name,
-    implicit_role, input_type,
+    implicit_role, input_type, is_details_summary,
 };
 pub use reference::anchored_url;
 pub use roles::{NameFrom, Role, concrete_role, role, roles};
