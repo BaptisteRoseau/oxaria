@@ -346,6 +346,8 @@ fn is_submit_or_button_input(el: ElementRef) -> bool {
 
 #[cfg(test)]
 mod tests {
+    use rstest::rstest;
+
     use super::*;
     use crate::page::testutil::page_from_html;
 
@@ -373,62 +375,35 @@ mod tests {
         assert_eq!(p.by_tag("p").next().unwrap().text(), "Hello world");
     }
 
-    #[test]
-    fn accessible_name_prefers_labelledby() {
-        let p = page_from_html(
-            r#"<span id="lbl">Billing address</span><input aria-labelledby="lbl" value="ignored">"#,
-        );
-        let input = p.by_tag("input").next().unwrap();
-        assert_eq!(input.accessible_name(), "Billing address");
-    }
-
-    #[test]
-    fn accessible_name_falls_back_to_aria_label() {
-        let p = page_from_html(r#"<button aria-label="Close dialog"></button>"#);
-        let button = p.by_tag("button").next().unwrap();
-        assert_eq!(button.accessible_name(), "Close dialog");
-    }
-
-    #[test]
-    fn accessible_name_falls_back_to_text_content() {
-        let p = page_from_html("<button>Submit</button>");
-        let button = p.by_tag("button").next().unwrap();
-        assert_eq!(button.accessible_name(), "Submit");
-    }
-
-    #[test]
-    fn accessible_name_uses_label_for_text() {
-        let p = page_from_html(r#"<label for="a">Email</label><input id="a">"#);
-        let input = p.by_tag("input").next().unwrap();
-        assert_eq!(input.accessible_name(), "Email");
-    }
-
-    #[test]
-    fn accessible_name_uses_wrapping_label_text() {
-        let p = page_from_html(r#"<label>Email <input id="a"></label>"#);
-        let input = p.by_tag("input").next().unwrap();
-        assert_eq!(input.accessible_name(), "Email");
-    }
-
-    #[test]
-    fn accessible_name_uses_the_alt_of_contained_images() {
-        let p = page_from_html(r#"<a href="/"><img src="a.png" alt="Acme home page"></a>"#);
-        let link = p.by_tag("a").next().unwrap();
-        assert_eq!(link.accessible_name(), "Acme home page");
-    }
-
-    #[test]
-    fn accessible_name_falls_back_to_value_for_submit_input() {
-        let p = page_from_html(r#"<input type="submit" value="Send it">"#);
-        let input = p.by_tag("input").next().unwrap();
-        assert_eq!(input.accessible_name(), "Send it");
-    }
-
-    #[test]
-    fn accessible_name_is_empty_when_nothing_found() {
-        let p = page_from_html("<button></button>");
-        let button = p.by_tag("button").next().unwrap();
-        assert_eq!(button.accessible_name(), "");
+    #[rstest]
+    // aria-labelledby is preferred.
+    #[case(
+        r#"<span id="lbl">Billing address</span><input aria-labelledby="lbl" value="ignored">"#,
+        "input",
+        "Billing address"
+    )]
+    // Then aria-label.
+    #[case(
+        r#"<button aria-label="Close dialog"></button>"#,
+        "button",
+        "Close dialog"
+    )]
+    // Then text content.
+    #[case("<button>Submit</button>", "button", "Submit")]
+    #[case(r#"<label for="a">Email</label><input id="a">"#, "input", "Email")]
+    #[case(r#"<label>Email <input id="a"></label>"#, "input", "Email")]
+    // The alt of contained images.
+    #[case(
+        r#"<a href="/"><img src="a.png" alt="Acme home page"></a>"#,
+        "a",
+        "Acme home page"
+    )]
+    // Then the value of a submit input.
+    #[case(r#"<input type="submit" value="Send it">"#, "input", "Send it")]
+    #[case("<button></button>", "button", "")]
+    fn accessible_name(#[case] html: &str, #[case] tag: &str, #[case] expected: &str) {
+        let p = page_from_html(html);
+        assert_eq!(p.by_tag(tag).next().unwrap().accessible_name(), expected);
     }
 
     #[test]
@@ -449,45 +424,44 @@ mod tests {
         assert_eq!(tags, vec!["span", "b", "em", "i"]);
     }
 
-    fn selector_of(html: &str, tag: &str, nth: usize) -> String {
+    #[rstest]
+    // A structural path from body.
+    #[case(
+        "<body><main><div><p>a</p></div><div><button>x</button></div></main></body>",
+        "button",
+        0,
+        "body > main > div:nth-of-type(2) > button"
+    )]
+    // Only same-tag siblings are counted.
+    #[case(
+        "<body><div><span>a</span><button>1</button><span>b</span><button>2</button></div></body>",
+        "button",
+        1,
+        "body > div > button:nth-of-type(2)"
+    )]
+    // The path stops at the nearest unique id.
+    #[case(
+        r#"<body><div id="nav"><ul><li><a href="/">a</a></li></ul></div></body>"#,
+        "a",
+        0,
+        "div#nav > ul > li > a"
+    )]
+    // The element's own unique id.
+    #[case(
+        r#"<body><div><button id="submit">x</button></div></body>"#,
+        "button",
+        0,
+        "button#submit"
+    )]
+    // Duplicate and unusual ids are ignored.
+    #[case(
+        r#"<body><div id="d"><b id="a:b">x</b></div><div id="d"></div></body>"#,
+        "b",
+        0,
+        "body > div:nth-of-type(1) > b"
+    )]
+    fn selector(#[case] html: &str, #[case] tag: &str, #[case] nth: usize, #[case] expected: &str) {
         let page = page_from_html(html);
-        let el = page.by_tag(tag).nth(nth).unwrap();
-        el.selector()
-    }
-
-    #[test]
-    fn selector_is_a_structural_path_from_body() {
-        let html = "<body><main><div><p>a</p></div><div><button>x</button></div></main></body>";
-        assert_eq!(
-            selector_of(html, "button", 0),
-            "body > main > div:nth-of-type(2) > button"
-        );
-    }
-
-    #[test]
-    fn selector_counts_only_same_tag_siblings() {
-        let html = "<body><div><span>a</span><button>1</button><span>b</span><button>2</button></div></body>";
-        assert_eq!(
-            selector_of(html, "button", 1),
-            "body > div > button:nth-of-type(2)"
-        );
-    }
-
-    #[test]
-    fn selector_stops_at_the_nearest_unique_id() {
-        let html = r#"<body><div id="nav"><ul><li><a href="/">a</a></li></ul></div></body>"#;
-        assert_eq!(selector_of(html, "a", 0), "div#nav > ul > li > a");
-    }
-
-    #[test]
-    fn selector_uses_the_elements_own_unique_id() {
-        let html = r#"<body><div><button id="submit">x</button></div></body>"#;
-        assert_eq!(selector_of(html, "button", 0), "button#submit");
-    }
-
-    #[test]
-    fn selector_ignores_duplicate_and_unusual_ids() {
-        let html = r#"<body><div id="d"><b id="a:b">x</b></div><div id="d"></div></body>"#;
-        assert_eq!(selector_of(html, "b", 0), "body > div:nth-of-type(1) > b");
+        assert_eq!(page.by_tag(tag).nth(nth).unwrap().selector(), expected);
     }
 }

@@ -80,8 +80,10 @@ fn words(text: &str) -> Vec<String> {
 
 #[cfg(test)]
 mod tests {
+    use rstest::rstest;
+
     use super::*;
-    use crate::rules::testutil::{assert_fires, count, run};
+    use crate::rules::testutil::{assert_fires, count};
 
     #[test]
     fn aria_label_replacing_button_text_is_flagged() {
@@ -96,53 +98,37 @@ mod tests {
         );
     }
 
-    #[test]
-    fn labelledby_replacing_submit_value_is_flagged() {
-        let html = r#"<div id="hidden-label">Find in this site</div>
-                      <input type="submit" aria-labelledby="hidden-label" value="search">"#;
-        assert_eq!(count(check_label_not_in_name, html), 1);
-    }
-
-    #[test]
-    fn aria_label_replacing_a_form_label_is_flagged() {
-        let html = r#"<label for="e">Email</label><input id="e" aria-label="Your address">"#;
-        assert_eq!(count(check_label_not_in_name, html), 1);
-    }
-
-    #[test]
-    fn name_extending_the_visible_label_is_not_flagged() {
-        let html = r#"<a href="/spec" aria-label="Download the gizmo specification (PDF)">Download</a>
-                      <button aria-label="Send message now">Send message</button>"#;
-        assert!(run(check_label_not_in_name, html).is_empty());
-    }
-
-    #[test]
-    fn case_and_punctuation_are_ignored() {
-        let html = r#"<button aria-label="next page">Next page ›</button>"#;
-        assert!(run(check_label_not_in_name, html).is_empty());
-    }
-
-    #[test]
-    fn symbol_labels_are_not_flagged() {
-        let html = r#"<button aria-label="Close dialog">×</button><button aria-label="Close">x</button>
-                      <button aria-label="Bold">B</button>"#;
-        assert!(run(check_label_not_in_name, html).is_empty());
-    }
-
-    #[test]
-    fn controls_without_aria_names_are_not_flagged() {
-        let html = r#"<button>Go</button><div aria-label="Card">Text</div>"#;
-        assert!(run(check_label_not_in_name, html).is_empty());
-    }
-
-    #[test]
-    fn words_must_appear_in_order() {
-        assert_eq!(
-            count(
-                check_label_not_in_name,
-                r#"<button aria-label="Cart view">View cart</button>"#
-            ),
-            1
-        );
+    #[rstest]
+    // aria-labelledby replacing a submit button's value.
+    #[case(
+        r#"<div id="hidden-label">Find in this site</div>
+           <input type="submit" aria-labelledby="hidden-label" value="search">"#,
+        1
+    )]
+    // aria-label replacing a form label.
+    #[case(
+        r#"<label for="e">Email</label><input id="e" aria-label="Your address">"#,
+        1
+    )]
+    // A name extending the visible label.
+    #[case(
+        r#"<a href="/spec" aria-label="Download the gizmo specification (PDF)">Download</a>
+           <button aria-label="Send message now">Send message</button>"#,
+        0
+    )]
+    // Case and punctuation are ignored.
+    #[case(r#"<button aria-label="next page">Next page ›</button>"#, 0)]
+    // Symbols and single characters are not labels.
+    #[case(
+        r#"<button aria-label="Close dialog">×</button><button aria-label="Close">x</button>
+           <button aria-label="Bold">B</button>"#,
+        0
+    )]
+    // Controls without ARIA names.
+    #[case(r#"<button>Go</button><div aria-label="Card">Text</div>"#, 0)]
+    // The label's words must appear in order.
+    #[case(r#"<button aria-label="Cart view">View cart</button>"#, 1)]
+    fn label_not_in_name(#[case] html: &str, #[case] expected: usize) {
+        assert_eq!(count(check_label_not_in_name, html), expected, "{html}");
     }
 }

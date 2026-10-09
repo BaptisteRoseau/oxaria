@@ -183,8 +183,10 @@ fn header_ids(table: ElementRef<'_>) -> HashSet<&str> {
 
 #[cfg(test)]
 mod tests {
+    use rstest::rstest;
+
     use super::*;
-    use crate::rules::testutil::{assert_fires, count, run};
+    use crate::rules::testutil::{assert_fires, count, rule_ids, run};
 
     #[test]
     fn scope_help_guesses_col_for_header_rows_and_row_beside_data() {
@@ -201,46 +203,37 @@ mod tests {
         assert_eq!(scopes, ["col", "col", "row"]);
     }
 
-    #[test]
-    fn table_without_th_is_flagged() {
-        let html = "<table><tr><td>Month</td><td>Revenue</td></tr></table>";
-        assert_fires(check_table_missing_headers, html, "F91");
+    #[rstest]
+    #[case("<table><tr><td>Month</td><td>Revenue</td></tr></table>", &["F91"])]
+    #[case(
+        r#"<table><tr><th scope="col">Month</th></tr><tr><td>January</td></tr></table>"#,
+        &[]
+    )]
+    #[case(r#"<table role="presentation"><tr><td>A</td><td>B</td></tr></table>"#, &[])]
+    // A table without data rows.
+    #[case("<table><tr><th>Header only</th></tr></table>", &[])]
+    fn table_missing_headers(#[case] html: &str, #[case] expected: &[&str]) {
+        assert_eq!(
+            rule_ids(check_table_missing_headers, html),
+            expected,
+            "{html}"
+        );
     }
 
-    #[test]
-    fn table_with_th_is_not_flagged() {
-        let html = r#"<table><tr><th scope="col">Month</th></tr><tr><td>January</td></tr></table>"#;
-        assert!(run(check_table_missing_headers, html).is_empty());
-    }
-
-    #[test]
-    fn presentation_table_is_not_flagged() {
-        let html = r#"<table role="presentation"><tr><td>A</td><td>B</td></tr></table>"#;
-        assert!(run(check_table_missing_headers, html).is_empty());
-    }
-
-    #[test]
-    fn table_without_data_rows_is_not_flagged() {
-        let html = "<table><tr><th>Header only</th></tr></table>";
-        assert!(run(check_table_missing_headers, html).is_empty());
-    }
-
-    #[test]
-    fn th_without_scope_is_flagged() {
-        let html = "<table><tr><th>Name</th></tr></table>";
-        assert_fires(check_header_missing_scope, html, "H63");
-    }
-
-    #[test]
-    fn th_with_scope_is_not_flagged() {
-        let html = r#"<table><tr><th scope="col">Name</th></tr></table>"#;
-        assert!(run(check_header_missing_scope, html).is_empty());
-    }
-
-    #[test]
-    fn th_referenced_by_headers_attribute_is_not_flagged() {
-        let html = r#"<table><tr><th id="name-h">Name</th></tr><tr><td headers="name-h">Alex</td></tr></table>"#;
-        assert!(run(check_header_missing_scope, html).is_empty());
+    #[rstest]
+    #[case("<table><tr><th>Name</th></tr></table>", &["H63"])]
+    #[case(r#"<table><tr><th scope="col">Name</th></tr></table>"#, &[])]
+    // A th referenced by a headers attribute.
+    #[case(
+        r#"<table><tr><th id="name-h">Name</th></tr><tr><td headers="name-h">Alex</td></tr></table>"#,
+        &[]
+    )]
+    fn header_missing_scope(#[case] html: &str, #[case] expected: &[&str]) {
+        assert_eq!(
+            rule_ids(check_header_missing_scope, html),
+            expected,
+            "{html}"
+        );
     }
 
     #[test]
@@ -269,18 +262,19 @@ mod tests {
         );
     }
 
-    #[test]
-    fn plain_layout_table_is_not_flagged() {
-        let html = r#"<table role="none" summary=""><tr><td>A</td><td>B</td></tr></table>"#;
-        assert!(run(check_presentation_table_semantics, html).is_empty());
-    }
-
-    #[test]
-    fn data_table_nested_in_layout_table_is_not_flagged() {
-        let html = r#"<table role="presentation"><tr><td>
-               <table><tr><th scope="col">Name</th></tr><tr><td>Alex</td></tr></table>
-               </td></tr></table>"#;
-        assert!(run(check_presentation_table_semantics, html).is_empty());
+    #[rstest]
+    #[case(r#"<table role="none" summary=""><tr><td>A</td><td>B</td></tr></table>"#)]
+    // A data table nested in a layout table.
+    #[case(
+        r#"<table role="presentation"><tr><td>
+           <table><tr><th scope="col">Name</th></tr><tr><td>Alex</td></tr></table>
+           </td></tr></table>"#
+    )]
+    fn plain_layout_table_is_not_flagged(#[case] html: &str) {
+        assert!(
+            run(check_presentation_table_semantics, html).is_empty(),
+            "{html}"
+        );
     }
 
     #[test]

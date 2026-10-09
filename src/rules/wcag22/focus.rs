@@ -104,8 +104,10 @@ fn split_css_rules(css: &str) -> Vec<(String, String)> {
 
 #[cfg(test)]
 mod tests {
+    use rstest::rstest;
+
     use super::*;
-    use crate::rules::testutil::{assert_fires, run};
+    use crate::rules::testutil::rule_ids;
 
     #[test]
     fn split_css_rules_splits_simple_stylesheet() {
@@ -130,34 +132,25 @@ mod tests {
         );
     }
 
-    #[test]
-    fn braces_in_comments_do_not_hide_later_rules() {
-        let html = "<style>/* legacy } */ a { color: red } a:focus { outline: none; }</style>";
-        let findings = run(check_outline_removed_without_alternative, html);
-        assert_eq!(findings.len(), 1, "{findings:?}");
-    }
-
-    #[test]
-    fn outline_none_without_alternative_is_flagged() {
-        let html = "<style>a:focus, button:focus { outline: none; }</style>";
-        assert_fires(check_outline_removed_without_alternative, html, "G195");
-    }
-
-    #[test]
-    fn outline_none_with_box_shadow_alternative_is_not_flagged() {
-        let html = "<style>a:focus-visible { outline: none; box-shadow: 0 0 0 3px blue; }</style>";
-        assert!(run(check_outline_removed_without_alternative, html).is_empty());
-    }
-
-    #[test]
-    fn rule_without_focus_selector_is_ignored() {
-        let html = "<style>a { outline: none; }</style>";
-        assert!(run(check_outline_removed_without_alternative, html).is_empty());
-    }
-
-    #[test]
-    fn no_style_tag_is_not_flagged() {
-        let html = "<body></body>";
-        assert!(run(check_outline_removed_without_alternative, html).is_empty());
+    #[rstest]
+    // Braces in comments don't hide later rules.
+    #[case(
+        "<style>/* legacy } */ a { color: red } a:focus { outline: none; }</style>",
+        &["G195"]
+    )]
+    #[case("<style>a:focus, button:focus { outline: none; }</style>", &["G195"])]
+    #[case(
+        "<style>a:focus-visible { outline: none; box-shadow: 0 0 0 3px blue; }</style>",
+        &[]
+    )]
+    // A rule without a focus selector is ignored.
+    #[case("<style>a { outline: none; }</style>", &[])]
+    #[case("<body></body>", &[])]
+    fn outline_removed_without_alternative(#[case] html: &str, #[case] expected: &[&str]) {
+        assert_eq!(
+            rule_ids(check_outline_removed_without_alternative, html),
+            expected,
+            "{html}"
+        );
     }
 }

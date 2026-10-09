@@ -38,3 +38,11 @@ pub fn assert_one(findings: Vec<Finding>, rule_id: &str) -> Finding {
 pub fn assert_fires(check: RuleCheck, html: &str, rule_id: &str) -> Finding {
     assert_one(run(check, html), rule_id)
 }
+
+/// The rule ID of every finding `check` reports on `html`, in order.
+pub fn rule_ids(check: RuleCheck, html: &str) -> Vec<&'static str> {
+    run(check, html)
+        .iter()
+        .map(|finding| finding.rule_id)
+        .collect()
+}

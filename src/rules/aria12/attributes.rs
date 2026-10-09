@@ -319,25 +319,20 @@ mod tests {
     }
 
     #[rstest]
-    #[case(r#"<div role="button" tabindex="0" aria-checked="true">Bold</div>"#)]
-    #[case(r#"<input type="text" aria-selected="true">"#)]
-    #[case(r#"<div aria-expanded="false">Menu</div>"#)]
-    #[case(r#"<ul><li aria-selected="true">x</li></ul>"#)]
-    fn unsupported_attributes_are_flagged(#[case] html: &str) {
-        assert_eq!(count(check_unsupported_attribute, html), 1, "{html}");
-    }
-
-    #[rstest]
-    #[case(r#"<div role="button" tabindex="0" aria-pressed="true">Bold</div>"#)]
-    #[case(r#"<input type="text" aria-required="true">"#)]
-    #[case(r#"<input type="password" aria-required="true">"#)]
-    #[case(r#"<input type="checkbox" aria-checked="true">"#)]
-    #[case(r#"<div role="separator" aria-valuenow="30"></div>"#)]
-    #[case(r#"<div aria-expanded="">Menu</div>"#)]
-    #[case(r#"<my-tree aria-expanded="true">x</my-tree>"#)]
-    #[case(r#"<div aria-label="x" aria-live="polite">x</div>"#)]
-    fn supported_attributes_are_not_flagged(#[case] html: &str) {
-        assert!(run(check_unsupported_attribute, html).is_empty(), "{html}");
+    #[case(r#"<div role="button" tabindex="0" aria-checked="true">Bold</div>"#, 1)]
+    #[case(r#"<input type="text" aria-selected="true">"#, 1)]
+    #[case(r#"<div aria-expanded="false">Menu</div>"#, 1)]
+    #[case(r#"<ul><li aria-selected="true">x</li></ul>"#, 1)]
+    #[case(r#"<div role="button" tabindex="0" aria-pressed="true">Bold</div>"#, 0)]
+    #[case(r#"<input type="text" aria-required="true">"#, 0)]
+    #[case(r#"<input type="password" aria-required="true">"#, 0)]
+    #[case(r#"<input type="checkbox" aria-checked="true">"#, 0)]
+    #[case(r#"<div role="separator" aria-valuenow="30"></div>"#, 0)]
+    #[case(r#"<div aria-expanded="">Menu</div>"#, 0)]
+    #[case(r#"<my-tree aria-expanded="true">x</my-tree>"#, 0)]
+    #[case(r#"<div aria-label="x" aria-live="polite">x</div>"#, 0)]
+    fn unsupported_attribute(#[case] html: &str, #[case] expected: usize) {
+        assert_eq!(count(check_unsupported_attribute, html), expected, "{html}");
     }
 
     #[test]
@@ -359,21 +354,25 @@ mod tests {
     }
 
     #[rstest]
-    #[case(r#"<div class="card" aria-label="Product: Trail running shoes">...</div>"#)]
-    #[case(r#"<p aria-label="Warning">Your session expires in 5 minutes.</p>"#)]
-    #[case(r#"<span role="none" aria-labelledby="x">x</span><i id="x">x</i>"#)]
-    fn prohibited_attributes_are_flagged(#[case] html: &str) {
-        assert_eq!(count(check_prohibited_attribute, html), 1, "{html}");
-    }
-
-    #[rstest]
-    #[case(r#"<div class="card" role="group" aria-label="Product: Trail running shoes">...</div>"#)]
-    #[case("<p><strong>Warning:</strong> your session expires in 5 minutes.</p>")]
-    #[case(r#"<nav aria-label="Main">x</nav>"#)]
-    #[case(r#"<div aria-label="">x</div>"#)]
-    #[case(r#"<fancy-card aria-label="Card">x</fancy-card>"#)]
-    fn allowed_names_are_not_flagged(#[case] html: &str) {
-        assert!(run(check_prohibited_attribute, html).is_empty(), "{html}");
+    #[case(
+        r#"<div class="card" aria-label="Product: Trail running shoes">...</div>"#,
+        1
+    )]
+    #[case(r#"<p aria-label="Warning">Your session expires in 5 minutes.</p>"#, 1)]
+    #[case(r#"<span role="none" aria-labelledby="x">x</span><i id="x">x</i>"#, 1)]
+    #[case(
+        r#"<div class="card" role="group" aria-label="Product: Trail running shoes">...</div>"#,
+        0
+    )]
+    #[case(
+        "<p><strong>Warning:</strong> your session expires in 5 minutes.</p>",
+        0
+    )]
+    #[case(r#"<nav aria-label="Main">x</nav>"#, 0)]
+    #[case(r#"<div aria-label="">x</div>"#, 0)]
+    #[case(r#"<fancy-card aria-label="Card">x</fancy-card>"#, 0)]
+    fn prohibited_attribute(#[case] html: &str, #[case] expected: usize) {
+        assert_eq!(count(check_prohibited_attribute, html), expected, "{html}");
     }
 
     #[rstest]
@@ -384,23 +383,19 @@ mod tests {
     #[case(r#"<table><tr><td aria-colspan="2">Total</td></tr></table>"#, 1)]
     #[case(r#"<table><tr><th aria-readonly="true">Name</th></tr></table>"#, 1)]
     #[case(r#"<div role="grid"><div role="rowgroup"><div role="row" aria-setsize="3">x</div></div></div>"#, 1)]
-    fn static_table_attributes_are_flagged(#[case] html: &str, #[case] expected: usize) {
+    #[case(
+        r#"<div role="treegrid"><div role="row" aria-level="1" aria-expanded="true">x</div></div>"#,
+        0
+    )]
+    #[case(r#"<table><tr><td colspan="2">Total</td></tr></table>"#, 0)]
+    #[case(r#"<div role="grid"><div role="row"><div role="columnheader" aria-readonly="true">N</div></div></div>"#, 0)]
+    #[case(r#"<div role="table"><div role="row"><div role="cell" aria-colspan="2">x</div></div></div>"#, 0)]
+    fn static_table_attribute(#[case] html: &str, #[case] expected: usize) {
         assert_eq!(
             count(check_static_table_attribute, html),
             expected,
             "{html}"
         );
-    }
-
-    #[rstest]
-    #[case(
-        r#"<div role="treegrid"><div role="row" aria-level="1" aria-expanded="true">x</div></div>"#
-    )]
-    #[case(r#"<table><tr><td colspan="2">Total</td></tr></table>"#)]
-    #[case(r#"<div role="grid"><div role="row"><div role="columnheader" aria-readonly="true">N</div></div></div>"#)]
-    #[case(r#"<div role="table"><div role="row"><div role="cell" aria-colspan="2">x</div></div></div>"#)]
-    fn allowed_table_attributes_are_not_flagged(#[case] html: &str) {
-        assert!(run(check_static_table_attribute, html).is_empty(), "{html}");
     }
 
     #[test]
@@ -415,17 +410,15 @@ mod tests {
     }
 
     #[rstest]
-    #[case(r#"<div aria-roledescription="slide" id="slide42">...</div>"#)]
-    #[case(r#"<div role="region" aria-roledescription=" " aria-labelledby="h">...</div>"#)]
-    #[case(r#"<svg aria-roledescription="chart"></svg>"#)]
-    fn misused_role_descriptions_are_flagged(#[case] html: &str) {
-        assert_eq!(count(check_role_description, html), 1, "{html}");
-    }
-
-    #[rstest]
-    #[case(r#"<div role="region" aria-roledescription="slide" aria-labelledby="h"><h1 id="h">Q</h1></div>"#)]
-    #[case(r#"<button aria-roledescription="toggle">x</button>"#)]
-    fn role_descriptions_on_roles_are_not_flagged(#[case] html: &str) {
-        assert!(run(check_role_description, html).is_empty(), "{html}");
+    #[case(r#"<div aria-roledescription="slide" id="slide42">...</div>"#, 1)]
+    #[case(
+        r#"<div role="region" aria-roledescription=" " aria-labelledby="h">...</div>"#,
+        1
+    )]
+    #[case(r#"<svg aria-roledescription="chart"></svg>"#, 1)]
+    #[case(r#"<div role="region" aria-roledescription="slide" aria-labelledby="h"><h1 id="h">Q</h1></div>"#, 0)]
+    #[case(r#"<button aria-roledescription="toggle">x</button>"#, 0)]
+    fn role_description(#[case] html: &str, #[case] expected: usize) {
+        assert_eq!(count(check_role_description, html), expected, "{html}");
     }
 }

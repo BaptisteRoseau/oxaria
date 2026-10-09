@@ -96,51 +96,46 @@ mod tests {
     use rstest::rstest;
 
     use super::*;
-    use crate::rules::testutil::{count, run};
+    use crate::rules::testutil::count;
 
     #[rstest]
     #[case(r#"<div role="tablist" aria-label="Settings"><div role="tab" aria-selected="true">General</div>
               <div role="tab" aria-selected="false">Privacy</div></div>"#, 2)]
     #[case(r#"<span role="button" onclick="save()">Save</span>"#, 1)]
     #[case(r#"<a role="link">Home</a>"#, 1)]
-    fn unfocusable_widgets_are_flagged(#[case] html: &str, #[case] expected: usize) {
+    #[case(r#"<div role="tablist" aria-label="Settings"><div role="tab" tabindex="0" aria-selected="true">General</div>
+              <div role="tab" tabindex="-1" aria-selected="false">Privacy</div></div>"#, 0)]
+    #[case(r#"<div role="radiogroup" tabindex="0" aria-activedescendant="r1"><div role="radio" id="r1">A</div></div>"#, 0)]
+    #[case(r#"<a role="link" aria-disabled="true">Export</a>"#, 0)]
+    #[case(r#"<li role="tab"><a href="/a">A</a></li>"#, 0)]
+    #[case(r#"<div role="textbox" contenteditable>x</div>"#, 0)]
+    #[case(r#"<div role="option">Items aren't checked</div>"#, 0)]
+    #[case(r#"<button role="tab">Native</button>"#, 0)]
+    #[case(r#"<button>Open <span role="button">x</span></button>"#, 0)]
+    fn unfocusable_widget(#[case] html: &str, #[case] expected: usize) {
         assert_eq!(count(check_unfocusable_widget, html), expected, "{html}");
     }
 
     #[rstest]
-    #[case(r#"<div role="tablist" aria-label="Settings"><div role="tab" tabindex="0" aria-selected="true">General</div>
-              <div role="tab" tabindex="-1" aria-selected="false">Privacy</div></div>"#)]
-    #[case(r#"<div role="radiogroup" tabindex="0" aria-activedescendant="r1"><div role="radio" id="r1">A</div></div>"#)]
-    #[case(r#"<a role="link" aria-disabled="true">Export</a>"#)]
-    #[case(r#"<li role="tab"><a href="/a">A</a></li>"#)]
-    #[case(r#"<div role="textbox" contenteditable>x</div>"#)]
-    #[case(r#"<div role="option">Items aren't checked</div>"#)]
-    #[case(r#"<button role="tab">Native</button>"#)]
-    #[case(r#"<button>Open <span role="button">x</span></button>"#)]
-    fn focusable_widgets_are_not_flagged(#[case] html: &str) {
-        assert!(run(check_unfocusable_widget, html).is_empty(), "{html}");
-    }
-
-    #[test]
-    fn dialog_without_focusable_is_flagged() {
-        let html = r#"<button onclick="closeDialog()">Close</button>
+    #[case(
+        r#"<button onclick="closeDialog()">Close</button>
             <div role="dialog" aria-modal="true" aria-labelledby="dlg-title">
-              <h2 id="dlg-title">Photo details</h2><p>Taken on 12 May 2026.</p></div>"#;
-        assert_eq!(count(check_dialog_without_focusable, html), 1);
-    }
-
-    #[rstest]
+              <h2 id="dlg-title">Photo details</h2><p>Taken on 12 May 2026.</p></div>"#,
+        1
+    )]
     #[case(
         r#"<div role="dialog" aria-modal="true" aria-labelledby="dlg-title">
               <h2 id="dlg-title">Photo details</h2><p>Taken on 12 May 2026.</p>
-              <button onclick="closeDialog()">Close</button></div>"#
+              <button onclick="closeDialog()">Close</button></div>"#,
+        0
     )]
-    #[case(r#"<div role="dialog" aria-label="Loading"></div>"#)]
-    #[case(r#"<dialog><p>Closed</p></dialog>"#)]
-    #[case(r#"<div role="dialog" tabindex="-1"><p>Static</p></div>"#)]
-    fn dialogs_with_focusable_are_not_flagged(#[case] html: &str) {
-        assert!(
-            run(check_dialog_without_focusable, html).is_empty(),
+    #[case(r#"<div role="dialog" aria-label="Loading"></div>"#, 0)]
+    #[case(r#"<dialog><p>Closed</p></dialog>"#, 0)]
+    #[case(r#"<div role="dialog" tabindex="-1"><p>Static</p></div>"#, 0)]
+    fn dialog_without_focusable(#[case] html: &str, #[case] expected: usize) {
+        assert_eq!(
+            count(check_dialog_without_focusable, html),
+            expected,
             "{html}"
         );
     }

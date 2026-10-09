@@ -166,9 +166,11 @@ fn duplicate_text_finding(text: &str, mut distinct_hrefs: Vec<String>) -> Option
 
 #[cfg(test)]
 mod tests {
+    use rstest::rstest;
+
     use super::*;
     use crate::page::testutil::page_from_html;
-    use crate::rules::testutil::{assert_fires, count, help, run};
+    use crate::rules::testutil::{help, rule_ids, run};
 
     #[test]
     fn empty_image_link_help_points_at_the_images_alt() {
@@ -180,13 +182,6 @@ mod tests {
     }
 
     #[test]
-    fn image_only_link_without_alt_is_reported_as_f89() {
-        let html = r#"<a href="scores.html"><img src="football.gif" alt=""></a>
-               <a href="scores.html">Football Scoreboard</a>"#;
-        assert_fires(check_non_descriptive_link_text, html, "F89");
-    }
-
-    #[test]
     fn generic_link_help_quotes_the_text() {
         let html = r#"<a href="/report.pdf">Click here</a>"#;
         assert!(
@@ -194,48 +189,23 @@ mod tests {
         );
     }
 
-    #[test]
-    fn empty_link_text_is_flagged() {
-        let html = r#"<a href="/report.pdf"></a>"#;
-        assert_fires(check_non_descriptive_link_text, html, "H30");
-    }
-
-    #[test]
-    fn click_here_is_flagged() {
-        let html = r#"<a href="/report.pdf">Click here</a>"#;
-        assert_eq!(count(check_non_descriptive_link_text, html), 1);
-    }
-
-    #[test]
-    fn descriptive_link_text_is_not_flagged() {
-        let html = r#"<a href="/report.pdf">Download the 2026 Annual Report</a>"#;
-        assert!(run(check_non_descriptive_link_text, html).is_empty());
-    }
-
-    #[test]
-    fn aria_label_overrides_generic_visible_text() {
-        let html = r#"<a href="/report.pdf" aria-label="Download the 2026 report">Click here</a>"#;
-        assert!(run(check_non_descriptive_link_text, html).is_empty());
-    }
-
-    #[test]
-    fn same_text_different_hrefs_is_flagged() {
-        let html = r#"<a href="/products/1">Read more</a><a href="/products/2">Read more</a>"#;
-        assert_fires(check_ambiguous_duplicate_link_text, html, "LNK001");
-    }
-
-    #[test]
-    fn ambiguous_link_texts_are_reported_in_a_stable_order() {
-        let html = r#"<a href="/1">Pricing</a><a href="/2">Pricing</a><a href="/3">About us</a><a href="/4">About us</a>"#;
-        let findings = run(check_ambiguous_duplicate_link_text, html);
-        assert!(findings[0].message.contains("\"about us\""), "{findings:?}");
-        assert!(findings[1].message.contains("\"pricing\""), "{findings:?}");
-    }
-
-    #[test]
-    fn same_text_same_href_is_not_flagged() {
-        let html = r#"<a href="/products/1">Wireless Headphones</a><a href="/products/1">Wireless Headphones</a>"#;
-        assert!(run(check_ambiguous_duplicate_link_text, html).is_empty());
+    #[rstest]
+    #[case(
+        r#"<a href="scores.html"><img src="football.gif" alt=""></a>
+           <a href="scores.html">Football Scoreboard</a>"#,
+        &["F89"]
+    )]
+    #[case(r#"<a href="/report.pdf"></a>"#, &["H30"])]
+    #[case(r#"<a href="/report.pdf">Click here</a>"#, &["H30"])]
+    #[case(r#"<a href="/report.pdf">Download the 2026 Annual Report</a>"#, &[])]
+    // aria-label overrides the generic visible text.
+    #[case(r#"<a href="/report.pdf" aria-label="Download the 2026 report">Click here</a>"#, &[])]
+    fn non_descriptive_link_text(#[case] html: &str, #[case] expected: &[&str]) {
+        assert_eq!(
+            rule_ids(check_non_descriptive_link_text, html),
+            expected,
+            "{html}"
+        );
     }
 
     fn page_at(html: &str, url: &str) -> RenderedPage {
@@ -246,70 +216,89 @@ mod tests {
     }
 
     #[test]
-    fn relative_and_same_host_absolute_hrefs_are_the_same_destination() {
-        // github.com: "pricing" linked as both `/pricing` and `https://github.com/pricing`.
-        let p = page_at(
-            r#"<a href="/pricing">Pricing</a><a href="https://github.com/pricing">Pricing</a>"#,
-            "https://github.com/",
-        );
-        assert!(check_ambiguous_duplicate_link_text(&p).is_empty());
+    fn ambiguous_link_texts_are_reported_in_a_stable_order() {
+        let html = r#"<a href="/1">Pricing</a><a href="/2">Pricing</a><a href="/3">About us</a><a href="/4">About us</a>"#;
+        let findings = run(check_ambiguous_duplicate_link_text, html);
+        assert!(findings[0].message.contains("\"about us\""), "{findings:?}");
+        assert!(findings[1].message.contains("\"pricing\""), "{findings:?}");
     }
 
-    #[test]
-    fn page_relative_and_root_relative_hrefs_are_compared_resolved() {
-        let p = page_at(
-            r#"<a href="guide">User guide</a><a href="/docs/guide">User guide</a>"#,
-            "https://example.com/docs/intro",
-        );
-        assert!(check_ambiguous_duplicate_link_text(&p).is_empty());
-    }
-
-    #[test]
-    fn hrefs_differing_only_by_fragment_are_the_same_destination() {
-        // nodejs.org API docs: "index" linked as `index.html` and `index.html#index`.
-        let html =
-            r##"<a href="index.html">Index page</a><a href="index.html#index">Index page</a>"##;
-        assert!(run(check_ambiguous_duplicate_link_text, html).is_empty());
-    }
-
-    #[test]
-    fn hrefs_differing_only_by_query_string_are_the_same_destination() {
-        // ubuntu.com: the same page linked with and without a `?_gl=` tracking parameter.
-        let p = page_at(
-            r#"<a href="/managed-infrastructure">Managed infrastructure</a>
-               <a href="https://ubuntu.com/managed-infrastructure?_gl=1*e5c2b5">Managed infrastructure</a>"#,
-            "https://ubuntu.com/",
-        );
-        assert!(check_ambiguous_duplicate_link_text(&p).is_empty());
-    }
-
-    #[test]
-    fn hrefs_differing_only_by_case_are_the_same_destination() {
-        // code.visualstudio.com: "Download" linked as both `/Download` and `/download`.
-        let html = r#"<a href="/Download">Download</a><a href="/download">Download</a>"#;
-        assert!(run(check_ambiguous_duplicate_link_text, html).is_empty());
-    }
-
-    #[test]
-    fn hrefs_differing_only_by_trailing_slash_are_the_same_destination() {
-        // pypi.org: "Python Software Foundation" linked to `/psf-landing` and `/psf-landing/`.
-        let p = page_at(
-            r#"<a href="https://www.python.org/psf-landing">Python Software Foundation</a>
-               <a href="https://www.python.org/psf-landing/">Python Software Foundation</a>"#,
-            "https://pypi.org/",
-        );
-        assert!(check_ambiguous_duplicate_link_text(&p).is_empty());
-    }
-
-    #[test]
-    fn http_and_https_links_to_the_same_page_are_the_same_destination() {
-        // ubuntu.com: Multipass linked as both `http://` and `https://canonical.com/multipass`.
-        let p = page_at(
-            r#"<a href="http://canonical.com/multipass">Multipass VMs</a>
-               <a href="https://canonical.com/multipass">Multipass VMs</a>"#,
-            "https://ubuntu.com/navigation",
-        );
-        assert!(check_ambiguous_duplicate_link_text(&p).is_empty());
+    #[rstest]
+    #[case(
+        r#"<a href="/products/1">Read more</a><a href="/products/2">Read more</a>"#,
+        None,
+        1
+    )]
+    #[case(
+        r#"<a href="/products/1">Wireless Headphones</a><a href="/products/1">Wireless Headphones</a>"#,
+        None,
+        0
+    )]
+    // github.com: "pricing" linked as both `/pricing` and `https://github.com/pricing`.
+    #[case(
+        r#"<a href="/pricing">Pricing</a><a href="https://github.com/pricing">Pricing</a>"#,
+        Some("https://github.com/"),
+        0
+    )]
+    // Page-relative and root-relative hrefs are compared resolved.
+    #[case(
+        r#"<a href="guide">User guide</a><a href="/docs/guide">User guide</a>"#,
+        Some("https://example.com/docs/intro"),
+        0
+    )]
+    // nodejs.org API docs: "index" linked as `index.html` and `index.html#index`.
+    #[case(
+        r##"<a href="index.html">Index page</a><a href="index.html#index">Index page</a>"##,
+        None,
+        0
+    )]
+    // ubuntu.com: the same page linked with and without a `?_gl=` tracking parameter.
+    #[case(
+        r#"<a href="/managed-infrastructure">Managed infrastructure</a>
+           <a href="https://ubuntu.com/managed-infrastructure?_gl=1*e5c2b5">Managed infrastructure</a>"#,
+        Some("https://ubuntu.com/"),
+        0
+    )]
+    // code.visualstudio.com: "Download" linked as both `/Download` and `/download`.
+    #[case(
+        r#"<a href="/Download">Download</a><a href="/download">Download</a>"#,
+        None,
+        0
+    )]
+    // pypi.org: "Python Software Foundation" linked to `/psf-landing` and `/psf-landing/`.
+    #[case(
+        r#"<a href="https://www.python.org/psf-landing">Python Software Foundation</a>
+           <a href="https://www.python.org/psf-landing/">Python Software Foundation</a>"#,
+        Some("https://pypi.org/"),
+        0
+    )]
+    // ubuntu.com: Multipass linked as both `http://` and `https://canonical.com/multipass`.
+    #[case(
+        r#"<a href="http://canonical.com/multipass">Multipass VMs</a>
+           <a href="https://canonical.com/multipass">Multipass VMs</a>"#,
+        Some("https://ubuntu.com/navigation"),
+        0
+    )]
+    // Different paths are still flagged with a page URL.
+    #[case(
+        r#"<a href="/products/1">Read more</a><a href="https://shop.example/products/2">Read more</a>"#,
+        Some("https://shop.example/"),
+        1
+    )]
+    // Text shorter than 3 characters is ignored.
+    #[case(r#"<a href="/a">Go</a><a href="/b">Go</a>"#, None, 0)]
+    fn ambiguous_duplicate_link_text(
+        #[case] html: &str,
+        #[case] url: Option<&str>,
+        #[case] expected: usize,
+    ) {
+        let page = match url {
+            Some(url) => page_at(html, url),
+            None => page_from_html(html),
+        };
+        let findings = check_ambiguous_duplicate_link_text(&page);
+        assert_eq!(findings.len(), expected, "{html}");
+        assert!(findings.iter().all(|finding| finding.rule_id == "LNK001"));
     }
 
     #[test]
@@ -333,20 +322,5 @@ mod tests {
             "{}",
             findings[0].message
         );
-    }
-
-    #[test]
-    fn different_paths_are_still_flagged_with_a_page_url() {
-        let p = page_at(
-            r#"<a href="/products/1">Read more</a><a href="https://shop.example/products/2">Read more</a>"#,
-            "https://shop.example/",
-        );
-        assert_eq!(check_ambiguous_duplicate_link_text(&p).len(), 1);
-    }
-
-    #[test]
-    fn short_text_is_ignored_for_duplicate_check() {
-        let html = r#"<a href="/a">Go</a><a href="/b">Go</a>"#;
-        assert!(run(check_ambiguous_duplicate_link_text, html).is_empty());
     }
 }

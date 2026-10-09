@@ -84,37 +84,32 @@ pub fn check_marquee(page: &RenderedPage) -> Vec<Finding> {
 
 #[cfg(test)]
 mod tests {
+    use rstest::rstest;
+
     use super::*;
-    use crate::rules::testutil::{assert_fires, run};
+    use crate::rules::testutil::{assert_fires, rule_ids, run};
 
-    #[test]
-    fn video_without_captions_is_flagged() {
-        let html = r#"<video src="a.mp4" controls></video>"#;
-        assert_fires(check_video_missing_captions, html, "G87");
+    #[rstest]
+    #[case(r#"<video src="a.mp4" controls></video>"#, &["G87"])]
+    #[case(r#"<video src="a.mp4" controls><track kind="captions" src="a.vtt"></video>"#, &[])]
+    fn video_missing_captions(#[case] html: &str, #[case] expected: &[&str]) {
+        assert_eq!(
+            rule_ids(check_video_missing_captions, html),
+            expected,
+            "{html}"
+        );
     }
 
-    #[test]
-    fn video_with_captions_track_is_not_flagged() {
-        let html = r#"<video src="a.mp4" controls><track kind="captions" src="a.vtt"></video>"#;
-        assert!(run(check_video_missing_captions, html).is_empty());
-    }
-
-    #[test]
-    fn autoplay_without_controls_is_flagged() {
-        let html = r#"<video src="a.mp4" autoplay></video>"#;
-        assert_fires(check_autoplay_without_controls, html, "G186");
-    }
-
-    #[test]
-    fn autoplay_with_controls_is_not_flagged() {
-        let html = r#"<video src="a.mp4" autoplay controls></video>"#;
-        assert!(run(check_autoplay_without_controls, html).is_empty());
-    }
-
-    #[test]
-    fn non_autoplay_video_is_not_flagged() {
-        let html = r#"<video src="a.mp4"></video>"#;
-        assert!(run(check_autoplay_without_controls, html).is_empty());
+    #[rstest]
+    #[case(r#"<video src="a.mp4" autoplay></video>"#, &["G186"])]
+    #[case(r#"<video src="a.mp4" autoplay controls></video>"#, &[])]
+    #[case(r#"<video src="a.mp4"></video>"#, &[])]
+    fn autoplay_without_controls(#[case] html: &str, #[case] expected: &[&str]) {
+        assert_eq!(
+            rule_ids(check_autoplay_without_controls, html),
+            expected,
+            "{html}"
+        );
     }
 
     #[test]

@@ -146,49 +146,42 @@ fn first_attr(el: ElementRef, names: &[&'static str]) -> Option<&'static str> {
 
 #[cfg(test)]
 mod tests {
+    use rstest::rstest;
+
     use super::*;
-    use crate::rules::testutil::{assert_fires, count, run};
+    use crate::rules::testutil::{assert_fires, rule_ids, run};
 
-    #[test]
-    fn scripted_span_link_is_flagged() {
-        assert_fires(
-            check_emulated_link,
-            r#"<span onclick="location.href='newpage.html'">Fake link</span>"#,
-            "F42",
+    #[rstest]
+    #[case(r#"<span onclick="location.href='newpage.html'">Fake link</span>"#, &["F42"])]
+    #[case(
+        r#"<img src="go.gif" alt="go to the new page" onclick="location.href='newpage.html'">"#,
+        &["F42"]
+    )]
+    // Real links and role="link" are not emulated links.
+    #[case(
+        r#"<a href="/a" onclick="location.href='/b'">A</a>
+           <span role="link" tabindex="0" onclick="location.href='/c'">C</span>"#,
+        &[]
+    )]
+    fn emulated_link(#[case] html: &str, #[case] expected: &[&str]) {
+        assert_eq!(rule_ids(check_emulated_link, html), expected, "{html}");
+    }
+
+    #[rstest]
+    #[case(
+        r#"<p><span onclick="toggleCheckbox('chkbox')">
+           <img src="unchecked.gif" id="chkbox" alt=""> Include Signature</span></p>"#,
+        &["F59"]
+    )]
+    #[case(r#"<div role="button" tabindex="0" onclick="go()">Go</div>"#, &[])]
+    // A navigating span is reported as an emulated link only.
+    #[case(r#"<span onclick="location.href='/x'">X</span>"#, &[])]
+    fn control_without_role(#[case] html: &str, #[case] expected: &[&str]) {
+        assert_eq!(
+            rule_ids(check_control_without_role, html),
+            expected,
+            "{html}"
         );
-    }
-
-    #[test]
-    fn scripted_image_link_is_flagged() {
-        let html =
-            r#"<img src="go.gif" alt="go to the new page" onclick="location.href='newpage.html'">"#;
-        assert_eq!(count(check_emulated_link, html), 1);
-    }
-
-    #[test]
-    fn real_links_and_role_link_are_not_flagged_as_emulated() {
-        let html = r#"<a href="/a" onclick="location.href='/b'">A</a>
-                      <span role="link" tabindex="0" onclick="location.href='/c'">C</span>"#;
-        assert!(run(check_emulated_link, html).is_empty());
-    }
-
-    #[test]
-    fn scripted_span_without_role_is_flagged() {
-        let html = r#"<p><span onclick="toggleCheckbox('chkbox')">
-                      <img src="unchecked.gif" id="chkbox" alt=""> Include Signature</span></p>"#;
-        assert_fires(check_control_without_role, html, "F59");
-    }
-
-    #[test]
-    fn scripted_div_with_role_is_not_flagged() {
-        let html = r#"<div role="button" tabindex="0" onclick="go()">Go</div>"#;
-        assert!(run(check_control_without_role, html).is_empty());
-    }
-
-    #[test]
-    fn navigating_span_is_reported_as_emulated_link_only() {
-        let html = r#"<span onclick="location.href='/x'">X</span>"#;
-        assert!(run(check_control_without_role, html).is_empty());
     }
 
     #[test]
@@ -206,18 +199,18 @@ mod tests {
         assert!(run(check_pointer_only_handler, html).is_empty());
     }
 
-    #[test]
-    fn blur_on_focus_is_flagged() {
-        let html = r#"<input type="submit" onFocus="this.blur();">
-                      <a href="link.html" onfocus="if(this.blur)this.blur();">Link Phrase</a>"#;
-        let findings = run(check_focus_removed_on_focus, html);
-        assert_eq!(findings.len(), 2);
-        assert_eq!(findings[0].rule_id, "F55");
-    }
-
-    #[test]
-    fn other_focus_handlers_are_not_flagged() {
-        let html = r#"<input onfocus="showHint()">"#;
-        assert!(run(check_focus_removed_on_focus, html).is_empty());
+    #[rstest]
+    #[case(
+        r#"<input type="submit" onFocus="this.blur();">
+           <a href="link.html" onfocus="if(this.blur)this.blur();">Link Phrase</a>"#,
+        &["F55", "F55"]
+    )]
+    #[case(r#"<input onfocus="showHint()">"#, &[])]
+    fn focus_removed_on_focus(#[case] html: &str, #[case] expected: &[&str]) {
+        assert_eq!(
+            rule_ids(check_focus_removed_on_focus, html),
+            expected,
+            "{html}"
+        );
     }
 }

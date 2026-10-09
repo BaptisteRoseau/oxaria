@@ -39,33 +39,28 @@ fn cancels_event(code: &str) -> bool {
 
 #[cfg(test)]
 mod tests {
+    use rstest::rstest;
+
     use super::*;
-    use crate::rules::testutil::{assert_fires, count, run};
+    use crate::rules::testutil::rule_ids;
 
-    #[test]
-    fn password_field_blocking_paste_is_flagged() {
-        assert_fires(
-            check_paste_blocked,
-            r#"<label for="pwd">Password</label><input id="pwd" type="password" onpaste="return false">"#,
-            "AUT001",
-        );
-    }
-
-    #[test]
-    fn code_field_blocking_paste_is_flagged() {
-        let html = r#"<input autocomplete="one-time-code" onpaste="event.preventDefault()">"#;
-        assert_eq!(count(check_paste_blocked, html), 1);
-    }
-
-    #[test]
-    fn password_field_allowing_paste_is_not_flagged() {
-        let html = r#"<input type="password" autocomplete="current-password" onpaste="track()">"#;
-        assert!(run(check_paste_blocked, html).is_empty());
-    }
-
-    #[test]
-    fn other_fields_blocking_paste_are_not_flagged() {
-        let html = r#"<input type="email" onpaste="return false">"#;
-        assert!(run(check_paste_blocked, html).is_empty());
+    #[rstest]
+    #[case(
+        r#"<label for="pwd">Password</label><input id="pwd" type="password" onpaste="return false">"#,
+        &["AUT001"]
+    )]
+    #[case(
+        r#"<input autocomplete="one-time-code" onpaste="event.preventDefault()">"#,
+        &["AUT001"]
+    )]
+    // A password field allowing paste.
+    #[case(
+        r#"<input type="password" autocomplete="current-password" onpaste="track()">"#,
+        &[]
+    )]
+    // Other fields blocking paste.
+    #[case(r#"<input type="email" onpaste="return false">"#, &[])]
+    fn paste_blocked(#[case] html: &str, #[case] expected: &[&str]) {
+        assert_eq!(rule_ids(check_paste_blocked, html), expected, "{html}");
     }
 }

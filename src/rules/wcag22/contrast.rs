@@ -157,18 +157,17 @@ fn contrast_ratio(l1: f64, l2: f64) -> f64 {
 
 #[cfg(test)]
 mod tests {
+    use rstest::rstest;
+
     use super::*;
     use crate::page::testutil::page_from_html;
     use crate::rules::testutil::{assert_one, run_with_defaults};
 
-    #[test]
-    fn relative_luminance_black_is_zero() {
-        assert!((relative_luminance((0, 0, 0)) - 0.0).abs() < 1e-6);
-    }
-
-    #[test]
-    fn relative_luminance_white_is_one() {
-        assert!((relative_luminance((255, 255, 255)) - 1.0).abs() < 1e-6);
+    #[rstest]
+    #[case((0, 0, 0), 0.0)]
+    #[case((255, 255, 255), 1.0)]
+    fn relative_luminance_of_black_and_white(#[case] color: Rgb, #[case] expected: f64) {
+        assert!((relative_luminance(color) - expected).abs() < 1e-6);
     }
 
     #[test]
@@ -247,44 +246,27 @@ mod tests {
         );
     }
 
-    #[test]
-    fn low_contrast_large_text_is_reported_as_g145() {
-        let html =
-            r#"<h1 style="color: #aaaaaa; background-color: #ffffff; font-size: 28px">Title</h1>"#;
-        assert_one(run_with_defaults(check_text_contrast, html), "G145");
-    }
-
-    #[test]
-    fn high_contrast_text_is_not_flagged() {
-        let html = r#"<p style="color: #000000; background-color: #ffffff">Body text</p>"#;
-        assert!(run_with_defaults(check_text_contrast, html).is_empty());
-    }
-
-    #[test]
-    fn large_bold_text_uses_lower_threshold() {
-        let html = r#"<h1 style="color: #949494; background-color: #ffffff; font-size: 28px; font-weight: bold">Title</h1>"#;
-        assert!(run_with_defaults(check_text_contrast, html).is_empty());
-    }
-
-    #[test]
-    fn element_with_no_text_children_is_skipped() {
-        let html = r#"<div style="color: #999999; background-color: #ffffff"><span style="color: #999999; background-color: #ffffff">nested</span></div>"#;
+    #[rstest]
+    #[case(
+        r#"<h1 style="color: #aaaaaa; background-color: #ffffff; font-size: 28px">Title</h1>"#,
+        &["G145"]
+    )]
+    #[case(r#"<p style="color: #000000; background-color: #ffffff">Body text</p>"#, &[])]
+    // Large bold text uses the lower threshold.
+    #[case(
+        r#"<h1 style="color: #949494; background-color: #ffffff; font-size: 28px; font-weight: bold">Title</h1>"#,
+        &[]
+    )]
+    // Only the span with direct text is flagged, not the div with no text children.
+    #[case(
+        r#"<div style="color: #999999; background-color: #ffffff"><span style="color: #999999; background-color: #ffffff">nested</span></div>"#,
+        &["G18"]
+    )]
+    // A missing background defaults to the white canvas: light gray still fails.
+    #[case(r#"<p style="color: #eeeeee">Body text</p>"#, &["G18"])]
+    fn text_contrast(#[case] html: &str, #[case] expected: &[&str]) {
         let findings = run_with_defaults(check_text_contrast, html);
-        assert_eq!(
-            findings.len(),
-            1,
-            "only the span with direct text should be flagged"
-        );
-    }
-
-    #[test]
-    fn missing_background_defaults_to_white_canvas() {
-        let html = r#"<p style="color: #eeeeee">Body text</p>"#;
-        let findings = run_with_defaults(check_text_contrast, html);
-        assert_eq!(
-            findings.len(),
-            1,
-            "light gray on default white should still fail"
-        );
+        let rule_ids: Vec<_> = findings.iter().map(|finding| finding.rule_id).collect();
+        assert_eq!(rule_ids, expected, "{html}");
     }
 }

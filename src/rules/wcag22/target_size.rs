@@ -89,6 +89,8 @@ fn target_size_help(element: ElementRef, size: f64, threshold: f64) -> String {
 
 #[cfg(test)]
 mod tests {
+    use rstest::rstest;
+
     use super::*;
     use crate::page::testutil::page_from_html;
     use crate::rules::testutil::{assert_one, run_with_defaults};
@@ -126,17 +128,6 @@ mod tests {
     }
 
     #[test]
-    fn large_target_is_not_flagged() {
-        let html = r#"<button style="width: 24px; height: 24px">X</button>"#;
-        assert!(run_with_defaults(check_target_size, html).is_empty());
-    }
-
-    #[test]
-    fn element_without_size_is_skipped() {
-        assert!(run_with_defaults(check_target_size, "<button>X</button>").is_empty());
-    }
-
-    #[test]
     fn custom_threshold_is_respected() {
         let opts = CheckOptions {
             target_size_threshold: 44.0,
@@ -146,68 +137,53 @@ mod tests {
         assert_eq!(check_target_size(&p, &opts).len(), 1);
     }
 
-    #[test]
-    fn input_with_only_a_css_height_is_measured_by_that_height() {
-        // What litehtml produces for `.lsb { height: 30px }` on google.com's submit buttons.
-        let html = r#"<input type="submit" value="Search" style="width: 0px; height: 30px">"#;
-        assert!(run_with_defaults(check_target_size, html).is_empty());
+    #[rstest]
+    #[case(r#"<button style="width: 24px; height: 24px">X</button>"#, 0)]
+    // An element without a size is skipped.
+    #[case("<button>X</button>", 0)]
+    // What litehtml produces for `.lsb { height: 30px }` on google.com's submit buttons: measured
+    // by that height.
+    #[case(
+        r#"<input type="submit" value="Search" style="width: 0px; height: 30px">"#,
+        0
+    )]
+    // gitlab.com's customer logo links: CSS width 164px, height 0 because the `<img>` inside is
+    // never loaded.
+    #[case(
+        r#"<a href="/customers/weave/" aria-label="weave logo" style="width: 164px; height: 0px"><img src="logo.png"></a>"#,
+        0
+    )]
+    // A text link containing an icon is measured normally.
+    #[case(
+        r#"<a href="/x" style="width: 0px; height: 30px">Docs <svg></svg></a>"#,
+        1
+    )]
+    // Only form controls lack an intrinsic size; a laid-out 0px-wide link is a real finding.
+    #[case(r#"<a href="/x" style="width: 0px; height: 30px">X</a>"#, 1)]
+    // An anchor without href is not checked.
+    #[case(r#"<a name="top" style="width: 4px; height: 4px"></a>"#, 0)]
+    #[case(r#"<div style="width: 4px; height: 4px"></div>"#, 0)]
+    fn target_size(#[case] html: &str, #[case] expected: usize) {
+        assert_eq!(
+            run_with_defaults(check_target_size, html).len(),
+            expected,
+            "{html}"
+        );
     }
 
-    #[test]
-    fn input_with_only_a_small_css_height_is_still_flagged() {
-        let html = r#"<input type="submit" value="Search" style="width: 0px; height: 16px">"#;
+    #[rstest]
+    #[case(r#"<input type="submit" value="Search" style="width: 0px; height: 16px">"#)]
+    // docker.com's search button: an `<svg>` icon, 16px high, 0 wide.
+    #[case(
+        r#"<button aria-label="Search" style="width: 0px; height: 16px"><svg viewBox="0 0 24 24"></svg></button>"#
+    )]
+    fn target_with_only_a_small_css_height_is_measured_by_that_height(#[case] html: &str) {
         let findings = run_with_defaults(check_target_size, html);
-        assert_eq!(findings.len(), 1);
+        assert_eq!(findings.len(), 1, "{html}");
         assert!(
             findings[0].message.contains("16px"),
             "{}",
             findings[0].message
         );
-    }
-
-    #[test]
-    fn image_link_with_only_a_css_width_is_measured_by_that_width() {
-        // gitlab.com's customer logo links: CSS width 164px, height 0 because the
-        // `<img>` inside is never loaded.
-        let html = r#"<a href="/customers/weave/" aria-label="weave logo" style="width: 164px; height: 0px"><img src="logo.png"></a>"#;
-        assert!(run_with_defaults(check_target_size, html).is_empty());
-    }
-
-    #[test]
-    fn icon_button_with_only_a_css_height_is_measured_by_that_height() {
-        // docker.com's search button: an `<svg>` icon, 16px high, 0 wide.
-        let html = r#"<button aria-label="Search" style="width: 0px; height: 16px"><svg viewBox="0 0 24 24"></svg></button>"#;
-        let findings = run_with_defaults(check_target_size, html);
-        assert_eq!(findings.len(), 1);
-        assert!(
-            findings[0].message.contains("16px"),
-            "{}",
-            findings[0].message
-        );
-    }
-
-    #[test]
-    fn text_link_containing_an_icon_is_measured_normally() {
-        let html = r#"<a href="/x" style="width: 0px; height: 30px">Docs <svg></svg></a>"#;
-        assert_eq!(run_with_defaults(check_target_size, html).len(), 1);
-    }
-
-    #[test]
-    fn zero_width_link_is_still_flagged() {
-        // Only form controls lack an intrinsic size; a laid-out 0px-wide link is a real finding.
-        let html = r#"<a href="/x" style="width: 0px; height: 30px">X</a>"#;
-        assert_eq!(run_with_defaults(check_target_size, html).len(), 1);
-    }
-
-    #[test]
-    fn anchor_without_href_is_not_checked() {
-        let html = r#"<a name="top" style="width: 4px; height: 4px"></a>"#;
-        assert!(run_with_defaults(check_target_size, html).is_empty());
-    }
-
-    #[test]
-    fn non_interactive_element_is_not_checked() {
-        let html = r#"<div style="width: 4px; height: 4px"></div>"#;
-        assert!(run_with_defaults(check_target_size, html).is_empty());
     }
 }

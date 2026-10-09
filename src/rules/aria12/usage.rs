@@ -136,41 +136,40 @@ mod tests {
     use rstest::rstest;
 
     use super::*;
-    use crate::rules::testutil::{count, run};
+    use crate::rules::testutil::count;
 
     #[rstest]
-    #[case(r#"<a href="/glossary#api" role="term">API</a>"#)]
-    #[case(r#"<span role="time">Sept 27</span>"#)]
-    #[case(r#"<div role="time">yesterday at noon</div>"#)]
-    fn misused_roles_are_flagged(#[case] html: &str) {
-        assert_eq!(count(check_role_purpose, html), 1, "{html}");
+    #[case(r#"<a href="/glossary#api" role="term">API</a>"#, 1)]
+    #[case(r#"<span role="time">Sept 27</span>"#, 1)]
+    #[case(r#"<div role="time">yesterday at noon</div>"#, 1)]
+    #[case(r#"<span role="term">API</span>"#, 0)]
+    #[case(r#"<span role="time">2019-11-18</span>"#, 0)]
+    #[case(r#"<span role="time">4h 18m 3s</span>"#, 0)]
+    #[case(r#"<time datetime="2026-09-27">Sept 27</time>"#, 0)]
+    #[case(r#"<span role="time"></span>"#, 0)]
+    fn role_purpose(#[case] html: &str, #[case] expected: usize) {
+        assert_eq!(count(check_role_purpose, html), expected, "{html}");
     }
 
     #[rstest]
-    #[case(r#"<span role="term">API</span>"#)]
-    #[case(r#"<span role="time">2019-11-18</span>"#)]
-    #[case(r#"<span role="time">4h 18m 3s</span>"#)]
-    #[case(r#"<time datetime="2026-09-27">Sept 27</time>"#)]
-    #[case(r#"<span role="time"></span>"#)]
-    fn fitting_roles_are_not_flagged(#[case] html: &str) {
-        assert!(run(check_role_purpose, html).is_empty(), "{html}");
-    }
-
-    #[rstest]
-    #[case(r#"<div contenteditable role="searchbox" aria-placeholder="MM-DD-YYYY"></div>"#)]
-    #[case(r#"<div role="alertdialog" aria-labelledby="t"><h2 id="t">Delete?</h2><p>Gone forever.</p><button>OK</button></div>"#)]
-    #[case(r#"<button aria-details="d">Chart</button><div id="d" hidden>Details</div>"#)]
-    fn wrong_naming_mechanisms_are_flagged(#[case] html: &str) {
-        assert_eq!(count(check_naming_mechanism, html), 1, "{html}");
-    }
-
-    #[rstest]
+    #[case(
+        r#"<div contenteditable role="searchbox" aria-placeholder="MM-DD-YYYY"></div>"#,
+        1
+    )]
+    #[case(r#"<div role="alertdialog" aria-labelledby="t"><h2 id="t">Delete?</h2><p>Gone forever.</p><button>OK</button></div>"#, 1)]
+    #[case(
+        r#"<button aria-details="d">Chart</button><div id="d" hidden>Details</div>"#,
+        1
+    )]
     #[case(r#"<span id="label">Birthday:</span>
-              <div contenteditable role="searchbox" aria-labelledby="label" aria-placeholder="MM-DD-YYYY"></div>"#)]
-    #[case(r#"<label for="b">Birthday</label><div id="b" contenteditable role="textbox" aria-placeholder="MM-DD"></div>"#)]
-    #[case(r#"<div role="alertdialog" aria-describedby="m"><p id="m">Gone forever.</p><button>OK</button></div>"#)]
-    #[case(r#"<button aria-details="d">Chart</button><div id="d">Details</div>"#)]
-    fn right_naming_mechanisms_are_not_flagged(#[case] html: &str) {
-        assert!(run(check_naming_mechanism, html).is_empty(), "{html}");
+              <div contenteditable role="searchbox" aria-labelledby="label" aria-placeholder="MM-DD-YYYY"></div>"#, 0)]
+    #[case(r#"<label for="b">Birthday</label><div id="b" contenteditable role="textbox" aria-placeholder="MM-DD"></div>"#, 0)]
+    #[case(r#"<div role="alertdialog" aria-describedby="m"><p id="m">Gone forever.</p><button>OK</button></div>"#, 0)]
+    #[case(
+        r#"<button aria-details="d">Chart</button><div id="d">Details</div>"#,
+        0
+    )]
+    fn naming_mechanism(#[case] html: &str, #[case] expected: usize) {
+        assert_eq!(count(check_naming_mechanism, html), expected, "{html}");
     }
 }

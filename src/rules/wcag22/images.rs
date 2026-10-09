@@ -89,13 +89,10 @@ fn non_alternative_message(img: ElementRef, alt: &str) -> String {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-    use crate::rules::testutil::{assert_fires, count, help, run};
+    use rstest::rstest;
 
-    #[test]
-    fn missing_alt_is_flagged() {
-        assert_fires(check_missing_alt, r#"<img src="photo.jpg">"#, "F65");
-    }
+    use super::*;
+    use crate::rules::testutil::{help, rule_ids};
 
     #[test]
     fn missing_alt_help_reuses_the_src() {
@@ -113,44 +110,25 @@ mod tests {
         assert!(help.starts_with(r#"replace "chart.jpg" with"#), "{help}");
     }
 
-    #[test]
-    fn empty_alt_is_not_flagged_as_missing() {
-        assert!(run(check_missing_alt, r#"<img src="deco.png" alt="">"#).is_empty());
+    #[rstest]
+    #[case(r#"<img src="photo.jpg">"#, &["F65"])]
+    #[case(r#"<img src="deco.png" alt="">"#, &[])]
+    #[case(r#"<img src="photo.jpg" alt="A red bicycle">"#, &[])]
+    fn missing_alt(#[case] html: &str, #[case] expected: &[&str]) {
+        assert_eq!(rule_ids(check_missing_alt, html), expected, "{html}");
     }
 
-    #[test]
-    fn descriptive_alt_is_not_flagged_as_missing() {
-        let html = r#"<img src="photo.jpg" alt="A red bicycle">"#;
-        assert!(run(check_missing_alt, html).is_empty());
-    }
-
-    #[test]
-    fn placeholder_word_alt_is_flagged() {
-        let html = r#"<img src="a.jpg" alt="image">"#;
-        assert_fires(check_non_alternative_alt, html, "F30");
-    }
-
-    #[test]
-    fn numbered_placeholder_word_alt_is_flagged() {
-        let html = r#"<img src="a.jpg" alt="picture1">"#;
-        assert_eq!(count(check_non_alternative_alt, html), 1);
-    }
-
-    #[test]
-    fn filename_alt_is_flagged() {
-        let html = r#"<img src="a.jpg" alt="Oct.jpg">"#;
-        assert_eq!(count(check_non_alternative_alt, html), 1);
-    }
-
-    #[test]
-    fn descriptive_alt_is_not_flagged_as_non_alternative() {
-        let html = r#"<img src="a.jpg" alt="Quarterly sales rose 12%">"#;
-        assert!(run(check_non_alternative_alt, html).is_empty());
-    }
-
-    #[test]
-    fn empty_alt_is_not_flagged_as_non_alternative() {
-        let html = r#"<img src="a.jpg" alt="">"#;
-        assert!(run(check_non_alternative_alt, html).is_empty());
+    #[rstest]
+    #[case(r#"<img src="a.jpg" alt="image">"#, &["F30"])]
+    #[case(r#"<img src="a.jpg" alt="picture1">"#, &["F30"])]
+    #[case(r#"<img src="a.jpg" alt="Oct.jpg">"#, &["F30"])]
+    #[case(r#"<img src="a.jpg" alt="Quarterly sales rose 12%">"#, &[])]
+    #[case(r#"<img src="a.jpg" alt="">"#, &[])]
+    fn non_alternative_alt(#[case] html: &str, #[case] expected: &[&str]) {
+        assert_eq!(
+            rule_ids(check_non_alternative_alt, html),
+            expected,
+            "{html}"
+        );
     }
 }

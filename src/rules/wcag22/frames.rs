@@ -41,46 +41,26 @@ fn has_name(page: &RenderedPage, iframe: ElementRef) -> bool {
 
 #[cfg(test)]
 mod tests {
+    use rstest::rstest;
+
     use super::*;
-    use crate::rules::testutil::{assert_fires, count, run};
+    use crate::rules::testutil::rule_ids;
 
-    #[test]
-    fn untitled_iframe_is_flagged() {
-        assert_fires(
-            check_untitled_iframe,
-            r#"<iframe src="banner-ad.html" name="ad-iframe"></iframe>"#,
-            "H64",
-        );
-    }
-
-    #[test]
-    fn empty_title_is_flagged() {
-        assert_eq!(
-            count(
-                check_untitled_iframe,
-                r#"<iframe src="a.html" title=" "></iframe>"#
-            ),
-            1
-        );
-    }
-
-    #[test]
-    fn titled_iframe_is_not_flagged() {
-        let html = r#"<iframe src="a.html" title="Advertisement"></iframe>"#;
-        assert!(run(check_untitled_iframe, html).is_empty());
-    }
-
-    #[test]
-    fn aria_named_iframe_is_not_flagged() {
-        let html = r#"<h2 id="map">Store map</h2><iframe src="m.html" aria-labelledby="map"></iframe>
-                      <iframe src="v.html" aria-label="Product video"></iframe>"#;
-        assert!(run(check_untitled_iframe, html).is_empty());
-    }
-
-    #[test]
-    fn hidden_iframe_is_not_flagged() {
-        let html = r#"<iframe src="t.html" hidden></iframe><iframe src="u.html" aria-hidden="true"></iframe>
-                      <noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-X"></iframe></noscript>"#;
-        assert!(run(check_untitled_iframe, html).is_empty());
+    #[rstest]
+    #[case(r#"<iframe src="banner-ad.html" name="ad-iframe"></iframe>"#, &["H64"])]
+    #[case(r#"<iframe src="a.html" title=" "></iframe>"#, &["H64"])]
+    #[case(r#"<iframe src="a.html" title="Advertisement"></iframe>"#, &[])]
+    #[case(
+        r#"<h2 id="map">Store map</h2><iframe src="m.html" aria-labelledby="map"></iframe>
+           <iframe src="v.html" aria-label="Product video"></iframe>"#,
+        &[]
+    )]
+    #[case(
+        r#"<iframe src="t.html" hidden></iframe><iframe src="u.html" aria-hidden="true"></iframe>
+           <noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-X"></iframe></noscript>"#,
+        &[]
+    )]
+    fn untitled_iframe(#[case] html: &str, #[case] expected: &[&str]) {
+        assert_eq!(rule_ids(check_untitled_iframe, html), expected, "{html}");
     }
 }

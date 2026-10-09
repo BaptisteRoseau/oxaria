@@ -85,19 +85,15 @@ fn dangling_reference_message(attribute: &str, id: &str) -> String {
 
 #[cfg(test)]
 mod tests {
+    use rstest::rstest;
+
     use super::*;
-    use crate::rules::testutil::{assert_fires, count, help, run};
+    use crate::rules::testutil::{help, rule_ids, run};
 
     #[test]
     fn dangling_reference_help_names_the_missing_id() {
         let html = r#"<button aria-describedby="hint">Go</button>"#;
         assert!(help(check_dangling_aria_reference, html).starts_with(r#"add id="hint" to"#));
-    }
-
-    #[test]
-    fn duplicate_ids_are_flagged() {
-        let html = r#"<input id="search"><input id="search">"#;
-        assert_fires(check_duplicate_ids, html, "IDS001");
     }
 
     #[test]
@@ -112,32 +108,22 @@ mod tests {
         assert!(messages[2].contains("\"c\""), "{messages:?}");
     }
 
-    #[test]
-    fn unique_ids_are_not_flagged() {
-        assert!(run(check_duplicate_ids, r#"<input id="a"><input id="b">"#).is_empty());
+    #[rstest]
+    #[case(r#"<input id="search"><input id="search">"#, &["IDS001"])]
+    #[case(r#"<input id="a"><input id="b">"#, &[])]
+    fn duplicate_ids(#[case] html: &str, #[case] expected: &[&str]) {
+        assert_eq!(rule_ids(check_duplicate_ids, html), expected, "{html}");
     }
 
-    #[test]
-    fn dangling_aria_labelledby_is_flagged() {
-        let html = r#"<input aria-labelledby="missing">"#;
-        assert_fires(check_dangling_aria_reference, html, "ARIA16");
-    }
-
-    #[test]
-    fn dangling_aria_describedby_is_reported_as_aria1() {
-        let html = r#"<input aria-describedby="missing">"#;
-        assert_fires(check_dangling_aria_reference, html, "ARIA1");
-    }
-
-    #[test]
-    fn resolved_aria_labelledby_is_not_flagged() {
-        let html = r#"<span id="lbl">Name</span><input aria-labelledby="lbl">"#;
-        assert!(run(check_dangling_aria_reference, html).is_empty());
-    }
-
-    #[test]
-    fn dangling_aria_describedby_is_flagged() {
-        let html = r#"<input aria-describedby="missing">"#;
-        assert_eq!(count(check_dangling_aria_reference, html), 1);
+    #[rstest]
+    #[case(r#"<input aria-labelledby="missing">"#, &["ARIA16"])]
+    #[case(r#"<input aria-describedby="missing">"#, &["ARIA1"])]
+    #[case(r#"<span id="lbl">Name</span><input aria-labelledby="lbl">"#, &[])]
+    fn dangling_aria_reference(#[case] html: &str, #[case] expected: &[&str]) {
+        assert_eq!(
+            rule_ids(check_dangling_aria_reference, html),
+            expected,
+            "{html}"
+        );
     }
 }

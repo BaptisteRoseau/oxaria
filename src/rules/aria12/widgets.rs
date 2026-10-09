@@ -277,15 +277,6 @@ mod tests {
           <li role="option" aria-selected="false">Zebra</li>
           <li role="option" id="selected_option" aria-selected="true">Zoom</li></ul>"#;
 
-    #[test]
-    fn aria_11_combobox_is_flagged() {
-        let html = r#"<div role="combobox" aria-expanded="false" aria-owns="country-list">
-              <input type="text" aria-label="Country"></div>
-            <ul role="listbox" id="country-list"><li role="option">France</li></ul>"#;
-        let findings = run(check_combobox_pattern, html);
-        assert_eq!(findings.len(), 2, "{findings:?}");
-    }
-
     #[rstest]
     #[case(
         r#"<input role="combobox" aria-controls="p"><ul role="listbox" id="p"></ul>"#,
@@ -300,88 +291,96 @@ mod tests {
     }
 
     #[rstest]
-    #[case(ARIA_12_COMBOBOX)]
-    #[case(r#"<div role="combobox" tabindex="0" aria-expanded="false" aria-controls="p">Pick</div><div role="listbox" id="p"></div>"#)]
-    #[case(r#"<select><option>A</option></select>"#)]
-    fn aria_12_comboboxes_are_not_flagged(#[case] html: &str) {
-        assert!(run(check_combobox_pattern, html).is_empty(), "{html}");
+    // An ARIA 1.1 combobox.
+    #[case(
+        r#"<div role="combobox" aria-expanded="false" aria-owns="country-list">
+              <input type="text" aria-label="Country"></div>
+            <ul role="listbox" id="country-list"><li role="option">France</li></ul>"#,
+        2
+    )]
+    #[case(ARIA_12_COMBOBOX, 0)]
+    #[case(r#"<div role="combobox" tabindex="0" aria-expanded="false" aria-controls="p">Pick</div><div role="listbox" id="p"></div>"#, 0)]
+    #[case(r#"<select><option>A</option></select>"#, 0)]
+    fn combobox_pattern(#[case] html: &str, #[case] expected: usize) {
+        assert_eq!(count(check_combobox_pattern, html), expected, "{html}");
     }
 
     #[rstest]
     #[case(
         r#"<button aria-haspopup="true" aria-controls="share-dialog">Share</button>
-              <div role="dialog" id="share-dialog" aria-label="Share">...</div>"#
+              <div role="dialog" id="share-dialog" aria-label="Share">...</div>"#,
+        1
     )]
     #[case(
         r#"<button aria-haspopup="listbox" aria-controls="w">Pick</button>
-              <div id="w"><ul role="menu"><li role="menuitem">A</li></ul></div>"#
+              <div id="w"><ul role="menu"><li role="menuitem">A</li></ul></div>"#,
+        1
     )]
-    fn mismatched_popups_are_flagged(#[case] html: &str) {
-        assert_eq!(count(check_popup_role_match, html), 1, "{html}");
-    }
-
-    #[rstest]
     #[case(
         r#"<button aria-haspopup="dialog" aria-controls="share-dialog">Share</button>
-              <div role="dialog" id="share-dialog" aria-label="Share">...</div>"#
+              <div role="dialog" id="share-dialog" aria-label="Share">...</div>"#,
+        0
     )]
-    #[case(r#"<button aria-haspopup="true" aria-controls="m">Menu</button><ul role="menu" id="m"></ul>"#)]
-    #[case(r#"<button aria-haspopup="dialog" aria-controls="w">Open</button><div id="w">Loading</div>"#)]
-    #[case(r#"<button aria-haspopup="false" aria-controls="m">Menu</button><div role="dialog" id="m"></div>"#)]
-    #[case(r#"<button aria-haspopup="dialog" aria-controls="d">Open</button><div role="alertdialog" id="d"></div>"#)]
-    fn matching_popups_are_not_flagged(#[case] html: &str) {
-        assert!(run(check_popup_role_match, html).is_empty(), "{html}");
-    }
-
-    #[test]
-    fn unwired_autocomplete_is_flagged() {
-        let html = r#"<input type="search" aria-label="Search products" aria-autocomplete="list">
-            <ul role="listbox" id="suggestions"></ul>"#;
-        assert_eq!(count(check_autocomplete_popup, html), 2);
-    }
-
-    #[rstest]
-    #[case(r#"<input type="search" aria-label="Search products" aria-autocomplete="list"
-              aria-controls="suggestions" aria-haspopup="listbox"><ul role="listbox" id="suggestions"></ul>"#)]
-    #[case(ARIA_12_COMBOBOX)]
-    #[case(r#"<input type="text" aria-autocomplete="inline">"#)]
-    fn wired_autocomplete_is_not_flagged(#[case] html: &str) {
-        assert!(run(check_autocomplete_popup, html).is_empty(), "{html}");
-    }
-
-    #[test]
-    fn unfocusable_popup_trigger_is_flagged() {
-        let html = r#"<span aria-haspopup="menu" onclick="openMenu()">Account</span>"#;
-        assert_eq!(count(check_unfocusable_popup_trigger, html), 1);
+    #[case(r#"<button aria-haspopup="true" aria-controls="m">Menu</button><ul role="menu" id="m"></ul>"#, 0)]
+    #[case(r#"<button aria-haspopup="dialog" aria-controls="w">Open</button><div id="w">Loading</div>"#, 0)]
+    #[case(r#"<button aria-haspopup="false" aria-controls="m">Menu</button><div role="dialog" id="m"></div>"#, 0)]
+    #[case(r#"<button aria-haspopup="dialog" aria-controls="d">Open</button><div role="alertdialog" id="d"></div>"#, 0)]
+    fn popup_role_match(#[case] html: &str, #[case] expected: usize) {
+        assert_eq!(count(check_popup_role_match, html), expected, "{html}");
     }
 
     #[rstest]
     #[case(
-        r#"<button aria-haspopup="menu" aria-expanded="false" aria-controls="m">Account</button>"#
+        r#"<input type="search" aria-label="Search products" aria-autocomplete="list">
+            <ul role="listbox" id="suggestions"></ul>"#,
+        2
     )]
-    #[case(r#"<li aria-haspopup="true"><a href="/products">Products</a></li>"#)]
-    #[case(r#"<ul role="menu"><li role="menuitem" aria-haspopup="menu">More</li></ul>"#)]
-    #[case(r#"<span aria-haspopup="menu" aria-disabled="true">Account</span>"#)]
-    #[case(r#"<span aria-haspopup="false">Account</span>"#)]
-    fn focusable_popup_triggers_are_not_flagged(#[case] html: &str) {
-        assert!(
-            run(check_unfocusable_popup_trigger, html).is_empty(),
+    #[case(r#"<input type="search" aria-label="Search products" aria-autocomplete="list"
+              aria-controls="suggestions" aria-haspopup="listbox"><ul role="listbox" id="suggestions"></ul>"#, 0)]
+    #[case(ARIA_12_COMBOBOX, 0)]
+    #[case(r#"<input type="text" aria-autocomplete="inline">"#, 0)]
+    fn autocomplete_popup(#[case] html: &str, #[case] expected: usize) {
+        assert_eq!(count(check_autocomplete_popup, html), expected, "{html}");
+    }
+
+    #[rstest]
+    #[case(r#"<span aria-haspopup="menu" onclick="openMenu()">Account</span>"#, 1)]
+    #[case(
+        r#"<button aria-haspopup="menu" aria-expanded="false" aria-controls="m">Account</button>"#,
+        0
+    )]
+    #[case(r#"<li aria-haspopup="true"><a href="/products">Products</a></li>"#, 0)]
+    #[case(
+        r#"<ul role="menu"><li role="menuitem" aria-haspopup="menu">More</li></ul>"#,
+        0
+    )]
+    #[case(r#"<span aria-haspopup="menu" aria-disabled="true">Account</span>"#, 0)]
+    #[case(r#"<span aria-haspopup="false">Account</span>"#, 0)]
+    fn unfocusable_popup_trigger(#[case] html: &str, #[case] expected: usize) {
+        assert_eq!(
+            count(check_unfocusable_popup_trigger, html),
+            expected,
             "{html}"
         );
     }
 
-    #[test]
-    fn unfocusable_feed_article_is_flagged() {
-        let html = r#"<div role="feed" aria-label="News">
-            <article aria-labelledby="a1-title"><h2 id="a1-title">Title</h2></article></div>"#;
-        assert_eq!(count(check_unfocusable_feed_article, html), 1);
-    }
-
-    #[test]
-    fn focusable_feed_article_is_not_flagged() {
-        let html = r#"<div role="feed" aria-label="News" aria-busy="false">
+    #[rstest]
+    #[case(
+        r#"<div role="feed" aria-label="News">
+            <article aria-labelledby="a1-title"><h2 id="a1-title">Title</h2></article></div>"#,
+        1
+    )]
+    #[case(
+        r#"<div role="feed" aria-label="News" aria-busy="false">
             <article tabindex="0" aria-labelledby="a1-title"><h2 id="a1-title">Title</h2></article></div>
-            <article>Not in a feed</article>"#;
-        assert!(run(check_unfocusable_feed_article, html).is_empty());
+            <article>Not in a feed</article>"#,
+        0
+    )]
+    fn unfocusable_feed_article(#[case] html: &str, #[case] expected: usize) {
+        assert_eq!(
+            count(check_unfocusable_feed_article, html),
+            expected,
+            "{html}"
+        );
     }
 }

@@ -60,8 +60,10 @@ fn dangling_skip_link_message(link: ElementRef) -> String {
 
 #[cfg(test)]
 mod tests {
+    use rstest::rstest;
+
     use super::*;
-    use crate::rules::testutil::{assert_fires, help, run};
+    use crate::rules::testutil::{help, rule_ids};
 
     #[test]
     fn dangling_skip_link_help_names_the_missing_id() {
@@ -72,22 +74,15 @@ mod tests {
         );
     }
 
-    #[test]
-    fn missing_skip_link_is_flagged() {
-        let html = r#"<body><nav></nav><main id="main"></main></body>"#;
-        assert_fires(check_missing_skip_link, html, "G1");
-    }
-
-    #[test]
-    fn valid_skip_link_is_not_flagged() {
-        let html =
-            r##"<body><a href="#main">Skip to main content</a><main id="main"></main></body>"##;
-        assert!(run(check_missing_skip_link, html).is_empty());
-    }
-
-    #[test]
-    fn dangling_skip_link_target_is_flagged() {
-        let html = r##"<body><a href="#main">Skip to main content</a></body>"##;
-        assert_fires(check_missing_skip_link, html, "G1");
+    #[rstest]
+    #[case(r#"<body><nav></nav><main id="main"></main></body>"#, &["G1"])]
+    #[case(
+        r##"<body><a href="#main">Skip to main content</a><main id="main"></main></body>"##,
+        &[]
+    )]
+    // The skip link's target is missing.
+    #[case(r##"<body><a href="#main">Skip to main content</a></body>"##, &["G1"])]
+    fn missing_skip_link(#[case] html: &str, #[case] expected: &[&str]) {
+        assert_eq!(rule_ids(check_missing_skip_link, html), expected, "{html}");
     }
 }

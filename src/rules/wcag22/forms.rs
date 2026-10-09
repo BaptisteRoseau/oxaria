@@ -134,8 +134,10 @@ fn required_not_indicated_message(control: ElementRef) -> String {
 
 #[cfg(test)]
 mod tests {
+    use rstest::rstest;
+
     use super::*;
-    use crate::rules::testutil::{assert_fires, help, run};
+    use crate::rules::testutil::{help, rule_ids, run};
 
     #[test]
     fn missing_label_message_omits_absent_type_attribute() {
@@ -171,70 +173,36 @@ mod tests {
         assert!(help.starts_with("use a native <button>"), "{help}");
     }
 
-    #[test]
-    fn input_without_label_is_flagged() {
-        assert_fires(
-            check_missing_label,
-            r#"<input id="email" type="email">"#,
-            "H44",
+    #[rstest]
+    #[case(r#"<input id="email" type="email">"#, &["H44"])]
+    #[case(r#"<label for="email">Email</label><input id="email" type="email">"#, &[])]
+    #[case(r#"<label>Email <input type="email"></label>"#, &[])]
+    #[case(r#"<input type="search" aria-label="Search">"#, &[])]
+    #[case(r#"<input type="hidden" value="1">"#, &[])]
+    fn missing_label(#[case] html: &str, #[case] expected: &[&str]) {
+        assert_eq!(rule_ids(check_missing_label, html), expected, "{html}");
+    }
+
+    #[rstest]
+    #[case("<button><svg></svg></button>", &["F68"])]
+    #[case("<button>Submit</button>", &[])]
+    #[case(r#"<button aria-label="Close"><svg></svg></button>"#, &[])]
+    fn unnamed_control(#[case] html: &str, #[case] expected: &[&str]) {
+        assert_eq!(rule_ids(check_unnamed_control, html), expected, "{html}");
+    }
+
+    #[rstest]
+    #[case(r#"<label for="n">Last name</label><input id="n" required>"#, &["H90"])]
+    #[case(r#"<label for="n">Last name (required)</label><input id="n" required>"#, &[])]
+    #[case(
+        r#"<label for="n">Last name</label><input id="n" required aria-required="true">"#,
+        &[]
+    )]
+    fn required_not_indicated(#[case] html: &str, #[case] expected: &[&str]) {
+        assert_eq!(
+            rule_ids(check_required_not_indicated, html),
+            expected,
+            "{html}"
         );
-    }
-
-    #[test]
-    fn input_with_matching_label_for_is_not_flagged() {
-        let html = r#"<label for="email">Email</label><input id="email" type="email">"#;
-        assert!(run(check_missing_label, html).is_empty());
-    }
-
-    #[test]
-    fn input_wrapped_in_label_is_not_flagged() {
-        let html = r#"<label>Email <input type="email"></label>"#;
-        assert!(run(check_missing_label, html).is_empty());
-    }
-
-    #[test]
-    fn input_with_aria_label_is_not_flagged() {
-        let html = r#"<input type="search" aria-label="Search">"#;
-        assert!(run(check_missing_label, html).is_empty());
-    }
-
-    #[test]
-    fn hidden_input_is_not_flagged() {
-        assert!(run(check_missing_label, r#"<input type="hidden" value="1">"#).is_empty());
-    }
-
-    #[test]
-    fn icon_button_without_name_is_flagged() {
-        assert_fires(check_unnamed_control, "<button><svg></svg></button>", "F68");
-    }
-
-    #[test]
-    fn button_with_text_is_not_flagged() {
-        assert!(run(check_unnamed_control, "<button>Submit</button>").is_empty());
-    }
-
-    #[test]
-    fn button_with_aria_label_is_not_flagged() {
-        let html = r#"<button aria-label="Close"><svg></svg></button>"#;
-        assert!(run(check_unnamed_control, html).is_empty());
-    }
-
-    #[test]
-    fn required_field_without_indication_is_flagged() {
-        let html = r#"<label for="n">Last name</label><input id="n" required>"#;
-        assert_fires(check_required_not_indicated, html, "H90");
-    }
-
-    #[test]
-    fn required_field_with_label_wording_is_not_flagged() {
-        let html = r#"<label for="n">Last name (required)</label><input id="n" required>"#;
-        assert!(run(check_required_not_indicated, html).is_empty());
-    }
-
-    #[test]
-    fn required_field_with_aria_required_is_not_flagged() {
-        let html =
-            r#"<label for="n">Last name</label><input id="n" required aria-required="true">"#;
-        assert!(run(check_required_not_indicated, html).is_empty());
     }
 }

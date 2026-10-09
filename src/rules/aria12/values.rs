@@ -322,73 +322,72 @@ mod tests {
         assert!(run(check_value_type, html).is_empty(), "{html}");
     }
 
-    #[test]
-    fn positions_outside_the_set_are_flagged() {
-        let html = r#"<ul role="listbox" aria-label="Available fruit">
+    #[rstest]
+    // Positions outside the set.
+    #[case(
+        r#"<ul role="listbox" aria-label="Available fruit">
             <li role="option" aria-setsize="16" aria-posinset="0">apples</li>
-            <li role="option" aria-setsize="16" aria-posinset="17">bananas</li></ul>"#;
-        assert_eq!(count(check_integer_range, html), 2);
-    }
-
-    #[rstest]
-    #[case(r#"<h2 aria-level="0">x</h2>"#)]
-    #[case(r#"<div role="grid" aria-rowcount="0"></div>"#)]
-    #[case(r#"<li role="option" aria-setsize="-2">x</li>"#)]
-    #[case(r#"<div role="grid" aria-colcount="3"><div role="row"><div role="gridcell" aria-colindex="4">x</div></div></div>"#)]
-    #[case(r#"<div role="cell" aria-rowspan="-1">x</div>"#)]
-    fn out_of_range_integers_are_flagged(#[case] html: &str) {
-        assert_eq!(count(check_integer_range, html), 1, "{html}");
-    }
-
-    #[rstest]
+            <li role="option" aria-setsize="16" aria-posinset="17">bananas</li></ul>"#,
+        2
+    )]
+    #[case(r#"<h2 aria-level="0">x</h2>"#, 1)]
+    #[case(r#"<div role="grid" aria-rowcount="0"></div>"#, 1)]
+    #[case(r#"<li role="option" aria-setsize="-2">x</li>"#, 1)]
+    #[case(r#"<div role="grid" aria-colcount="3"><div role="row"><div role="gridcell" aria-colindex="4">x</div></div></div>"#, 1)]
+    #[case(r#"<div role="cell" aria-rowspan="-1">x</div>"#, 1)]
     #[case(r#"<ul role="listbox" aria-label="Fruit"><li role="option" aria-setsize="16" aria-posinset="5">a</li>
-              <li role="option" aria-setsize="16" aria-posinset="6">b</li></ul>"#)]
-    #[case(r#"<li role="option" aria-setsize="-1" aria-posinset="40">x</li>"#)]
-    #[case(r#"<div role="grid" aria-colcount="-1"><div role="row"><div role="gridcell" aria-colindex="40">x</div></div></div>"#)]
-    #[case(r#"<div role="cell" aria-rowspan="0">x</div>"#)]
-    fn in_range_integers_are_not_flagged(#[case] html: &str) {
-        assert!(run(check_integer_range, html).is_empty(), "{html}");
+              <li role="option" aria-setsize="16" aria-posinset="6">b</li></ul>"#, 0)]
+    #[case(r#"<li role="option" aria-setsize="-1" aria-posinset="40">x</li>"#, 0)]
+    #[case(r#"<div role="grid" aria-colcount="-1"><div role="row"><div role="gridcell" aria-colindex="40">x</div></div></div>"#, 0)]
+    #[case(r#"<div role="cell" aria-rowspan="0">x</div>"#, 0)]
+    fn integer_range(#[case] html: &str, #[case] expected: usize) {
+        assert_eq!(count(check_integer_range, html), expected, "{html}");
     }
 
     #[rstest]
-    #[case(r#"<div role="slider" tabindex="0" aria-label="Volume" aria-valuemin="10" aria-valuemax="0" aria-valuenow="50"></div>"#)]
-    #[case(r#"<div role="meter" aria-label="Disk usage" aria-valuenow="130">130%</div>"#)]
-    #[case(r#"<div role="slider" tabindex="0" aria-label="Size" aria-valuetext="medium"></div>"#)]
-    #[case(r#"<div role="separator" tabindex="0" aria-valuenow="120"></div>"#)]
-    fn inconsistent_ranges_are_flagged(#[case] html: &str) {
-        assert_eq!(count(check_range_consistency, html), 1, "{html}");
+    #[case(r#"<div role="slider" tabindex="0" aria-label="Volume" aria-valuemin="10" aria-valuemax="0" aria-valuenow="50"></div>"#, 1)]
+    #[case(
+        r#"<div role="meter" aria-label="Disk usage" aria-valuenow="130">130%</div>"#,
+        1
+    )]
+    #[case(
+        r#"<div role="slider" tabindex="0" aria-label="Size" aria-valuetext="medium"></div>"#,
+        1
+    )]
+    #[case(r#"<div role="separator" tabindex="0" aria-valuenow="120"></div>"#, 1)]
+    #[case(r#"<div role="slider" tabindex="0" aria-label="Volume" aria-valuemin="0" aria-valuemax="10" aria-valuenow="5"></div>"#, 0)]
+    #[case(
+        r#"<div role="meter" aria-label="Disk usage" aria-valuenow="65">65%</div>"#,
+        0
+    )]
+    #[case(r#"<div role="spinbutton" tabindex="0" aria-valuenow="500"></div>"#, 0)]
+    #[case(r#"<div role="progressbar" aria-valuetext="Loading"></div>"#, 0)]
+    #[case(r#"<div role="separator" aria-valuenow="120"></div>"#, 0)]
+    #[case(r#"<meter aria-valuenow="130" value="130" max="200"></meter>"#, 0)]
+    fn range_consistency(#[case] html: &str, #[case] expected: usize) {
+        assert_eq!(count(check_range_consistency, html), expected, "{html}");
     }
 
     #[rstest]
-    #[case(r#"<div role="slider" tabindex="0" aria-label="Volume" aria-valuemin="0" aria-valuemax="10" aria-valuenow="5"></div>"#)]
-    #[case(r#"<div role="meter" aria-label="Disk usage" aria-valuenow="65">65%</div>"#)]
-    #[case(r#"<div role="spinbutton" tabindex="0" aria-valuenow="500"></div>"#)]
-    #[case(r#"<div role="progressbar" aria-valuetext="Loading"></div>"#)]
-    #[case(r#"<div role="separator" aria-valuenow="120"></div>"#)]
-    #[case(r#"<meter aria-valuenow="130" value="130" max="200"></meter>"#)]
-    fn consistent_ranges_are_not_flagged(#[case] html: &str) {
-        assert!(run(check_range_consistency, html).is_empty(), "{html}");
-    }
-
-    #[test]
-    fn rows_missing_an_index_are_flagged() {
-        let html = r#"<div role="grid" aria-rowcount="2000">
-            <div role="row" aria-rowindex="1"><div role="gridcell">a</div></div>
-            <div role="row"><div role="gridcell">b</div></div></div>"#;
-        assert_eq!(count(check_missing_row_index, html), 1);
-    }
-
-    #[rstest]
+    // Rows missing an index.
     #[case(
         r#"<div role="grid" aria-rowcount="2000">
             <div role="row" aria-rowindex="1"><div role="gridcell">a</div></div>
-            <div role="row" aria-rowindex="100"><div role="gridcell">b</div></div></div>"#
+            <div role="row"><div role="gridcell">b</div></div></div>"#,
+        1
     )]
-    #[case("<table><tr><td>a</td></tr><tr><td>b</td></tr></table>")]
     #[case(
-        r#"<table><tr aria-rowindex="1"><td>a</td></tr></table><table><tr><td>b</td></tr></table>"#
+        r#"<div role="grid" aria-rowcount="2000">
+            <div role="row" aria-rowindex="1"><div role="gridcell">a</div></div>
+            <div role="row" aria-rowindex="100"><div role="gridcell">b</div></div></div>"#,
+        0
     )]
-    fn consistently_indexed_rows_are_not_flagged(#[case] html: &str) {
-        assert!(run(check_missing_row_index, html).is_empty(), "{html}");
+    #[case("<table><tr><td>a</td></tr><tr><td>b</td></tr></table>", 0)]
+    #[case(
+        r#"<table><tr aria-rowindex="1"><td>a</td></tr></table><table><tr><td>b</td></tr></table>"#,
+        0
+    )]
+    fn missing_row_index(#[case] html: &str, #[case] expected: usize) {
+        assert_eq!(count(check_missing_row_index, html), expected, "{html}");
     }
 }

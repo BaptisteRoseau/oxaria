@@ -78,8 +78,10 @@ fn skipped_level_message(previous_level: u8, level: u8) -> String {
 
 #[cfg(test)]
 mod tests {
+    use rstest::rstest;
+
     use super::*;
-    use crate::rules::testutil::{assert_fires, help, run};
+    use crate::rules::testutil::{help, rule_ids};
 
     #[test]
     fn skipped_level_help_names_the_expected_level() {
@@ -89,45 +91,37 @@ mod tests {
         );
     }
 
-    #[test]
-    fn missing_h1_is_flagged() {
-        assert_fires(check_missing_h1, "<h2>Section</h2>", "H42");
+    #[rstest]
+    #[case("<h2>Section</h2>", &["H42"])]
+    #[case("<h1>Title</h1>", &[])]
+    fn missing_h1(#[case] html: &str, #[case] expected: &[&str]) {
+        assert_eq!(rule_ids(check_missing_h1, html), expected, "{html}");
     }
 
-    #[test]
-    fn present_h1_is_not_flagged() {
-        assert!(run(check_missing_h1, "<h1>Title</h1>").is_empty());
+    #[rstest]
+    #[case("<h1>T</h1><h4>Specifications</h4>", &["G141"])]
+    #[case("<h1>T</h1><h2>A</h2><h2>B</h2><h3>C</h3>", &[])]
+    // Going back up a level is not a skip.
+    #[case("<h1>T</h1><h2>A</h2><h3>B</h3><h2>C</h2>", &[])]
+    fn skipped_heading_level(#[case] html: &str, #[case] expected: &[&str]) {
+        assert_eq!(
+            rule_ids(check_skipped_heading_level, html),
+            expected,
+            "{html}"
+        );
     }
 
-    #[test]
-    fn sequential_headings_are_not_flagged() {
-        let html = "<h1>T</h1><h2>A</h2><h2>B</h2><h3>C</h3>";
-        assert!(run(check_skipped_heading_level, html).is_empty());
-    }
-
-    #[test]
-    fn skipped_heading_level_is_flagged() {
-        let html = "<h1>T</h1><h4>Specifications</h4>";
-        assert_fires(check_skipped_heading_level, html, "G141");
-    }
-
-    #[test]
-    fn heading_going_backwards_is_not_flagged() {
-        let html = "<h1>T</h1><h2>A</h2><h3>B</h3><h2>C</h2>";
-        assert!(run(check_skipped_heading_level, html).is_empty());
-    }
-
-    #[test]
-    fn presentational_heading_is_flagged() {
-        let html = r#"<h1>T</h1><h2 role="presentation">Reviews</h2><h3 role="none">A</h3>"#;
-        let findings = run(check_presentational_heading, html);
-        assert_eq!(findings.len(), 2);
-        assert_eq!(findings[0].rule_id, "F92");
-    }
-
-    #[test]
-    fn heading_with_other_role_is_not_flagged() {
-        let html = r#"<h2 role="heading">Reviews</h2><h3>Specs</h3>"#;
-        assert!(run(check_presentational_heading, html).is_empty());
+    #[rstest]
+    #[case(
+        r#"<h1>T</h1><h2 role="presentation">Reviews</h2><h3 role="none">A</h3>"#,
+        &["F92", "F92"]
+    )]
+    #[case(r#"<h2 role="heading">Reviews</h2><h3>Specs</h3>"#, &[])]
+    fn presentational_heading(#[case] html: &str, #[case] expected: &[&str]) {
+        assert_eq!(
+            rule_ids(check_presentational_heading, html),
+            expected,
+            "{html}"
+        );
     }
 }

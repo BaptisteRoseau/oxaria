@@ -27,24 +27,16 @@ fn has_lang(page: &RenderedPage) -> bool {
 
 #[cfg(test)]
 mod tests {
+    use rstest::rstest;
+
     use super::*;
-    use crate::rules::testutil::{assert_fires, count, run};
+    use crate::rules::testutil::rule_ids;
 
-    #[test]
-    fn missing_lang_is_flagged() {
-        let html = "<html><head></head><body></body></html>";
-        assert_fires(check_missing_lang, html, "H57");
-    }
-
-    #[test]
-    fn empty_lang_is_flagged() {
-        let html = r#"<html lang=""><body></body></html>"#;
-        assert_eq!(count(check_missing_lang, html), 1);
-    }
-
-    #[test]
-    fn present_lang_is_not_flagged() {
-        let html = r#"<html lang="en"><body></body></html>"#;
-        assert!(run(check_missing_lang, html).is_empty());
+    #[rstest]
+    #[case("<html><head></head><body></body></html>", &["H57"])]
+    #[case(r#"<html lang=""><body></body></html>"#, &["H57"])]
+    #[case(r#"<html lang="en"><body></body></html>"#, &[])]
+    fn missing_lang(#[case] html: &str, #[case] expected: &[&str]) {
+        assert_eq!(rule_ids(check_missing_lang, html), expected, "{html}");
     }
 }

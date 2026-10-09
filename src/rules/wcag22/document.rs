@@ -77,30 +77,16 @@ mod tests {
     use rstest::rstest;
 
     use super::*;
-    use crate::rules::testutil::{assert_fires, count, run};
+    use crate::rules::testutil::{rule_ids, run};
 
-    #[test]
-    fn missing_title_is_flagged() {
-        let html = "<html><head></head><body><p>x</p></body></html>";
-        assert_fires(check_missing_title, html, "H25");
-    }
-
-    #[test]
-    fn empty_title_is_flagged() {
-        let html = "<html><head><title>  </title></head></html>";
-        assert_eq!(count(check_missing_title, html), 1);
-    }
-
-    #[test]
-    fn svg_title_does_not_count_as_the_page_title() {
-        let html = "<html><body><svg><title>Icon</title></svg></body></html>";
-        assert_eq!(count(check_missing_title, html), 1);
-    }
-
-    #[test]
-    fn present_title_is_not_flagged() {
-        let html = "<html><head><title>Contact us</title></head></html>";
-        assert!(run(check_missing_title, html).is_empty());
+    #[rstest]
+    #[case("<html><head></head><body><p>x</p></body></html>", &["H25"])]
+    #[case("<html><head><title>  </title></head></html>", &["H25"])]
+    // An svg title doesn't count as the page title.
+    #[case("<html><body><svg><title>Icon</title></svg></body></html>", &["H25"])]
+    #[case("<html><head><title>Contact us</title></head></html>", &[])]
+    fn missing_title(#[case] html: &str, #[case] expected: &[&str]) {
+        assert_eq!(rule_ids(check_missing_title, html), expected, "{html}");
     }
 
     #[rstest]

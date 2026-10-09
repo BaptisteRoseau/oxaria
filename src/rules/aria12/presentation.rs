@@ -244,23 +244,18 @@ mod tests {
         r#"<div role="button"><div role="button"><a href="/x">x</a></div></div>"#,
         1
     )]
-    fn lost_content_is_flagged(#[case] html: &str, #[case] expected: usize) {
+    #[case(r#"<div role="button" tabindex="0">Choose the Pro plan</div>"#, 0)]
+    #[case(r#"<div role="tab" aria-selected="false">Details</div>"#, 0)]
+    #[case(r#"<button><img src="i.png" alt=""><strong>Save</strong> <svg aria-hidden="true"></svg></button>"#, 0)]
+    #[case(r#"<div role="img" aria-label="Chart"><img src="a.png" alt=""><img src="b.png" alt=""></div>"#, 0)]
+    #[case(
+        r#"<button><span aria-hidden="true"><a href="/x">x</a></span></button>"#,
+        0
+    )]
+    fn content_in_presentational_children(#[case] html: &str, #[case] expected: usize) {
         assert_eq!(
             count(check_content_in_presentational_children, html),
             expected,
-            "{html}"
-        );
-    }
-
-    #[rstest]
-    #[case(r#"<div role="button" tabindex="0">Choose the Pro plan</div>"#)]
-    #[case(r#"<div role="tab" aria-selected="false">Details</div>"#)]
-    #[case(r#"<button><img src="i.png" alt=""><strong>Save</strong> <svg aria-hidden="true"></svg></button>"#)]
-    #[case(r#"<div role="img" aria-label="Chart"><img src="a.png" alt=""><img src="b.png" alt=""></div>"#)]
-    #[case(r#"<button><span aria-hidden="true"><a href="/x">x</a></span></button>"#)]
-    fn plain_content_is_not_flagged(#[case] html: &str) {
-        assert!(
-            run(check_content_in_presentational_children, html).is_empty(),
             "{html}"
         );
     }
