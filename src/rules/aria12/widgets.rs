@@ -5,9 +5,7 @@
 
 use crate::page::{ElementRef, RenderedPage};
 use crate::rules::Finding;
-use crate::rules::aria_spec::{
-    AriaValue, Parsed, aria_idrefs, aria_value, first_valid_role, is_focusable, is_hidden,
-};
+use crate::rules::aria_spec::{aria_idrefs, aria_token, first_valid_role, is_focusable, is_hidden};
 
 use super::support::is_aria_disabled;
 use super::tree::{Tree, exposed_role, has_exposed_role};
@@ -16,19 +14,10 @@ const COMBOBOX_POPUP_ROLES: &[&str] = &["listbox", "tree", "grid", "dialog"];
 const POPUP_ROLES: &[&str] = &["menu", "listbox", "tree", "grid", "dialog", "alertdialog"];
 const TEXT_FIELD_ROLES: &[&str] = &["textbox", "searchbox"];
 
-fn token(el: ElementRef, name: &str) -> Option<String> {
-    match aria_value(el, name)? {
-        Parsed::Valid(AriaValue::Tokens(tokens)) => {
-            tokens.first().map(|token| token.to_ascii_lowercase())
-        }
-        _ => None,
-    }
-}
-
 /// The `aria-haspopup` value naming a popup, `true` meaning `menu`;
 /// `None` when absent or `false`.
 fn popup_kind(el: ElementRef) -> Option<String> {
-    match token(el, "aria-haspopup")?.as_str() {
+    match aria_token(el, "aria-haspopup")?.as_str() {
         "false" => None,
         "true" => Some("menu".to_string()),
         kind => Some(kind.to_string()),
@@ -174,7 +163,7 @@ pub fn check_autocomplete_popup(page: &RenderedPage) -> Vec<Finding> {
         .filter(|el| !is_hidden(*el))
         .filter(|el| {
             matches!(
-                token(*el, "aria-autocomplete").as_deref(),
+                aria_token(*el, "aria-autocomplete").as_deref(),
                 Some("list" | "both")
             )
         })

@@ -22,5 +22,5 @@ pub use html::{
 pub use reference::anchored_url;
 pub use roles::{NameFrom, Role, TABLE_ROLES, concrete_role, role, roles};
 pub use values::{
-    AriaValue, Parsed, aria_idrefs, aria_number, aria_value, is_aria_true, parse_value,
+    AriaValue, Parsed, aria_idrefs, aria_number, aria_token, aria_value, is_aria_true, parse_value,
 };

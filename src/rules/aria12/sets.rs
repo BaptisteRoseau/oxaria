@@ -4,7 +4,7 @@
 
 use crate::page::{ElementRef, RenderedPage};
 use crate::rules::Finding;
-use crate::rules::aria_spec::{AriaValue, Parsed, aria_value, is_hidden};
+use crate::rules::aria_spec::{aria_token, is_hidden};
 
 use super::tree::{has_exposed_role, table_of};
 
@@ -53,25 +53,16 @@ fn groups<'a>(
     groups
 }
 
+/// `false` marks no item.
 fn current_value(el: ElementRef) -> Option<String> {
-    token(el, "aria-current")
+    aria_token(el, "aria-current").filter(|token| token != "false")
 }
 
 /// Only one header is sorted at a time, whatever the direction.
 fn sorted_value(el: ElementRef) -> Option<String> {
-    token(el, "aria-sort").map(|_| String::new())
-}
-
-/// The attribute's token, unless it is `false` (or `none` for
-/// `aria-sort`), which marks no item.
-fn token(el: ElementRef, name: &str) -> Option<String> {
-    match aria_value(el, name)? {
-        Parsed::Valid(AriaValue::Tokens(tokens)) => tokens
-            .first()
-            .map(|token| token.to_ascii_lowercase())
-            .filter(|token| token != "false" && token != "none"),
-        _ => None,
-    }
+    aria_token(el, "aria-sort")
+        .filter(|token| token != "none")
+        .map(|_| String::new())
 }
 
 /// The element's siblings, or the items of its list when it sits in a

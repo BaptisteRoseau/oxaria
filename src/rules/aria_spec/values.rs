@@ -71,6 +71,16 @@ pub fn aria_idrefs<'a>(el: ElementRef<'a>, name: &str) -> Vec<&'a str> {
     }
 }
 
+/// The first token of a token (list) attribute, lowercased.
+pub fn aria_token(el: ElementRef, name: &str) -> Option<String> {
+    match aria_value(el, name)? {
+        Parsed::Valid(AriaValue::Tokens(tokens)) => {
+            tokens.first().map(|token| token.to_ascii_lowercase())
+        }
+        _ => None,
+    }
+}
+
 pub fn aria_number(el: ElementRef, name: &str) -> Option<f64> {
     match aria_value(el, name)? {
         Parsed::Valid(AriaValue::Number(number)) => Some(number),
