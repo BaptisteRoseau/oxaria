@@ -4,6 +4,7 @@
 use crate::page::{ElementRef, RenderedPage};
 use crate::rules::Finding;
 use crate::rules::aria_spec::is_not_rendered;
+use crate::rules::css::declarations;
 
 const POINTS_TO_PIXELS: f64 = 4.0 / 3.0;
 /// Absorbs float error, so that a spacing of exactly the minimum passes.
@@ -69,10 +70,8 @@ fn spacing_findings(page: &RenderedPage, rule: &SpacingRule) -> Vec<Finding> {
 /// The value of the declaration that wins the cascade within the `style`
 /// attribute, when it is `!important`: the last important one.
 fn important_value(style: &str, property: &str) -> Option<String> {
-    style
-        .split(';')
-        .filter_map(|declaration| declaration.split_once(':'))
-        .filter(|(name, _)| name.trim().eq_ignore_ascii_case(property))
+    declarations(style)
+        .filter(|(name, _)| name.eq_ignore_ascii_case(property))
         .filter_map(|(_, value)| strip_important(value))
         .next_back()
 }

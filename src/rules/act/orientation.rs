@@ -6,6 +6,7 @@
 
 use crate::page::RenderedPage;
 use crate::rules::Finding;
+use crate::rules::css::{declarations, strip_comments};
 
 /// How far from a quarter turn a rotation may be and still lock the page.
 const ANGLE_TOLERANCE_DEGREES: f64 = 1.0;
@@ -99,18 +100,16 @@ fn is_orientation_query(prelude: &str) -> bool {
 }
 
 fn quarter_turns(body: &str) -> impl Iterator<Item = String> + '_ {
-    body.split(';')
-        .filter_map(|declaration| declaration.split_once(':'))
-        .filter_map(|(name, value)| {
-            let name = name.trim().to_ascii_lowercase();
-            let value = value.trim().to_ascii_lowercase();
-            let angle = match name.as_str() {
-                "transform" => transform_rotation(&value),
-                "rotate" => rotate_property(&value),
-                _ => None,
-            }?;
-            is_quarter_turn(angle).then(|| format!("{name}: {value}"))
-        })
+    declarations(body).filter_map(|(name, value)| {
+        let name = name.to_ascii_lowercase();
+        let value = value.to_ascii_lowercase();
+        let angle = match name.as_str() {
+            "transform" => transform_rotation(&value),
+            "rotate" => rotate_property(&value),
+            _ => None,
+        }?;
+        is_quarter_turn(angle).then(|| format!("{name}: {value}"))
+    })
 }
 
 fn is_quarter_turn(degrees: f64) -> bool {
@@ -183,18 +182,6 @@ fn angle_degrees(angle: &str) -> Option<f64> {
         "" if number == 0.0 => Some(0.0),
         _ => None,
     }
-}
-
-fn strip_comments(css: &str) -> String {
-    let mut stripped = String::with_capacity(css.len());
-    let mut rest = css;
-    while let Some(start) = rest.find("/*") {
-        stripped.push_str(&rest[..start]);
-        let comment = &rest[start + 2..];
-        rest = comment.find("*/").map_or("", |end| &comment[end + 2..]);
-    }
-    stripped.push_str(rest);
-    stripped
 }
 
 #[cfg(test)]
