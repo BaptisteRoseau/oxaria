@@ -6,6 +6,7 @@ use crate::rules::aria_spec::{
     ARIA_1_3_ATTRIBUTES, Attribute, Parsed, ValueType, aria_attributes, attribute, attributes,
     concrete_role, explicit_roles, is_hidden, parse_value, roles,
 };
+use crate::rules::markup::start_tag_first;
 
 /// The Graphics-ARIA and DPub-ARIA 1.1 roles: ACT accepts every WAI-ARIA
 /// specification, and the shared role table only holds WAI-ARIA 1.2.
@@ -163,12 +164,11 @@ pub fn check_role_valid(page: &RenderedPage) -> Vec<Finding> {
         .filter(|el| !explicit_roles(*el).is_empty() && !is_hidden(*el))
         .filter(|el| !explicit_roles(*el).iter().any(|token| is_valid_role(token)))
         .map(|el| {
-            let value = el.attr("role").unwrap_or_default();
             Finding::error(
                 "674b10",
                 format!(
-                    "<{} role=\"{value}\"> contains no valid WAI-ARIA role",
-                    el.tag()
+                    "{} contains no valid WAI-ARIA role",
+                    start_tag_first(el, &["role"])
                 ),
             )
             .at(el)

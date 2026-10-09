@@ -9,8 +9,9 @@ use crate::rules::aria_spec::{
     attribute, first_valid_role, is_focusable, is_hidden, parse_value,
 };
 
-use super::support::{closest, or_list, quoted};
+use super::support::{closest, or_list};
 use super::tree::{exposed_role, has_exposed_role};
+use crate::rules::markup::quoted;
 
 const TABLE_ROLES: &[&str] = &["table", "grid", "treegrid"];
 const RANGE_ROLES: &[&str] = &[

@@ -10,10 +10,10 @@ use crate::rules::aria_spec::{
     is_hidden, parse_value,
 };
 
-use super::support::quoted;
 use super::tree::{
     exposed_role, has_presentational_children_ancestor, presentational_children_role,
 };
+use crate::rules::markup::quoted;
 
 /// Document structure roles whose meaning is lost inside a role with
 /// presentational children. Text-level roles (`strong`, `code`, ...) and

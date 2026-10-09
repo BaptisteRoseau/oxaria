@@ -4,7 +4,6 @@ mod attributes;
 mod checks;
 mod content_model;
 mod deprecated;
-mod markup;
 mod native_attributes;
 mod reference;
 mod roles;

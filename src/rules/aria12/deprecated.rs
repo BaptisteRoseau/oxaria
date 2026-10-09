@@ -6,7 +6,8 @@ use crate::page::{ElementRef, RenderedPage};
 use crate::rules::Finding;
 use crate::rules::aria_spec::{effective_role, explicit_roles};
 
-use super::support::{is_unroled_custom_element, quoted, role_label};
+use super::support::{is_unroled_custom_element, role_label};
+use crate::rules::markup::quoted;
 
 const DRAG_AND_DROP_ATTRIBUTES: &[&str] = &["aria-grabbed", "aria-dropeffect"];
 

@@ -5,6 +5,7 @@ use super::name::accessible_name;
 use crate::page::{ElementRef, RenderedPage};
 use crate::rules::Finding;
 use crate::rules::aria_spec::{effective_role, first_valid_role, input_type, is_hidden};
+use crate::rules::markup::start_tag_first;
 
 const FORM_FIELD_ROLES: &[&str] = &[
     "checkbox",
@@ -39,12 +40,9 @@ pub fn check_button_name(page: &RenderedPage) -> Vec<Finding> {
         has_role(el, "button") && !(el.tag() == "input" && input_type(el) == "image")
     })
     .map(|button| {
-        Finding::error(
-            "97a4e1",
-            format!("{} has no accessible name", markup(button)),
-        )
-        .at(button)
-        .help(button_help(button))
+        Finding::error("97a4e1", no_name_message(button))
+            .at(button)
+            .help(button_help(button))
     })
     .collect()
 }
@@ -64,7 +62,7 @@ fn button_help(button: ElementRef) -> &'static str {
 pub fn check_link_name(page: &RenderedPage) -> Vec<Finding> {
     unnamed(page, |el| has_role(el, "link"))
         .map(|link| {
-            Finding::error("c487ae", format!("{} has no accessible name", markup(link)))
+            Finding::error("c487ae", no_name_message(link))
                 .at(link)
                 .help(link_help(link))
         })
@@ -92,7 +90,7 @@ fn has_image(el: ElementRef) -> bool {
 pub fn check_menuitem_name(page: &RenderedPage) -> Vec<Finding> {
     unnamed(page, |el| has_role(el, "menuitem"))
         .map(|item| {
-            Finding::error("m6b1q3", format!("{} has no accessible name", markup(item)))
+            Finding::error("m6b1q3", no_name_message(item))
                 .at(item)
                 .help(
                     "give it visible text, or aria-label=\"...\" if it only shows an icon \
@@ -107,12 +105,9 @@ pub fn check_menuitem_name(page: &RenderedPage) -> Vec<Finding> {
 pub fn check_summary_name(page: &RenderedPage) -> Vec<Finding> {
     unnamed(page, |el| is_details_summary(el) && has_no_explicit_role(el))
         .map(|summary| {
-            Finding::error(
-                "2t702h",
-                format!("{} has no accessible name", markup(summary)),
-            )
-            .at(summary)
-            .help("give the <summary> text saying what the <details> reveals, e.g. <summary>Opening times</summary>")
+            Finding::error("2t702h", no_name_message(summary))
+                .at(summary)
+                .help("give the <summary> text saying what the <details> reveals, e.g. <summary>Opening times</summary>")
         })
         .collect()
 }
@@ -139,12 +134,9 @@ fn has_no_explicit_role(el: ElementRef) -> bool {
 pub fn check_form_field_name(page: &RenderedPage) -> Vec<Finding> {
     unnamed(page, is_form_field)
         .map(|field| {
-            Finding::error(
-                "e086e5",
-                format!("{} has no accessible name", markup(field)),
-            )
-            .at(field)
-            .help(form_field_help(field))
+            Finding::error("e086e5", no_name_message(field))
+                .at(field)
+                .help(form_field_help(field))
         })
         .collect()
 }
@@ -180,18 +172,13 @@ fn unnamed<'a>(
         .filter(|el| accessible_name(*el).is_empty())
 }
 
-fn has_role(el: ElementRef, name: &str) -> bool {
-    effective_role(el).is_some_and(|role| role.name == name)
+fn no_name_message(el: ElementRef) -> String {
+    let tag = start_tag_first(el, &["type", "role", "href"]);
+    format!("{tag} has no accessible name")
 }
 
-fn markup(el: ElementRef) -> String {
-    let attribute = ["type", "role", "href"]
-        .into_iter()
-        .find_map(|name| Some((name, el.attr(name)?)));
-    match attribute {
-        Some((name, value)) => format!("<{} {name}=\"{value}\">", el.tag()),
-        None => format!("<{}>", el.tag()),
-    }
+fn has_role(el: ElementRef, name: &str) -> bool {
+    effective_role(el).is_some_and(|role| role.name == name)
 }
 
 #[cfg(test)]

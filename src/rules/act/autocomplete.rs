@@ -5,6 +5,7 @@ use crate::rules::Finding;
 use crate::rules::aria_spec::{
     effective_role, input_type, is_aria_true, is_disabled, is_not_rendered, is_tabbable,
 };
+use crate::rules::markup::start_tag_first;
 use crate::rules::wcag22::is_valid_autocomplete;
 
 /// `input` types whose value the user doesn't type, so autofill doesn't
@@ -20,12 +21,12 @@ pub fn check_autocomplete_valid(page: &RenderedPage) -> Vec<Finding> {
         .filter(|el| is_fillable_field(*el))
         .filter_map(|field| Some((field, field.non_empty_attr("autocomplete")?)))
         .filter(|(_, value)| !is_valid_autocomplete(value))
-        .map(|(field, value)| {
+        .map(|(field, _)| {
             Finding::error(
                 "73f2c2",
                 format!(
-                    "<{} autocomplete=\"{value}\"> is not a valid autofill token list",
-                    field.tag()
+                    "{} is not a valid autofill token list",
+                    start_tag_first(field, &["autocomplete"])
                 ),
             )
             .at(field)

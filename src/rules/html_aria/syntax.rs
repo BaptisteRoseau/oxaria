@@ -4,7 +4,7 @@ use crate::page::{ElementRef, RenderedPage};
 use crate::rules::Finding;
 use crate::rules::aria_spec::{Parsed, ValueType, aria_attributes, attribute, parse_value, role};
 
-use super::markup::start_tag;
+use crate::rules::markup::start_tag;
 
 /// HTMLARIA016: role tokens and `aria-*` token values not written in
 /// ASCII lowercase. Only tokens browsers would recognize once lowercased

@@ -8,7 +8,7 @@ use crate::rules::aria_spec::{
     roles,
 };
 
-use super::markup::start_tag;
+use crate::rules::markup::start_tag;
 
 const HEADINGS: &[(&str, i64)] = &[
     ("h1", 1),

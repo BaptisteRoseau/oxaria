@@ -8,9 +8,9 @@ use crate::rules::aria_spec::{
     aria_idrefs, first_valid_role, has_author_name, is_focusable, is_hidden,
 };
 
-use super::support::quoted;
 use super::time_string;
 use super::tree::has_exposed_role;
+use crate::rules::markup::quoted;
 
 /// ARIA-USAGE002: a `term` isn't interactive, and a `time`'s text is a
 /// machine-readable date, time or duration.

@@ -4,7 +4,7 @@ use crate::page::{ElementRef, RenderedPage};
 use crate::rules::Finding;
 use crate::rules::aria_spec::{effective_role, first_valid_role, input_type, is_not_rendered};
 
-use super::markup::start_tag;
+use crate::rules::markup::start_tag;
 
 /// Roles allowing no interactive content and no `tabindex` descendants.
 const CONTROL_ROLES: &[&str] = &[

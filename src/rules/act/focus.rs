@@ -1,8 +1,9 @@
 //! ACT rule 307n5z for focusable content hidden by presentational children.
 
-use crate::page::{ElementRef, RenderedPage};
+use crate::page::RenderedPage;
 use crate::rules::Finding;
 use crate::rules::aria_spec::{effective_role, is_tabbable};
+use crate::rules::markup::start_tag_first;
 
 /// 307n5z: an element whose role makes its children presentational (a
 /// button, checkbox, tab, image, ...) must not contain anything in the
@@ -23,7 +24,7 @@ pub fn check_focusable_in_presentational_children(page: &RenderedPage) -> Vec<Fi
                          assistive technologies",
                         el.tag(),
                         role.name,
-                        markup(focusable)
+                        start_tag_first(focusable, &["href", "tabindex"])
                     ),
                 )
                 .at(el)
@@ -36,14 +37,6 @@ pub fn check_focusable_in_presentational_children(page: &RenderedPage) -> Vec<Fi
             )
         })
         .collect()
-}
-
-fn markup(el: ElementRef) -> String {
-    match (el.attr("href"), el.attr("tabindex")) {
-        (Some(href), _) => format!("<{} href=\"{href}\">", el.tag()),
-        (None, Some(tabindex)) => format!("<{} tabindex=\"{tabindex}\">", el.tag()),
-        (None, None) => format!("<{}>", el.tag()),
-    }
 }
 
 #[cfg(test)]

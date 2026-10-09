@@ -9,7 +9,7 @@ use crate::rules::aria_spec::{
     role as named_role, roles, tabindex,
 };
 
-use super::markup::start_tag;
+use crate::rules::markup::start_tag;
 
 /// Governed by ARIA in HTML's separate naming requirement (HTMLARIA008),
 /// which isn't implemented: see `standards/overlap.md` C6.

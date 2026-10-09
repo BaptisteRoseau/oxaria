@@ -1,23 +1,7 @@
-//! Small helpers shared by the WAI-ARIA 1.2 rules: how findings quote
-//! markup, and spelling suggestions.
+//! Small helpers shared by the WAI-ARIA 1.2 rules.
 
 use crate::page::ElementRef;
 use crate::rules::aria_spec::{Role, first_valid_role, is_aria_true};
-
-const MAX_QUOTED_VALUE: usize = 40;
-
-/// `name="value"`, with a long value shortened.
-pub fn quoted(name: &str, value: &str) -> String {
-    format!("{name}=\"{}\"", shortened(value))
-}
-
-pub fn shortened(value: &str) -> String {
-    let value = value.trim();
-    match value.char_indices().nth(MAX_QUOTED_VALUE) {
-        Some((end, _)) => format!("{}...", &value[..end]),
-        None => value.to_string(),
-    }
-}
 
 /// `role "button"`, noting when the role is implicit: authors don't
 /// always know `div` is `generic` or `input` is `textbox`.
@@ -77,16 +61,6 @@ fn edit_distance(a: &str, b: &str) -> usize {
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    #[test]
-    fn long_values_are_shortened() {
-        assert_eq!(quoted("aria-label", " Close "), r#"aria-label="Close""#);
-        let long = "x".repeat(50);
-        assert_eq!(
-            quoted("aria-label", &long),
-            format!("aria-label=\"{}...\"", "x".repeat(40))
-        );
-    }
 
     #[test]
     fn suggests_close_spellings_only() {

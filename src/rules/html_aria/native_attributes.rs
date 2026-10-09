@@ -5,7 +5,7 @@ use crate::page::{ElementRef, RenderedPage};
 use crate::rules::Finding;
 use crate::rules::aria_spec::{AriaValue, NATIVE_EQUIVALENTS, Parsed, aria_value, input_type};
 
-use super::markup::{attribute, start_tag};
+use crate::rules::markup::{attribute, start_tag};
 
 /// `input` types whose `min`/`max` HTML defines.
 const RANGED_INPUT_TYPES: &[&str] = &[

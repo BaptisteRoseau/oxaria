@@ -9,6 +9,7 @@ mod aria_spec;
 mod color;
 mod finding;
 mod html_aria;
+mod markup;
 mod options;
 mod registry;
 mod standard;

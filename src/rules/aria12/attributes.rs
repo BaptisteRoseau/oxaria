@@ -10,8 +10,9 @@ use crate::rules::aria_spec::{
     effective_role, parse_value, roles,
 };
 
-use super::support::{closest, is_unroled_custom_element, quoted, role_label};
+use super::support::{closest, is_unroled_custom_element, role_label};
 use super::tree::exposed_role;
+use crate::rules::markup::quoted;
 
 const TREEGRID_ROW_ATTRIBUTES: &[&str] = &[
     "aria-expanded",

@@ -3,6 +3,7 @@
 use crate::page::{ElementRef, RenderedPage};
 use crate::rules::Finding;
 use crate::rules::aria_spec::{effective_role, is_hidden};
+use crate::rules::markup::start_tag_first;
 
 /// a25f45: each id in a cell's `headers` must be another cell of the same
 /// table.
@@ -12,7 +13,7 @@ pub fn check_headers_refer_to_cells(page: &RenderedPage) -> Vec<Finding> {
         .filter_map(|cell| Some((cell, cell.attr("headers")?, exposed_table(cell)?)))
         .filter_map(|(cell, headers, table)| {
             let invalid = invalid_references(cell, headers, table);
-            (!invalid.is_empty()).then(|| headers_finding(cell, headers, &invalid))
+            (!invalid.is_empty()).then(|| headers_finding(cell, &invalid))
         })
         .collect()
 }
@@ -45,7 +46,7 @@ fn refers_to_other_cell(cell: ElementRef, id: &str, table: ElementRef) -> bool {
     })
 }
 
-fn headers_finding(cell: ElementRef, headers: &str, invalid: &[&str]) -> Finding {
+fn headers_finding(cell: ElementRef, invalid: &[&str]) -> Finding {
     let quoted: Vec<String> = invalid.iter().map(|id| format!("\"{id}\"")).collect();
     let is_self_reference = invalid.iter().all(|id| cell.attr("id") == Some(*id));
     let help = match is_self_reference {
@@ -59,8 +60,8 @@ fn headers_finding(cell: ElementRef, headers: &str, invalid: &[&str]) -> Finding
     Finding::error(
         "a25f45",
         format!(
-            "<{} headers=\"{headers}\"> refers to {}, not another cell of the same table",
-            cell.tag(),
+            "{} refers to {}, not another cell of the same table",
+            start_tag_first(cell, &["headers"]),
             quoted.join(", ")
         ),
     )

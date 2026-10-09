@@ -4,6 +4,7 @@ use super::language_subtags::LANGUAGE_SUBTAGS;
 use crate::page::{ElementRef, RenderedPage};
 use crate::rules::Finding;
 use crate::rules::aria_spec::is_not_rendered;
+use crate::rules::markup::start_tag_first;
 
 /// 2779a5: the first HTML `title` element must contain text.
 pub fn check_page_title(page: &RenderedPage) -> Vec<Finding> {
@@ -75,8 +76,8 @@ pub fn check_element_lang_valid(page: &RenderedPage) -> Vec<Finding> {
             Finding::error(
                 "de46e4",
                 format!(
-                    "<{} lang=\"{lang}\"> has no known primary language subtag",
-                    el.tag()
+                    "{} has no known primary language subtag",
+                    start_tag_first(el, &["lang"])
                 ),
             )
             .at(el)

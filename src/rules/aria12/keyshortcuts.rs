@@ -3,7 +3,7 @@
 use crate::page::RenderedPage;
 use crate::rules::Finding;
 
-use super::support::quoted;
+use crate::rules::markup::quoted;
 
 const MODIFIERS: &[&str] = &["Alt", "Control", "Shift", "Meta", "AltGraph"];
 

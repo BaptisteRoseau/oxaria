@@ -4,7 +4,7 @@ use crate::page::{ElementRef, RenderedPage};
 use crate::rules::Finding;
 use crate::rules::aria_spec::{DEPRECATED_ROLES, aria_attributes, attribute, explicit_roles};
 
-use super::markup::start_tag;
+use crate::rules::markup::start_tag;
 
 /// HTMLARIA015: deprecated `role` tokens and `aria-*` attributes.
 pub fn check_deprecated_aria(page: &RenderedPage) -> Vec<Finding> {

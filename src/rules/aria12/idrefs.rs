@@ -8,8 +8,8 @@ use crate::rules::aria_spec::{
     AriaValue, Parsed, aria_idrefs, aria_value, first_valid_role, is_hidden,
 };
 
-use super::support::shortened;
 use super::tree::{Tree, exposed_role};
+use crate::rules::markup::shortened;
 
 const IDREF_ATTRIBUTES: &[&str] = &[
     "aria-activedescendant",
