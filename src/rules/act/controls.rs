@@ -38,13 +38,12 @@ const ROLELESS_FIELD_TYPES: &[&str] = &[
 /// 97a4e1: every element exposed as a button, except `input type="image"`
 /// (see 59796f), needs a non-empty accessible name.
 pub fn check_button_name(page: &RenderedPage) -> Vec<Finding> {
-    unnamed(page, |el| {
-        has_role(el, "button") && !(el.tag() == "input" && input_type(el) == "image")
-    })
-    .map(|button| {
-        Finding::error_at(button, "97a4e1", no_name_message(button)).help(button_help(button))
-    })
-    .collect()
+    unnamed_findings(
+        page,
+        "97a4e1",
+        |el| has_role(el, "button") && !(el.tag() == "input" && input_type(el) == "image"),
+        button_help,
+    )
 }
 
 fn button_help(button: ElementRef) -> &'static str {
@@ -60,9 +59,7 @@ fn button_help(button: ElementRef) -> &'static str {
 
 /// c487ae: every element exposed as a link needs a non-empty accessible name.
 pub fn check_link_name(page: &RenderedPage) -> Vec<Finding> {
-    unnamed(page, |el| has_role(el, "link"))
-        .map(|link| Finding::error_at(link, "c487ae", no_name_message(link)).help(link_help(link)))
-        .collect()
+    unnamed_findings(page, "c487ae", |el| has_role(el, "link"), link_help)
 }
 
 fn link_help(link: ElementRef) -> &'static str {
@@ -84,25 +81,29 @@ fn has_image(el: ElementRef) -> bool {
 /// m6b1q3: every element exposed as a `menuitem` needs a non-empty
 /// accessible name.
 pub fn check_menuitem_name(page: &RenderedPage) -> Vec<Finding> {
-    unnamed(page, |el| has_role(el, "menuitem"))
-        .map(|item| {
-            Finding::error_at(item, "m6b1q3", no_name_message(item)).help(
-                "give it visible text, or aria-label=\"...\" if it only shows an icon \
-                 (an icon with alt=\"\" gives it no name)",
-            )
-        })
-        .collect()
+    unnamed_findings(
+        page,
+        "m6b1q3",
+        |el| has_role(el, "menuitem"),
+        |_| {
+            "give it visible text, or aria-label=\"...\" if it only shows an icon \
+             (an icon with alt=\"\" gives it no name)"
+        },
+    )
 }
 
 /// 2t702h: the `summary` that toggles a `details` element needs a non-empty
 /// accessible name besides its disclosure marker.
 pub fn check_summary_name(page: &RenderedPage) -> Vec<Finding> {
-    unnamed(page, |el| is_details_summary(el) && has_no_explicit_role(el))
-        .map(|summary| {
-            Finding::error_at(summary, "2t702h", no_name_message(summary))
-                .help("give the <summary> text saying what the <details> reveals, e.g. <summary>Opening times</summary>")
-        })
-        .collect()
+    unnamed_findings(
+        page,
+        "2t702h",
+        |el| is_details_summary(el) && has_no_explicit_role(el),
+        |_| {
+            "give the <summary> text saying what the <details> reveals, e.g. \
+             <summary>Opening times</summary>"
+        },
+    )
 }
 
 /// A presentational role doesn't count: the summary is focusable, so
@@ -114,11 +115,7 @@ fn has_no_explicit_role(el: ElementRef) -> bool {
 /// e086e5: every form field (an element with a form field role, or an
 /// `input` type without a role) needs a non-empty accessible name.
 pub fn check_form_field_name(page: &RenderedPage) -> Vec<Finding> {
-    unnamed(page, is_form_field)
-        .map(|field| {
-            Finding::error_at(field, "e086e5", no_name_message(field)).help(form_field_help(field))
-        })
-        .collect()
+    unnamed_findings(page, "e086e5", is_form_field, form_field_help)
 }
 
 fn is_form_field(el: ElementRef) -> bool {
@@ -143,18 +140,20 @@ fn form_field_help(field: ElementRef) -> String {
     }
 }
 
-fn unnamed<'a>(
-    page: &'a RenderedPage,
-    applies: impl Fn(ElementRef) -> bool + 'a,
-) -> impl Iterator<Item = ElementRef<'a>> {
+fn unnamed_findings<H: Into<String>>(
+    page: &RenderedPage,
+    rule_id: &'static str,
+    applies: impl Fn(ElementRef) -> bool,
+    help: impl Fn(ElementRef) -> H,
+) -> Vec<Finding> {
     page.all()
-        .filter(move |el| applies(*el) && !is_hidden(*el))
+        .filter(|el| applies(*el) && !is_hidden(*el))
         .filter(|el| accessible_name(*el).is_empty())
-}
-
-fn no_name_message(el: ElementRef) -> String {
-    let tag = start_tag_first(el, &["type", "role", "href"]);
-    format!("{tag} has no accessible name")
+        .map(|el| {
+            let tag = start_tag_first(el, &["type", "role", "href"]);
+            Finding::error_at(el, rule_id, format!("{tag} has no accessible name")).help(help(el))
+        })
+        .collect()
 }
 
 fn has_role(el: ElementRef, name: &str) -> bool {
