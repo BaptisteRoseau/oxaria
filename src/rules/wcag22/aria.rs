@@ -1,7 +1,5 @@
 //! WCAG 4.1.1 / 4.1.2 checks for `id` uniqueness and ARIA references.
 
-use std::collections::BTreeMap;
-
 use crate::page::RenderedPage;
 
 use crate::rules::Finding;
@@ -13,21 +11,15 @@ const REFERENCE_ATTRIBUTES: &[(&str, &str)] =
 /// IDS001: duplicate `id` values break `for`, `aria-labelledby`/`aria-describedby`, and fragment
 /// navigation, since only one element can be resolved for a given id.
 pub fn check_duplicate_ids(page: &RenderedPage) -> Vec<Finding> {
-    id_counts(page)
+    let mut duplicates: Vec<(&str, usize)> =
+        page.id_counts().filter(|(_, count)| *count > 1).collect();
+    duplicates.sort_unstable();
+    duplicates
         .into_iter()
-        .filter(|(_, count)| *count > 1)
         .map(|(id, count)| {
             Finding::error("IDS001", duplicate_id_message(id, count)).help(duplicate_id_help(id))
         })
         .collect()
-}
-
-fn id_counts(page: &RenderedPage) -> BTreeMap<&str, usize> {
-    let mut counts = BTreeMap::new();
-    for id in page.all().filter_map(|el| el.attr("id")) {
-        *counts.entry(id).or_insert(0) += 1;
-    }
-    counts
 }
 
 fn duplicate_id_help(id: &str) -> String {

@@ -49,6 +49,7 @@ pub fn render(html: &str) -> Result<RenderedPage, CheckerError> {
         elements,
         stylesheets: extract_stylesheets(html),
         url: None,
+        id_index: Default::default(),
     })
 }
 

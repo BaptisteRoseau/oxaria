@@ -12,7 +12,7 @@ pub fn check_missing_label(page: &RenderedPage) -> Vec<Finding> {
         .map(|control| {
             Finding::error("H44", missing_label_message(control))
                 .at(control)
-                .help(missing_label_help(page, control))
+                .help(missing_label_help(control))
         })
         .collect()
 }
@@ -37,17 +37,16 @@ fn missing_label_message(control: ElementRef) -> String {
     }
 }
 
-fn missing_label_help(page: &RenderedPage, control: ElementRef) -> String {
-    let label = match control.attr("id").filter(|id| is_unique_id(page, id)) {
+fn missing_label_help(control: ElementRef) -> String {
+    // A `for=` pointing at a duplicate id would label the first element with it, not this one.
+    let label = match control
+        .attr("id")
+        .filter(|id| control.page().id_count(id) == 1)
+    {
         Some(id) => format!("add <label for=\"{id}\">...</label>"),
         None => "wrap it in <label>...</label>".to_string(),
     };
     format!("{label}, or give it an aria-label (a placeholder is not a label)")
-}
-
-/// A `for=` pointing at a duplicate id would label the first element with it, not this one.
-fn is_unique_id(page: &RenderedPage, id: &str) -> bool {
-    page.all().filter(|el| el.attr("id") == Some(id)).count() == 1
 }
 
 /// F68: interactive controls (buttons, custom `role=button` widgets, image/submit buttons) must

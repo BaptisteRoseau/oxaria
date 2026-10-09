@@ -8,7 +8,7 @@ use crate::page::{ElementRef, RenderedPage};
 use crate::rules::aria_spec::{Role, aria_idrefs, effective_role, is_hidden};
 
 pub struct Tree<'a> {
-    ids: HashMap<&'a str, Vec<ElementRef<'a>>>,
+    page: &'a RenderedPage,
     /// id -> the first element whose `aria-owns` lists it.
     owners: HashMap<&'a str, ElementRef<'a>>,
     /// Bounds walks up the tree, which `aria-owns` cycles would make endless.
@@ -17,32 +17,17 @@ pub struct Tree<'a> {
 
 impl<'a> Tree<'a> {
     pub fn new(page: &'a RenderedPage) -> Self {
-        let mut ids: HashMap<&str, Vec<ElementRef>> = HashMap::new();
         let mut owners = HashMap::new();
         for el in page.all() {
-            if let Some(id) = el.attr("id") {
-                ids.entry(id).or_default().push(el);
-            }
             for id in aria_idrefs(el, "aria-owns") {
                 owners.entry(id).or_insert(el);
             }
         }
         Tree {
-            ids,
+            page,
             owners,
             size: page.elements.len(),
         }
-    }
-
-    /// The first element with this id, as `getElementById` returns.
-    pub fn by_id(&self, id: &str) -> Option<ElementRef<'a>> {
-        self.ids
-            .get(id)
-            .and_then(|elements| elements.first().copied())
-    }
-
-    pub fn id_count(&self, id: &str) -> usize {
-        self.ids.get(id).map_or(0, Vec::len)
     }
 
     /// The `aria-owns` owner if there is one, else the DOM parent.
@@ -69,7 +54,7 @@ impl<'a> Tree<'a> {
         self.collect_owned(el, &mut owned);
         let targets = aria_idrefs(el, "aria-owns")
             .into_iter()
-            .filter_map(|id| self.by_id(id))
+            .filter_map(|id| self.page.element_by_id(id))
             .filter(|target| *target != el && !is_hidden(*target));
         for target in targets {
             match exposed_role(target) {
@@ -130,7 +115,7 @@ mod tests {
     fn owned_tags(html: &str, id: &str) -> Vec<String> {
         let page = page_from_html(html);
         let tree = Tree::new(&page);
-        let el = tree.by_id(id).unwrap();
+        let el = page.element_by_id(id).unwrap();
         tree.owned(el)
             .iter()
             .map(|el| el.tag().to_string())
@@ -156,7 +141,7 @@ mod tests {
         let page =
             page_from_html(r#"<div role="tablist"><span><b id="t" role="tab">x</b></span></div>"#);
         let tree = Tree::new(&page);
-        let (_, role) = tree.context(tree.by_id("t").unwrap()).unwrap();
+        let (_, role) = tree.context(page.element_by_id("t").unwrap()).unwrap();
         assert_eq!(role.name, "tablist");
     }
 
@@ -165,6 +150,6 @@ mod tests {
         let page =
             page_from_html(r#"<div id="a" aria-owns="b"><div id="b" aria-owns="a"></div></div>"#);
         let tree = Tree::new(&page);
-        assert!(tree.context(tree.by_id("a").unwrap()).is_none());
+        assert!(tree.context(page.element_by_id("a").unwrap()).is_none());
     }
 }

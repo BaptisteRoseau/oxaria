@@ -2,6 +2,9 @@
 //! structure together with its computed color, font, and layout data, as an
 //! index-linked arena so it is `Send + Sync`.
 
+use std::collections::HashMap;
+use std::sync::OnceLock;
+
 use url::Url;
 
 pub const TEXT_TAG: &str = "#text";
@@ -68,6 +71,9 @@ pub struct RenderedPage {
     /// tell a same-site absolute link (`https://site/pricing`) from a
     /// relative one (`/pricing`) pointing at the same place.
     pub url: Option<Url>,
+    /// id -> the indices of the elements carrying it, in document order. Built
+    /// on first use, so `elements` must not change after a page is queried.
+    pub id_index: OnceLock<HashMap<String, Vec<usize>>>,
 }
 
 impl RenderedPage {
@@ -85,8 +91,38 @@ impl RenderedPage {
         self.all().filter(move |el| el.tag() == tag)
     }
 
+    /// The first element with this id, as `getElementById` returns.
     pub fn element_by_id(&self, id: &str) -> Option<ElementRef<'_>> {
-        self.all().find(|el| el.attr("id") == Some(id))
+        self.elements_with_id(id)
+            .first()
+            .map(|&index| self.get(index))
+    }
+
+    pub fn id_count(&self, id: &str) -> usize {
+        self.elements_with_id(id).len()
+    }
+
+    /// Every id on the page with how many elements carry it, in no particular order.
+    pub fn id_counts(&self) -> impl Iterator<Item = (&str, usize)> {
+        self.id_index()
+            .iter()
+            .map(|(id, indices)| (id.as_str(), indices.len()))
+    }
+
+    fn elements_with_id(&self, id: &str) -> &[usize] {
+        self.id_index().get(id).map_or(&[], Vec::as_slice)
+    }
+
+    fn id_index(&self) -> &HashMap<String, Vec<usize>> {
+        self.id_index.get_or_init(|| {
+            let mut index: HashMap<String, Vec<usize>> = HashMap::new();
+            for el in self.all() {
+                if let Some(id) = el.attr("id") {
+                    index.entry(id.to_string()).or_default().push(el.index);
+                }
+            }
+            index
+        })
     }
 
     pub fn stylesheet_text(&self) -> String {
@@ -257,14 +293,7 @@ impl<'a> ElementRef<'a> {
             && id
                 .chars()
                 .all(|c| c.is_ascii_alphanumeric() || c == '-' || c == '_');
-        is_plain
-            && self
-                .page
-                .all()
-                .filter(|el| el.attr("id") == Some(id))
-                .take(2)
-                .count()
-                == 1
+        is_plain && self.page.id_count(id) == 1
     }
 
     fn selector_segment(&self) -> String {

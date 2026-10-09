@@ -29,14 +29,13 @@ const CONTROLLING_ROLES: &[&str] = &["combobox", "searchbox", "textbox"];
 /// ARIA-IDREF001: a reference to a missing or duplicated id relates the
 /// element to nothing, or to an arbitrary element.
 pub fn check_unresolved_reference(page: &RenderedPage) -> Vec<Finding> {
-    let tree = Tree::new(page);
     page.all()
         .flat_map(|el| {
             IDREF_ATTRIBUTES
                 .iter()
                 .filter(move |name| !is_popup_not_rendered_yet(el, name))
                 .flat_map(move |name| aria_idrefs(el, name).into_iter().map(move |id| (name, id)))
-                .filter_map(|(name, id)| unresolved_reference(&tree, el, name, id))
+                .filter_map(|(name, id)| unresolved_reference(el, name, id))
                 .collect::<Vec<_>>()
         })
         .collect()
@@ -57,8 +56,8 @@ fn is_unselected_tab(el: ElementRef) -> bool {
         && aria_value(el, "aria-selected") == Some(Parsed::Valid(AriaValue::False))
 }
 
-fn unresolved_reference(tree: &Tree, el: ElementRef, name: &str, id: &str) -> Option<Finding> {
-    let count = tree.id_count(id);
+fn unresolved_reference(el: ElementRef, name: &str, id: &str) -> Option<Finding> {
+    let count = el.page().id_count(id);
     let id = shortened(id);
     let (message, help) = match count {
         0 => (
@@ -86,7 +85,7 @@ pub fn check_aria_owns_conflict(page: &RenderedPage) -> Vec<Finding> {
                 .into_iter()
                 .map(move |id| (el, id))
         })
-        .filter(|(_, id)| tree.by_id(id).is_some())
+        .filter(|(_, id)| page.element_by_id(id).is_some())
         .collect();
     owns.iter()
         .enumerate()
@@ -116,7 +115,7 @@ fn second_owner_finding(owner: ElementRef, id: &str, first: ElementRef) -> Findi
 }
 
 fn circular_ownership_finding(tree: &Tree, owner: ElementRef, id: &str) -> Option<Finding> {
-    let owned = tree.by_id(id)?;
+    let owned = owner.page().element_by_id(id)?;
     let is_circular = tree
         .self_and_ancestors(owner)
         .skip(1)
@@ -142,7 +141,7 @@ pub fn check_active_descendant_ownership(page: &RenderedPage) -> Vec<Finding> {
         .filter(|el| !is_hidden(*el))
         .filter_map(|el| {
             let id = *aria_idrefs(el, "aria-activedescendant").first()?;
-            let target = tree.by_id(id)?;
+            let target = page.element_by_id(id)?;
             (!is_owned_by(&tree, target, el) && !is_in_controlled_popup(&tree, target, el))
                 .then(|| active_descendant_finding(el, id))
         })
@@ -162,7 +161,7 @@ fn is_in_controlled_popup(tree: &Tree, target: ElementRef, el: ElementRef) -> bo
     controls
         && aria_idrefs(el, "aria-controls")
             .into_iter()
-            .filter_map(|id| tree.by_id(id))
+            .filter_map(|id| el.page().element_by_id(id))
             .any(|popup| is_owned_by(tree, target, popup))
 }
 

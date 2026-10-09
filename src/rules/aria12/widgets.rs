@@ -44,16 +44,15 @@ fn popup_kind_of_role(role: &str) -> &str {
 }
 
 /// The first existing element `aria-controls` references.
-fn controlled<'a>(tree: &Tree<'a>, el: ElementRef<'a>) -> Option<ElementRef<'a>> {
+fn controlled<'a>(el: ElementRef<'a>) -> Option<ElementRef<'a>> {
     aria_idrefs(el, "aria-controls")
         .into_iter()
-        .find_map(|id| tree.by_id(id))
+        .find_map(|id| el.page().element_by_id(id))
 }
 
 /// ARIA-WIDGET001: since ARIA 1.2 the combobox is the text field itself,
 /// controls its popup, and always tells whether it's expanded.
 pub fn check_combobox_pattern(page: &RenderedPage) -> Vec<Finding> {
-    let tree = Tree::new(page);
     page.all()
         .filter(|el| !is_hidden(*el) && first_valid_role(*el).is_some_and(|r| r.name == "combobox"))
         .flat_map(|combobox| {
@@ -61,8 +60,8 @@ pub fn check_combobox_pattern(page: &RenderedPage) -> Vec<Finding> {
                 wrapped_text_field(combobox),
                 owns_popup(combobox),
                 missing_expanded(combobox),
-                wrong_popup_role(&tree, combobox),
-                missing_popup_kind(&tree, combobox),
+                wrong_popup_role(combobox),
+                missing_popup_kind(combobox),
             ]
             .into_iter()
             .flatten()
@@ -111,8 +110,8 @@ fn missing_expanded(combobox: ElementRef) -> Problem {
     })
 }
 
-fn wrong_popup_role(tree: &Tree, combobox: ElementRef) -> Problem {
-    let popup = controlled(tree, combobox)?;
+fn wrong_popup_role(combobox: ElementRef) -> Problem {
+    let popup = controlled(combobox)?;
     let role = exposed_role(popup).filter(|role| !COMBOBOX_POPUP_ROLES.contains(&role.name))?;
     Some((
         format!("combobox popup has role \"{}\"", role.name),
@@ -120,8 +119,8 @@ fn wrong_popup_role(tree: &Tree, combobox: ElementRef) -> Problem {
     ))
 }
 
-fn missing_popup_kind(tree: &Tree, combobox: ElementRef) -> Problem {
-    let popup = controlled(tree, combobox)?;
+fn missing_popup_kind(combobox: ElementRef) -> Problem {
+    let popup = controlled(combobox)?;
     let role = exposed_role(popup)
         .map(|role| popup_kind_of_role(role.name))
         .filter(|kind| *kind != "listbox" && COMBOBOX_POPUP_ROLES.contains(kind))?;
@@ -136,11 +135,10 @@ fn missing_popup_kind(tree: &Tree, combobox: ElementRef) -> Problem {
 /// ARIA-WIDGET002: `aria-haspopup` tells what opens, so it must match the
 /// popup's role.
 pub fn check_popup_role_match(page: &RenderedPage) -> Vec<Finding> {
-    let tree = Tree::new(page);
     page.all()
         .filter_map(|trigger| {
             let kind = popup_kind(trigger)?;
-            let popup_role = popup_role(controlled(&tree, trigger)?)?;
+            let popup_role = popup_role(controlled(trigger)?)?;
             let expected = popup_kind_of_role(popup_role);
             (kind != expected).then(|| popup_mismatch_finding(trigger, &kind, expected))
         })
