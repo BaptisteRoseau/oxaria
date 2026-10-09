@@ -7,6 +7,7 @@ use crate::rules::aria_spec::{
     concrete_role, explicit_roles, is_hidden, parse_value, roles,
 };
 use crate::rules::markup::start_tag_first;
+use crate::rules::spelling::closest_within;
 
 /// The Graphics-ARIA and DPub-ARIA 1.1 roles: ACT accepts every WAI-ARIA
 /// specification, and the shared role table only holds WAI-ARIA 1.2.
@@ -199,25 +200,7 @@ fn role_help(el: ElementRef) -> String {
 }
 
 fn closest<'a>(name: &str, candidates: impl Iterator<Item = &'a str>) -> Option<&'a str> {
-    candidates
-        .map(|candidate| (edit_distance(name, candidate), candidate))
-        .filter(|(distance, _)| *distance <= MAX_SUGGESTION_DISTANCE)
-        .min_by_key(|(distance, _)| *distance)
-        .map(|(_, candidate)| candidate)
-}
-
-fn edit_distance(a: &str, b: &str) -> usize {
-    let b: Vec<char> = b.chars().collect();
-    let mut previous: Vec<usize> = (0..=b.len()).collect();
-    for (i, a_char) in a.chars().enumerate() {
-        let mut current = vec![i + 1];
-        for (j, b_char) in b.iter().enumerate() {
-            let substitution = previous[j] + usize::from(a_char != *b_char);
-            current.push(substitution.min(previous[j + 1] + 1).min(current[j] + 1));
-        }
-        previous = current;
-    }
-    previous[b.len()]
+    closest_within(name, candidates, MAX_SUGGESTION_DISTANCE)
 }
 
 #[cfg(test)]
@@ -336,14 +319,5 @@ mod tests {
             help(check_role_valid, r#"<span role="lnik">ACT</span>"#),
             r#"did you mean role="link"?"#
         );
-    }
-
-    #[rstest]
-    #[case("lnik", "link", 2)]
-    #[case("aria-labelled", "aria-labelledby", 2)]
-    #[case("", "abc", 3)]
-    #[case("same", "same", 0)]
-    fn edit_distances(#[case] a: &str, #[case] b: &str, #[case] expected: usize) {
-        assert_eq!(edit_distance(a, b), expected);
     }
 }

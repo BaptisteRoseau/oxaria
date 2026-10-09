@@ -2,6 +2,7 @@
 
 use crate::page::ElementRef;
 use crate::rules::aria_spec::{Role, first_valid_role, is_aria_true};
+use crate::rules::spelling::closest_within;
 
 /// `role "button"`, noting when the role is implicit: authors don't
 /// always know `div` is `generic` or `input` is `textbox`.
@@ -35,27 +36,7 @@ pub fn or_list(items: &[&str]) -> String {
 
 /// The candidate closest to `word`, when it's close enough to be a typo.
 pub fn closest<'a>(word: &str, candidates: impl IntoIterator<Item = &'a str>) -> Option<&'a str> {
-    let limit = (word.len() / 4).max(2);
-    candidates
-        .into_iter()
-        .map(|candidate| (edit_distance(word, candidate), candidate))
-        .filter(|(distance, _)| *distance <= limit)
-        .min_by_key(|(distance, _)| *distance)
-        .map(|(_, candidate)| candidate)
-}
-
-fn edit_distance(a: &str, b: &str) -> usize {
-    let b: Vec<char> = b.chars().collect();
-    let mut previous: Vec<usize> = (0..=b.len()).collect();
-    for (i, ca) in a.chars().enumerate() {
-        let mut current = vec![i + 1];
-        for (j, cb) in b.iter().enumerate() {
-            let substitution = previous[j] + usize::from(ca != *cb);
-            current.push(substitution.min(previous[j + 1] + 1).min(current[j] + 1));
-        }
-        previous = current;
-    }
-    previous[b.len()]
+    closest_within(word, candidates, (word.len() / 4).max(2))
 }
 
 #[cfg(test)]

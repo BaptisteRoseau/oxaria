@@ -13,6 +13,7 @@ mod html_aria;
 mod markup;
 mod options;
 mod registry;
+mod spelling;
 mod standard;
 #[cfg(test)]
 mod testutil;
