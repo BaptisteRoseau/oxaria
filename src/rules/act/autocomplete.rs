@@ -18,8 +18,8 @@ const FIXED_VALUE_TYPES: &[&str] = &[
 pub fn check_autocomplete_valid(page: &RenderedPage) -> Vec<Finding> {
     page.all()
         .filter(|el| is_fillable_field(*el))
-        .filter_map(|field| Some((field, field.attr("autocomplete")?)))
-        .filter(|(_, value)| !value.trim().is_empty() && !is_valid_autocomplete(value))
+        .filter_map(|field| Some((field, field.non_empty_attr("autocomplete")?)))
+        .filter(|(_, value)| !is_valid_autocomplete(value))
         .map(|(field, value)| {
             Finding::error(
                 "73f2c2",

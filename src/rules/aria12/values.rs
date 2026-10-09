@@ -9,7 +9,7 @@ use crate::rules::aria_spec::{
     attribute, first_valid_role, is_focusable, is_hidden, parse_value,
 };
 
-use super::support::{closest, has_value, or_list, quoted};
+use super::support::{closest, or_list, quoted};
 use super::tree::{exposed_role, has_exposed_role};
 
 const TABLE_ROLES: &[&str] = &["table", "grid", "treegrid"];
@@ -224,8 +224,9 @@ fn value_out_of_bounds(
 }
 
 fn text_without_value(el: ElementRef, role: &Role, now: Option<f64>) -> Option<(String, String)> {
-    let is_missing_value =
-        KNOWN_VALUE_ROLES.contains(&role.name) && has_value(el, "aria-valuetext") && now.is_none();
+    let is_missing_value = KNOWN_VALUE_ROLES.contains(&role.name)
+        && el.non_empty_attr("aria-valuetext").is_some()
+        && now.is_none();
     is_missing_value.then(|| {
         (
             format!(
@@ -254,11 +255,13 @@ pub fn check_missing_row_index(page: &RenderedPage) -> Vec<Finding> {
         .collect();
     let indexed_tables: Vec<ElementRef> = rows
         .iter()
-        .filter(|(row, _)| has_value(*row, "aria-rowindex"))
+        .filter(|(row, _)| row.non_empty_attr("aria-rowindex").is_some())
         .map(|(_, table)| *table)
         .collect();
     rows.iter()
-        .filter(|(row, table)| !has_value(*row, "aria-rowindex") && indexed_tables.contains(table))
+        .filter(|(row, table)| {
+            !row.non_empty_attr("aria-rowindex").is_some() && indexed_tables.contains(table)
+        })
         .map(|(row, _)| {
             Finding::error(
                 "ARIA-VAL005",

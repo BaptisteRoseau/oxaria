@@ -76,7 +76,7 @@ fn navigates(el: ElementRef) -> bool {
 pub fn check_control_without_role(page: &RenderedPage) -> Vec<Finding> {
     page.all()
         .filter(|el| matches!(el.tag(), "div" | "span"))
-        .filter(|el| el.attr("role").is_none_or(|role| role.trim().is_empty()))
+        .filter(|el| el.non_empty_attr("role").is_none())
         .filter(|el| handlers(*el, ACTIVATION_HANDLERS).next().is_some() && !navigates(*el))
         .map(|el| {
             Finding::error(

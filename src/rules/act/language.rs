@@ -50,8 +50,8 @@ pub fn check_html_lang(page: &RenderedPage) -> Vec<Finding> {
 pub fn check_html_lang_valid(page: &RenderedPage) -> Vec<Finding> {
     page.by_tag("html")
         .next()
-        .and_then(|html| Some((html, html.attr("lang")?)))
-        .filter(|(_, lang)| !lang.trim().is_empty() && !has_known_primary_language(lang))
+        .and_then(|html| Some((html, html.non_empty_attr("lang")?)))
+        .filter(|(_, lang)| !has_known_primary_language(lang))
         .map(|(_, lang)| {
             Finding::error(
                 "bf051a",
@@ -86,24 +86,22 @@ pub fn check_element_lang_valid(page: &RenderedPage) -> Vec<Finding> {
 }
 
 fn is_in_body(el: ElementRef) -> bool {
-    el.tag() == "body" || el.ancestors().any(|ancestor| ancestor.tag() == "body")
+    el.self_and_ancestors().any(|el| el.tag() == "body")
 }
 
 /// Text whose nearest `lang` is this element's: text nodes, and image
 /// `alt` text, outside any descendant that sets its own `lang`.
 fn has_inheriting_text(el: ElementRef) -> bool {
-    el.children().any(|child| match child.node().is_text() {
-        true => !child.node().own_text.trim().is_empty(),
-        false => {
+    el.has_own_text()
+        || el.element_children().any(|child| {
             !child.has_attr("lang")
                 && !is_not_rendered(child)
                 && (has_alt_text(child) || has_inheriting_text(child))
-        }
-    })
+        })
 }
 
 fn has_alt_text(el: ElementRef) -> bool {
-    el.tag() == "img" && el.attr("alt").is_some_and(|alt| !alt.trim().is_empty())
+    el.tag() == "img" && el.non_empty_attr("alt").is_some()
 }
 
 /// RFC 5646's first subtag, matched case-insensitively. Grandfathered tags

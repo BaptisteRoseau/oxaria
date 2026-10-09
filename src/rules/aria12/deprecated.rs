@@ -6,7 +6,7 @@ use crate::page::{ElementRef, RenderedPage};
 use crate::rules::Finding;
 use crate::rules::aria_spec::{effective_role, explicit_roles};
 
-use super::support::{has_value, is_unroled_custom_element, quoted, role_label};
+use super::support::{is_unroled_custom_element, quoted, role_label};
 
 const DRAG_AND_DROP_ATTRIBUTES: &[&str] = &["aria-grabbed", "aria-dropeffect"];
 
@@ -40,7 +40,7 @@ pub fn check_drag_and_drop_attributes(page: &RenderedPage) -> Vec<Finding> {
         .flat_map(|el| {
             DRAG_AND_DROP_ATTRIBUTES
                 .iter()
-                .filter(move |name| has_value(el, name))
+                .filter(move |name| el.non_empty_attr(name).is_some())
                 .map(move |name| {
                     Finding::error(
                         "ARIA-DEPR002",
@@ -74,7 +74,7 @@ fn deprecated_attribute_findings(el: ElementRef) -> Vec<Finding> {
     };
     FORMERLY_GLOBAL_ATTRIBUTES
         .iter()
-        .filter(|name| has_value(el, name) && role.deprecates(name))
+        .filter(|name| el.non_empty_attr(name).is_some() && role.deprecates(name))
         .map(|name| {
             Finding::error(
                 "ARIA-DEPR003",

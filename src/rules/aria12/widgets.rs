@@ -9,7 +9,7 @@ use crate::rules::aria_spec::{
     AriaValue, Parsed, aria_idrefs, aria_value, first_valid_role, is_focusable, is_hidden,
 };
 
-use super::support::{has_value, is_aria_disabled};
+use super::support::is_aria_disabled;
 use super::tree::{Tree, exposed_role, has_exposed_role};
 
 const COMBOBOX_POPUP_ROLES: &[&str] = &["listbox", "tree", "grid", "dialog"];
@@ -92,7 +92,7 @@ fn wrapped_text_field(combobox: ElementRef) -> Problem {
 }
 
 fn owns_popup(combobox: ElementRef) -> Problem {
-    has_value(combobox, "aria-owns").then(|| {
+    combobox.non_empty_attr("aria-owns").is_some().then(|| {
         let ids = combobox.attr("aria-owns").unwrap_or_default().trim();
         (
             format!("combobox references its popup with aria-owns=\"{ids}\""),
@@ -102,7 +102,7 @@ fn owns_popup(combobox: ElementRef) -> Problem {
 }
 
 fn missing_expanded(combobox: ElementRef) -> Problem {
-    (!has_value(combobox, "aria-expanded")).then(|| {
+    (!combobox.non_empty_attr("aria-expanded").is_some()).then(|| {
         (
             "combobox has no aria-expanded".to_string(),
             "set aria-expanded=\"false\", and switch it to \"true\" while the popup is shown"
@@ -125,7 +125,7 @@ fn missing_popup_kind(tree: &Tree, combobox: ElementRef) -> Problem {
     let role = exposed_role(popup)
         .map(|role| popup_kind_of_role(role.name))
         .filter(|kind| *kind != "listbox" && COMBOBOX_POPUP_ROLES.contains(kind))?;
-    (!has_value(combobox, "aria-haspopup")).then(|| {
+    (!combobox.non_empty_attr("aria-haspopup").is_some()).then(|| {
         (
             format!("combobox opens a {role} but has no aria-haspopup"),
             format!("set aria-haspopup=\"{role}\" (a combobox's popup is a listbox by default)"),
@@ -193,7 +193,7 @@ pub fn check_autocomplete_popup(page: &RenderedPage) -> Vec<Finding> {
 }
 
 fn missing_suggestions_reference(el: ElementRef) -> Problem {
-    (!has_value(el, "aria-controls")).then(|| {
+    (!el.non_empty_attr("aria-controls").is_some()).then(|| {
         (
             "list autocomplete has no aria-controls".to_string(),
             "reference the suggestions popup with aria-controls=\"<id of the listbox>\""

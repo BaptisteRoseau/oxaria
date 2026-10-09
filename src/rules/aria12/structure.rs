@@ -104,8 +104,7 @@ pub fn check_required_owned(page: &RenderedPage) -> Vec<Finding> {
 }
 
 fn is_busy(el: ElementRef) -> bool {
-    std::iter::once(el)
-        .chain(el.ancestors())
+    el.self_and_ancestors()
         .any(|el| is_aria_true(el, "aria-busy"))
 }
 
@@ -243,18 +242,15 @@ pub fn check_caption_placement(page: &RenderedPage) -> Vec<Finding> {
         .collect()
 }
 
-fn element_children<'a>(el: ElementRef<'a>) -> Vec<ElementRef<'a>> {
-    el.children()
-        .filter(|child| !child.node().is_text() && !child.tag().is_empty())
-        .collect()
-}
-
 fn misplaced_caption(
     caption: ElementRef,
     parent: ElementRef,
     parent_role: &str,
 ) -> Option<Finding> {
-    let children = element_children(parent);
+    let children: Vec<_> = parent
+        .element_children()
+        .filter(|child| !child.tag().is_empty())
+        .collect();
     let is_first = children.first() == Some(&caption);
     let is_last = children.last() == Some(&caption);
     let (is_placed, place) = match parent_role {

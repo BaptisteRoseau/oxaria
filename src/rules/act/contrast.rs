@@ -9,7 +9,6 @@ use crate::page::{ElementRef, RenderedPage};
 use crate::rules::aria_spec::{effective_role, is_aria_true, is_disabled, is_not_rendered};
 use crate::rules::wcag22::{
     DEFAULT_CANVAS_BACKGROUND, Rgb, color_contrast, hex, is_large_text, passing_color,
-    renders_own_text,
 };
 use crate::rules::{CheckOptions, Finding};
 
@@ -18,7 +17,7 @@ use crate::rules::{CheckOptions, Finding};
 pub fn check_contrast_minimum(page: &RenderedPage, options: &CheckOptions) -> Vec<Finding> {
     let disabled_label_ids = disabled_widget_label_ids(page);
     page.all()
-        .filter(|el| renders_own_text(*el) && !is_not_rendered(*el))
+        .filter(|el| el.has_own_text() && !is_not_rendered(*el))
         .filter(|el| !is_in_disabled_widget(*el) && !is_in_disabled_label(*el, &disabled_label_ids))
         .filter_map(|el| contrast_finding(el, options))
         .collect()
@@ -65,7 +64,7 @@ fn contrast_help(foreground: Rgb, background: Rgb, threshold: f64) -> String {
 /// Inside a disabled `group` or widget: native `disabled`, or
 /// `aria-disabled="true"` on such a role.
 fn is_in_disabled_widget(el: ElementRef) -> bool {
-    std::iter::once(el).chain(el.ancestors()).any(|el| {
+    el.self_and_ancestors().any(|el| {
         is_disabled(el)
             || (is_aria_true(el, "aria-disabled")
                 && effective_role(el).is_some_and(|role| role.is_a("group") || role.is_a("widget")))
@@ -75,7 +74,7 @@ fn is_in_disabled_widget(el: ElementRef) -> bool {
 /// Inside the `label` of a disabled control, or an element naming a
 /// disabled widget through `aria-labelledby`.
 fn is_in_disabled_label(el: ElementRef, disabled_label_ids: &HashSet<&str>) -> bool {
-    std::iter::once(el).chain(el.ancestors()).any(|el| {
+    el.self_and_ancestors().any(|el| {
         (el.tag() == "label" && labels_disabled_control(el))
             || el
                 .attr("id")

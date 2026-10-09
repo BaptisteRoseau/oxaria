@@ -96,7 +96,7 @@ fn global_attribute<'a>(el: ElementRef<'a>) -> Option<(&'a str, &'a str)> {
 pub fn check_presentational_image_alt(page: &RenderedPage) -> Vec<Finding> {
     page.by_tag("img")
         .filter(|img| is_presentational(*img))
-        .filter_map(|img| Some((img, img.attr("alt").filter(|alt| !alt.trim().is_empty())?)))
+        .filter_map(|img| Some((img, img.non_empty_attr("alt")?)))
         .map(|(img, alt)| {
             Finding::error(
                 "ARIA-PRES002",
@@ -131,7 +131,7 @@ pub fn check_content_in_presentational_children(page: &RenderedPage) -> Vec<Find
 fn collect_lost_content<'a>(el: ElementRef<'a>, lost: &mut Vec<(ElementRef<'a>, String)>) {
     let children = el
         .children()
-        .filter(|child| !child.node().is_text() && !is_hidden(*child));
+        .filter(|child| !child.is_text() && !is_hidden(*child));
     for child in children {
         match lost_reason(child) {
             Some(reason) => lost.push((child, reason)),

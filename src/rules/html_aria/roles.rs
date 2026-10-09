@@ -105,8 +105,7 @@ fn is_details_summary(el: ElementRef) -> bool {
         && el.parent().is_some_and(|parent| {
             parent.tag() == "details"
                 && parent
-                    .children()
-                    .find(|child| child.tag() == "summary")
+                    .first_child("summary")
                     .is_some_and(|summary| summary == el)
         })
 }

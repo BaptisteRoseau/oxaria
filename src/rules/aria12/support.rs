@@ -35,13 +35,8 @@ pub fn is_unroled_custom_element(el: ElementRef) -> bool {
     el.tag().contains('-') && first_valid_role(el).is_none()
 }
 
-pub fn has_value(el: ElementRef, name: &str) -> bool {
-    el.attr(name).is_some_and(|value| !value.trim().is_empty())
-}
-
 pub fn is_aria_disabled(el: ElementRef) -> bool {
-    std::iter::once(el)
-        .chain(el.ancestors())
+    el.self_and_ancestors()
         .any(|el| is_aria_true(el, "aria-disabled"))
 }
 

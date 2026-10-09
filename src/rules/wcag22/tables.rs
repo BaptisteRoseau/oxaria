@@ -59,8 +59,7 @@ pub fn check_header_missing_scope(page: &RenderedPage) -> Vec<Finding> {
 /// A header in a row of only headers heads a column; one next to data cells heads its row.
 fn likely_scope(th: ElementRef) -> &'static str {
     let row_has_data = th
-        .ancestors()
-        .find(|el| el.tag() == "tr")
+        .nearest_ancestor("tr")
         .is_some_and(|row| row.children().any(|cell| cell.tag() == "td"));
     match row_has_data {
         true => "row",
@@ -113,10 +112,7 @@ fn data_table_markup(table: ElementRef) -> Vec<&'static str> {
     [
         (has_tag("th"), "<th>"),
         (has_tag("caption"), "<caption>"),
-        (
-            table.attr("summary").is_some_and(|s| !s.trim().is_empty()),
-            "summary",
-        ),
+        (table.non_empty_attr("summary").is_some(), "summary"),
         (has_attr("headers"), "headers"),
         (has_attr("scope"), "scope"),
     ]
@@ -145,7 +141,7 @@ pub fn check_headers_reference(page: &RenderedPage) -> Vec<Finding> {
         .filter(|el| matches!(el.tag(), "td" | "th"))
         .filter_map(|cell| {
             let tokens = cell.attr("headers")?;
-            let table = cell.ancestors().find(|el| el.tag() == "table")?;
+            let table = cell.nearest_ancestor("table")?;
             let header_ids = header_ids(table);
             let wrong: Vec<&str> = tokens
                 .split_whitespace()

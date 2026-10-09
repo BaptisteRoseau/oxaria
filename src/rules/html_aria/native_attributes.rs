@@ -227,7 +227,7 @@ fn is_checkable_with_aria_checked(el: ElementRef) -> bool {
 
 /// An editing host, or inside one: the nearest `contenteditable` decides.
 fn is_editable(el: ElementRef) -> bool {
-    std::iter::successors(Some(el), |el| el.parent())
+    el.self_and_ancestors()
         .find_map(|el| el.attr("contenteditable"))
         .is_some_and(|value| {
             let value = value.trim();

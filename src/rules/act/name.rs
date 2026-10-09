@@ -58,7 +58,7 @@ fn native_name(el: ElementRef) -> Option<String> {
         "input" => input_name(el),
         "svg" => svg_title(el),
         tag if LABELABLE_TAGS.contains(&tag) => el.label_text(),
-        _ if is_in_svg(el) => svg_title(el),
+        _ if el.has_ancestor("svg") => svg_title(el),
         _ => None,
     }
 }
@@ -80,8 +80,7 @@ fn input_label_or_value(input: ElementRef) -> Option<String> {
 }
 
 fn svg_title(el: ElementRef) -> Option<String> {
-    el.children()
-        .find(|child| child.tag() == "title")
+    el.first_child("title")
         .and_then(|title| non_empty(Some(&title.text())))
 }
 
@@ -95,7 +94,7 @@ fn content_name(el: ElementRef, traversal: Traversal) -> Option<String> {
     };
     let parts: Vec<String> = el
         .children()
-        .filter_map(|child| match child.node().is_text() {
+        .filter_map(|child| match child.is_text() {
             true => Some(child.node().own_text.clone()),
             false => name(child, inner),
         })
@@ -115,10 +114,6 @@ fn placeholder(el: ElementRef) -> Option<String> {
         "input" | "textarea" => non_empty(el.attr("placeholder")),
         _ => None,
     }
-}
-
-fn is_in_svg(el: ElementRef) -> bool {
-    el.ancestors().any(|ancestor| ancestor.tag() == "svg")
 }
 
 fn non_empty(value: Option<&str>) -> Option<String> {

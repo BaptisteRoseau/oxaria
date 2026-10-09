@@ -10,7 +10,7 @@ use crate::rules::aria_spec::{
     effective_role, parse_value, roles,
 };
 
-use super::support::{closest, has_value, is_unroled_custom_element, quoted, role_label};
+use super::support::{closest, is_unroled_custom_element, quoted, role_label};
 use super::tree::exposed_role;
 
 const TREEGRID_ROW_ATTRIBUTES: &[&str] = &[
@@ -175,7 +175,7 @@ fn restricted_row_attributes(row: ElementRef) -> Vec<Finding> {
     };
     TREEGRID_ROW_ATTRIBUTES
         .iter()
-        .filter(|name| has_value(row, name))
+        .filter(|name| row.non_empty_attr(name).is_some())
         .map(|name| {
             Finding::error(
                 "ARIA-ATTR005",
@@ -199,7 +199,7 @@ fn restricted_header_attributes(header: ElementRef) -> Vec<Finding> {
     }
     EDITABLE_GRID_HEADER_ATTRIBUTES
         .iter()
-        .filter(|name| has_value(header, name))
+        .filter(|name| header.non_empty_attr(name).is_some())
         .map(|name| {
             Finding::error(
                 "ARIA-ATTR005",
@@ -217,14 +217,13 @@ fn restricted_header_attributes(header: ElementRef) -> Vec<Finding> {
 }
 
 fn native_span_findings(el: ElementRef) -> Vec<Finding> {
-    let is_native_cell =
-        matches!(el.tag(), "td" | "th") && el.ancestors().any(|ancestor| ancestor.tag() == "table");
+    let is_native_cell = matches!(el.tag(), "td" | "th") && el.has_ancestor("table");
     if !is_native_cell {
         return Vec::new();
     }
     NATIVE_SPAN_ATTRIBUTES
         .iter()
-        .filter(|(name, _)| has_value(el, name))
+        .filter(|(name, _)| el.non_empty_attr(name).is_some())
         .map(|(name, native)| {
             let value = el.attr(name).unwrap_or_default().trim();
             Finding::error(

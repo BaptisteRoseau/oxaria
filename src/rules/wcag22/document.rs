@@ -1,6 +1,6 @@
 //! WCAG 2.4.2 (Page Titled) checks for the document's `title` element.
 
-use crate::page::{ElementRef, RenderedPage};
+use crate::page::RenderedPage;
 
 use crate::rules::Finding;
 
@@ -54,12 +54,8 @@ pub fn check_placeholder_title(page: &RenderedPage) -> Vec<Finding> {
 /// An `svg` can hold its own `title` element, so only the one in `head` counts.
 fn document_title(page: &RenderedPage) -> Option<String> {
     page.by_tag("title")
-        .find(|title| is_in_head(*title))
+        .find(|title| title.has_ancestor("head"))
         .map(|title| title.text())
-}
-
-fn is_in_head(el: ElementRef) -> bool {
-    el.ancestors().any(|ancestor| ancestor.tag() == "head")
 }
 
 fn is_placeholder_title(title: &str) -> bool {

@@ -21,8 +21,8 @@ pub fn check_missing_lang(page: &RenderedPage) -> Vec<Finding> {
 fn has_lang(page: &RenderedPage) -> bool {
     page.by_tag("html")
         .next()
-        .and_then(|html| html.attr("lang"))
-        .is_some_and(|lang| !lang.trim().is_empty())
+        .and_then(|html| html.non_empty_attr("lang"))
+        .is_some()
 }
 
 #[cfg(test)]

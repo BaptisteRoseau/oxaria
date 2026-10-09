@@ -101,7 +101,8 @@ pub fn is_hidden(el: ElementRef) -> bool {
 }
 
 pub fn is_aria_hidden(el: ElementRef) -> bool {
-    self_and_ancestors(el).any(|el| is_aria_true(el, "aria-hidden"))
+    el.self_and_ancestors()
+        .any(|el| is_aria_true(el, "aria-hidden"))
 }
 
 /// Not rendered because of its markup alone: a `hidden` attribute, an
@@ -110,14 +111,14 @@ pub fn is_aria_hidden(el: ElementRef) -> bool {
 /// known.
 pub fn is_not_rendered(el: ElementRef) -> bool {
     (el.tag() == "input" && input_type(el) == "hidden")
-        || self_and_ancestors(el).any(|el| {
+        || el.self_and_ancestors().any(|el| {
             el.has_attr("hidden") || UNRENDERED_TAGS.contains(&el.tag()) || is_closed_dialog(el)
         })
         || is_in_closed_details(el)
 }
 
 fn is_inert(el: ElementRef) -> bool {
-    self_and_ancestors(el).any(|el| el.has_attr("inert"))
+    el.self_and_ancestors().any(|el| el.has_attr("inert"))
 }
 
 /// Disabled form control, including through a disabled `fieldset` (except
@@ -171,8 +172,7 @@ fn is_in_disabled_fieldset(el: ElementRef) -> bool {
 fn is_first_legend_of(child: ElementRef, fieldset: ElementRef) -> bool {
     child.tag() == "legend"
         && fieldset
-            .children()
-            .find(|sibling| sibling.tag() == "legend")
+            .first_child("legend")
             .is_some_and(|legend| legend == child)
 }
 
@@ -190,10 +190,6 @@ fn is_in_closed_details(el: ElementRef) -> bool {
         child = ancestor;
     }
     false
-}
-
-fn self_and_ancestors<'a>(el: ElementRef<'a>) -> impl Iterator<Item = ElementRef<'a>> {
-    std::iter::successors(Some(el), |el| el.parent())
 }
 
 #[cfg(test)]

@@ -4,7 +4,6 @@
 use crate::page::{ElementRef, RenderedPage};
 use crate::rules::Finding;
 use crate::rules::aria_spec::is_not_rendered;
-use crate::rules::wcag22::renders_own_text;
 
 const POINTS_TO_PIXELS: f64 = 4.0 / 3.0;
 /// Absorbs float error, so that a spacing of exactly the minimum passes.
@@ -42,7 +41,7 @@ pub fn check_important_word_spacing(page: &RenderedPage) -> Vec<Finding> {
 
 fn spacing_findings(page: &RenderedPage, rule: &SpacingRule) -> Vec<Finding> {
     page.all()
-        .filter(|el| renders_own_text(*el) && !is_not_rendered(*el))
+        .filter(|el| el.has_own_text() && !is_not_rendered(*el))
         .filter_map(|el| Some((el, important_value(el.attr("style")?, rule.property)?)))
         .filter_map(|(el, value)| Some((el, spacing_ratio(el, &value)?, value)))
         .filter(|(_, ratio, _)| *ratio + TOLERANCE < rule.minimum)

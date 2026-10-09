@@ -27,13 +27,12 @@ pub fn check_untitled_iframe(page: &RenderedPage) -> Vec<Finding> {
 fn is_hidden(iframe: ElementRef) -> bool {
     iframe.has_attr("hidden")
         || iframe.attr("aria-hidden") == Some("true")
-        || iframe.ancestors().any(|el| el.tag() == "noscript")
+        || iframe.has_ancestor("noscript")
 }
 
 fn has_name(page: &RenderedPage, iframe: ElementRef) -> bool {
-    let named_by = |attr| iframe.attr(attr).is_some_and(|v| !v.trim().is_empty());
-    named_by("title")
-        || named_by("aria-label")
+    iframe.non_empty_attr("title").is_some()
+        || iframe.non_empty_attr("aria-label").is_some()
         || iframe
             .attr("aria-labelledby")
             .is_some_and(|ids| !page.ids_text(ids).is_empty())

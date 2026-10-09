@@ -145,7 +145,7 @@ pub fn allowed_aria(el: ElementRef) -> AllowedAria {
         "datalist" | "html" => NoAria,
         "input" if input_type(el) == "hidden" => NoAria,
         "button" if is_first_child_of_select(el) => NoAria,
-        "selectedcontent" if has_ancestor(el, "select") => NoAria,
+        "selectedcontent" if el.has_ancestor("select") => NoAria,
         "br" | "wbr" | "picture" => AriaHiddenOnly,
         "img" if is_decorative_img(el) => AriaHiddenTrueOnly,
         "caption" | "label" | "legend" => GlobalOnly,
@@ -209,7 +209,7 @@ fn implicit_role_name(el: ElementRef) -> Option<&'static str> {
         "menu" | "ol" | "ul" => Some("list"),
         "meter" => Some("meter"),
         "nav" => Some("navigation"),
-        "option" if has_ancestor(el, "select") || has_ancestor(el, "datalist") => Some("option"),
+        "option" if el.has_ancestor("select") || el.has_ancestor("datalist") => Some("option"),
         "output" => Some("status"),
         "p" => Some("paragraph"),
         "progress" => Some("progressbar"),
@@ -297,7 +297,7 @@ fn parent_is_list(el: ElementRef) -> bool {
 /// The role of the nearest ancestor `table`, when it is exposed as
 /// `table`, `grid` or `treegrid`.
 fn table_role(el: ElementRef) -> Option<&'static str> {
-    let table = el.ancestors().find(|ancestor| ancestor.tag() == "table")?;
+    let table = el.nearest_ancestor("table")?;
     effective_role(table)
         .map(|role| role.name)
         .filter(|name| matches!(*name, "table" | "grid" | "treegrid"))
@@ -339,7 +339,8 @@ fn is_list_box_select(el: ElementRef) -> bool {
 fn is_first_child_of_select(el: ElementRef) -> bool {
     el.parent().is_some_and(|parent| {
         parent.tag() == "select"
-            && element_children(parent)
+            && parent
+                .element_children()
                 .next()
                 .is_some_and(|first| first == el)
     })
@@ -349,23 +350,10 @@ fn is_first_child_of_select(el: ElementRef) -> bool {
 pub(super) fn is_details_summary(el: ElementRef) -> bool {
     el.parent().is_some_and(|parent| {
         parent.tag() == "details"
-            && element_children(parent)
-                .find(|child| child.tag() == "summary")
+            && parent
+                .first_child("summary")
                 .is_some_and(|summary| summary == el)
     })
-}
-
-fn has_ancestor(el: ElementRef, tag: &str) -> bool {
-    el.ancestors().any(|ancestor| ancestor.tag() == tag)
-}
-
-fn element_children<'a>(el: ElementRef<'a>) -> impl Iterator<Item = ElementRef<'a>> {
-    let page = el.page();
-    el.node()
-        .children
-        .iter()
-        .map(move |&index| page.get(index))
-        .filter(|child| !child.node().is_text())
 }
 
 fn is_custom_element(tag: &str) -> bool {

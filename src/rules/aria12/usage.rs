@@ -8,7 +8,7 @@ use crate::rules::aria_spec::{
     aria_idrefs, first_valid_role, has_author_name, is_focusable, is_hidden,
 };
 
-use super::support::{has_value, quoted};
+use super::support::quoted;
 use super::time_string;
 use super::tree::has_exposed_role;
 
@@ -73,7 +73,7 @@ pub fn check_naming_mechanism(page: &RenderedPage) -> Vec<Finding> {
 fn placeholder_as_label(el: ElementRef) -> Option<Finding> {
     let placeholder = el
         .attr("aria-placeholder")
-        .filter(|_| has_value(el, "aria-placeholder"))?;
+        .filter(|_| el.non_empty_attr("aria-placeholder").is_some())?;
     (!has_author_name(el) && !has_label_element(el)).then(|| {
         Finding::error(
             "ARIA-USAGE003",
@@ -97,12 +97,12 @@ fn has_label_element(el: ElementRef) -> bool {
             .by_tag("label")
             .any(|label| label.attr("for") == Some(id))
     });
-    is_labelled_by_for || el.ancestors().any(|ancestor| ancestor.tag() == "label")
+    is_labelled_by_for || el.has_ancestor("label")
 }
 
 fn alertdialog_without_description(el: ElementRef) -> Option<Finding> {
     let is_undescribed =
-        has_exposed_role(el, &["alertdialog"]) && !has_value(el, "aria-describedby");
+        has_exposed_role(el, &["alertdialog"]) && !el.non_empty_attr("aria-describedby").is_some();
     is_undescribed.then(|| {
         Finding::error(
             "ARIA-USAGE003",

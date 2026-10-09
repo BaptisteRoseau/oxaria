@@ -17,14 +17,9 @@ const WHITE: Rgb = (255, 255, 255);
 
 pub fn check_text_contrast(page: &RenderedPage, options: &CheckOptions) -> Vec<Finding> {
     page.all()
-        .filter(|el| renders_own_text(*el))
+        .filter(|el| el.has_own_text())
         .filter_map(|el| contrast_finding(el, options))
         .collect()
-}
-
-pub(crate) fn renders_own_text(el: ElementRef) -> bool {
-    el.children()
-        .any(|child| child.node().is_text() && !child.node().own_text.trim().is_empty())
 }
 
 fn contrast_finding(el: ElementRef, options: &CheckOptions) -> Option<Finding> {

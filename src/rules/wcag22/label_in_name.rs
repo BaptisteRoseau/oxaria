@@ -47,7 +47,7 @@ fn is_control(el: ElementRef) -> bool {
 fn is_named_by_aria(el: ElementRef) -> bool {
     ["aria-label", "aria-labelledby"]
         .iter()
-        .any(|attr| el.attr(attr).is_some_and(|value| !value.trim().is_empty()))
+        .any(|attr| el.non_empty_attr(attr).is_some())
 }
 
 /// Symbols ("×", "›") and single characters ("x" for close, "B" for bold) are not labels the

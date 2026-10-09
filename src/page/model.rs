@@ -78,7 +78,7 @@ impl RenderedPage {
     pub fn all(&self) -> impl Iterator<Item = ElementRef<'_>> {
         (0..self.elements.len())
             .map(|index| self.get(index))
-            .filter(|el| !el.node().is_text())
+            .filter(|el| !el.is_text())
     }
 
     pub fn by_tag<'a>(&'a self, tag: &'a str) -> impl Iterator<Item = ElementRef<'a>> {
@@ -141,6 +141,21 @@ impl<'a> ElementRef<'a> {
         self.attr(name).is_some()
     }
 
+    /// The raw value, when it isn't empty or only whitespace.
+    pub fn non_empty_attr(&self, name: &str) -> Option<&'a str> {
+        self.attr(name).filter(|value| !value.trim().is_empty())
+    }
+
+    pub fn is_text(&self) -> bool {
+        self.node().is_text()
+    }
+
+    /// A child text node with more than whitespace.
+    pub fn has_own_text(&self) -> bool {
+        self.children()
+            .any(|child| child.is_text() && !child.node().own_text.trim().is_empty())
+    }
+
     pub fn color(&self) -> (u8, u8, u8) {
         self.node().color
     }
@@ -169,12 +184,34 @@ impl<'a> ElementRef<'a> {
         std::iter::successors(self.parent(), |el| el.parent())
     }
 
+    pub fn self_and_ancestors(&self) -> impl Iterator<Item = ElementRef<'a>> {
+        std::iter::successors(Some(*self), |el| el.parent())
+    }
+
+    /// The nearest ancestor with this tag, never the element itself.
+    pub fn nearest_ancestor(&self, tag: &str) -> Option<ElementRef<'a>> {
+        self.ancestors().find(|ancestor| ancestor.tag() == tag)
+    }
+
+    /// Whether an ancestor, not the element itself, has this tag.
+    pub fn has_ancestor(&self, tag: &str) -> bool {
+        self.nearest_ancestor(tag).is_some()
+    }
+
     pub fn children(&self) -> impl Iterator<Item = ElementRef<'a>> + 'a {
         let page = self.page;
         self.node()
             .children
             .iter()
             .map(move |&index| page.get(index))
+    }
+
+    pub fn element_children(&self) -> impl Iterator<Item = ElementRef<'a>> + 'a {
+        self.children().filter(|child| !child.is_text())
+    }
+
+    pub fn first_child(&self, tag: &str) -> Option<ElementRef<'a>> {
+        self.children().find(|child| child.tag() == tag)
     }
 
     pub fn descendants(&self) -> impl Iterator<Item = ElementRef<'a>> {
@@ -193,7 +230,7 @@ impl<'a> ElementRef<'a> {
     /// path short and stable when unrelated parts of the page change.
     pub fn selector(&self) -> String {
         let mut segments = Vec::new();
-        for el in std::iter::once(*self).chain(self.ancestors()) {
+        for el in self.self_and_ancestors() {
             if el.tag().is_empty() || el.tag() == "html" {
                 continue;
             }
@@ -260,7 +297,7 @@ impl<'a> ElementRef<'a> {
         if let Some(name) = name_from_labelledby(el) {
             return name;
         }
-        if let Some(name) = non_empty_attr(el, "aria-label") {
+        if let Some(name) = trimmed_attr(el, "aria-label") {
             return name;
         }
         if let Some(name) = name_from_label(el) {
@@ -273,15 +310,15 @@ impl<'a> ElementRef<'a> {
         if let Some(name) = name_from_images(el) {
             return name;
         }
-        if let Some(name) = non_empty_attr(el, "alt") {
+        if let Some(name) = trimmed_attr(el, "alt") {
             return name;
         }
         if is_submit_or_button_input(el)
-            && let Some(name) = non_empty_attr(el, "value")
+            && let Some(name) = trimmed_attr(el, "value")
         {
             return name;
         }
-        non_empty_attr(el, "title").unwrap_or_default()
+        trimmed_attr(el, "title").unwrap_or_default()
     }
 
     /// Text of the `label` associated with this control (via `for` or wrapping), if any.
@@ -291,7 +328,7 @@ impl<'a> ElementRef<'a> {
 }
 
 fn collect_text(el: ElementRef, buf: &mut String) {
-    if el.node().is_text() {
+    if el.is_text() {
         buf.push_str(&el.node().own_text);
         buf.push(' ');
         return;
@@ -311,13 +348,13 @@ fn name_from_images(el: ElementRef) -> Option<String> {
     let alts: Vec<String> = el
         .descendants()
         .filter(|descendant| descendant.tag() == "img")
-        .filter_map(|img| non_empty_attr(img, "alt"))
+        .filter_map(|img| trimmed_attr(img, "alt"))
         .collect();
     (!alts.is_empty()).then(|| alts.join(" "))
 }
 
 fn name_from_label(el: ElementRef) -> Option<String> {
-    let label = label_for(el).or_else(|| label_ancestor(el))?;
+    let label = label_for(el).or_else(|| el.nearest_ancestor("label"))?;
     let text = label.text();
     (!text.is_empty()).then_some(text)
 }
@@ -329,15 +366,9 @@ fn label_for(el: ElementRef) -> Option<ElementRef> {
         .find(|label| label.attr("for") == Some(id))
 }
 
-fn label_ancestor(el: ElementRef) -> Option<ElementRef> {
-    el.ancestors().find(|ancestor| ancestor.tag() == "label")
-}
-
-fn non_empty_attr(el: ElementRef, name: &str) -> Option<String> {
-    el.attr(name)
-        .map(str::trim)
-        .filter(|value| !value.is_empty())
-        .map(str::to_string)
+fn trimmed_attr(el: ElementRef, name: &str) -> Option<String> {
+    el.non_empty_attr(name)
+        .map(|value| value.trim().to_string())
 }
 
 fn is_submit_or_button_input(el: ElementRef) -> bool {
@@ -422,6 +453,74 @@ mod tests {
             .filter(|t| *t != TEXT_TAG)
             .collect();
         assert_eq!(tags, vec!["span", "b", "em", "i"]);
+    }
+
+    #[test]
+    fn self_and_ancestors_starts_with_the_element() {
+        let p = page_from_html("<div><p><b>x</b></p></div>");
+        let tags: Vec<&str> = p
+            .by_tag("b")
+            .next()
+            .unwrap()
+            .self_and_ancestors()
+            .map(|el| el.tag())
+            .collect();
+        assert_eq!(tags, vec!["b", "p", "div", "body", "html"]);
+    }
+
+    #[rstest]
+    #[case("p", "div", Some("inner"))]
+    // The element itself never matches.
+    #[case("#inner", "div", Some("outer"))]
+    #[case("p", "p", None)]
+    fn nearest_ancestor(#[case] from: &str, #[case] tag: &str, #[case] expected: Option<&str>) {
+        let p = page_from_html(r#"<div id="outer"><div id="inner"><p>x</p></div></div>"#);
+        let el = match from.strip_prefix('#') {
+            Some(id) => p.element_by_id(id),
+            None => p.by_tag(from).next(),
+        }
+        .unwrap();
+        assert_eq!(
+            el.nearest_ancestor(tag).and_then(|a| a.attr("id")),
+            expected
+        );
+        assert_eq!(el.has_ancestor(tag), expected.is_some());
+    }
+
+    #[test]
+    fn element_children_and_first_child_skip_text() {
+        let p = page_from_html("<div>a<b>1</b>b<i></i><b>2</b></div>");
+        let div = p.by_tag("div").next().unwrap();
+        let tags: Vec<&str> = div.element_children().map(|el| el.tag()).collect();
+        assert_eq!(tags, vec!["b", "i", "b"]);
+        assert_eq!(
+            div.first_child("b").map(|b| b.text()),
+            Some("1".to_string())
+        );
+        assert!(div.first_child("em").is_none());
+    }
+
+    #[rstest]
+    #[case(r#"<p title=" Hi ">x</p>"#, Some(" Hi "))]
+    #[case(r#"<p title="  ">x</p>"#, None)]
+    #[case("<p>x</p>", None)]
+    fn non_empty_attr_keeps_the_raw_value(#[case] html: &str, #[case] expected: Option<&str>) {
+        let p = page_from_html(html);
+        assert_eq!(
+            p.by_tag("p").next().unwrap().non_empty_attr("title"),
+            expected
+        );
+    }
+
+    #[rstest]
+    #[case("<p>text</p>", true)]
+    #[case("<p> <b>bold</b> </p>", false)]
+    #[case("<p></p>", false)]
+    fn has_own_text(#[case] html: &str, #[case] expected: bool) {
+        let p = page_from_html(html);
+        let el = p.by_tag("p").next().unwrap();
+        assert_eq!(el.has_own_text(), expected);
+        assert!(!el.is_text());
     }
 
     #[rstest]

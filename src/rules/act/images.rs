@@ -170,7 +170,7 @@ pub fn check_svg_image_name(page: &RenderedPage) -> Vec<Finding> {
 }
 
 fn is_svg_element(el: ElementRef) -> bool {
-    el.tag() == "svg" || el.ancestors().any(|ancestor| ancestor.tag() == "svg")
+    el.self_and_ancestors().any(|el| el.tag() == "svg")
 }
 
 /// The first `role` token naming a WAI-ARIA or Graphics-ARIA role, when it

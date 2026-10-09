@@ -83,7 +83,7 @@ impl<'a> Tree<'a> {
     fn collect_owned(&self, el: ElementRef<'a>, owned: &mut Vec<ElementRef<'a>>) {
         let children = el
             .children()
-            .filter(|child| !child.node().is_text() && !is_hidden(*child))
+            .filter(|child| !child.is_text() && !is_hidden(*child))
             .filter(|child| self.owner(*child).is_none());
         for child in children {
             match exposed_role(child) {
