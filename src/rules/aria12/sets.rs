@@ -6,9 +6,7 @@ use crate::page::{ElementRef, RenderedPage};
 use crate::rules::Finding;
 use crate::rules::aria_spec::{AriaValue, Parsed, aria_value, is_hidden};
 
-use super::tree::{exposed_role, has_exposed_role};
-
-const TABLE_ROLES: &[&str] = &["table", "grid", "treegrid"];
+use super::tree::{has_exposed_role, table_of};
 
 /// Elements sharing a set (or a table) and a value.
 struct Group<'a> {
@@ -84,11 +82,6 @@ fn set_of(el: ElementRef) -> Option<ElementRef> {
         true => parent.parent(),
         false => Some(parent),
     }
-}
-
-fn table_of(el: ElementRef) -> Option<ElementRef> {
-    el.ancestors()
-        .find(|ancestor| exposed_role(*ancestor).is_some_and(|r| TABLE_ROLES.contains(&r.name)))
 }
 
 fn multiple_current_finding(group: Group) -> Finding {

@@ -7,7 +7,7 @@
 use crate::page::ElementRef;
 
 use super::element::{effective_role, first_valid_role};
-use super::roles::{Role, role};
+use super::roles::{Role, TABLE_ROLES, role};
 
 /// "No `role` or `aria-*` attributes" in the document conformance table
 /// (plus `input type=hidden`, which [`allowed_aria`] handles).
@@ -223,8 +223,8 @@ fn implicit_role_name(el: ElementRef) -> Option<&'static str> {
         "sup" => Some("superscript"),
         "table" => Some("table"),
         "tbody" | "tfoot" | "thead" => Some("rowgroup"),
-        "td" => table_role(el).map(data_cell_role),
-        "th" => table_role(el).map(|_| header_cell_role(el)),
+        "td" => table_element_role(el).map(data_cell_role),
+        "th" => table_element_role(el).map(|_| header_cell_role(el)),
         "textarea" => Some("textbox"),
         "time" => Some("time"),
         "tr" => Some("row"),
@@ -296,11 +296,11 @@ fn parent_is_list(el: ElementRef) -> bool {
 
 /// The role of the nearest ancestor `table`, when it is exposed as
 /// `table`, `grid` or `treegrid`.
-fn table_role(el: ElementRef) -> Option<&'static str> {
+fn table_element_role(el: ElementRef) -> Option<&'static str> {
     let table = el.nearest_ancestor("table")?;
     effective_role(table)
         .map(|role| role.name)
-        .filter(|name| matches!(*name, "table" | "grid" | "treegrid"))
+        .filter(|name| TABLE_ROLES.contains(name))
 }
 
 fn data_cell_role(table_role: &str) -> &'static str {

@@ -5,15 +5,14 @@
 use crate::page::{ElementRef, RenderedPage};
 use crate::rules::Finding;
 use crate::rules::aria_spec::{
-    AriaValue, Attribute, Parsed, Role, ValueType, aria_attributes, aria_number, aria_value,
-    attribute, first_valid_role, is_focusable, is_hidden, parse_value,
+    AriaValue, Attribute, Parsed, Role, TABLE_ROLES, ValueType, aria_attributes, aria_number,
+    aria_value, attribute, first_valid_role, is_focusable, is_hidden, parse_value,
 };
 
 use super::support::{closest, or_list};
-use super::tree::{exposed_role, has_exposed_role};
+use super::tree::{exposed_role, has_exposed_role, table_of};
 use crate::rules::markup::quoted;
 
-const TABLE_ROLES: &[&str] = &["table", "grid", "treegrid"];
 const RANGE_ROLES: &[&str] = &[
     "meter",
     "progressbar",
@@ -272,11 +271,6 @@ pub fn check_missing_row_index(page: &RenderedPage) -> Vec<Finding> {
             .help("add aria-rowindex with the row's position in the full table, counting from 1")
         })
         .collect()
-}
-
-fn table_of(el: ElementRef) -> Option<ElementRef> {
-    el.ancestors()
-        .find(|ancestor| has_exposed_role(*ancestor, TABLE_ROLES))
 }
 
 #[cfg(test)]

@@ -5,7 +5,7 @@
 use std::collections::HashMap;
 
 use crate::page::{ElementRef, RenderedPage};
-use crate::rules::aria_spec::{Role, aria_idrefs, effective_role, is_hidden};
+use crate::rules::aria_spec::{Role, TABLE_ROLES, aria_idrefs, effective_role, is_hidden};
 
 pub struct Tree<'a> {
     page: &'a RenderedPage,
@@ -94,6 +94,12 @@ pub fn exposed_role(el: ElementRef) -> Option<&'static Role> {
 
 pub fn has_exposed_role(el: ElementRef, names: &[&str]) -> bool {
     exposed_role(el).is_some_and(|role| names.contains(&role.name))
+}
+
+/// The nearest ancestor exposed as `table`, `grid` or `treegrid`.
+pub fn table_of(el: ElementRef) -> Option<ElementRef> {
+    el.ancestors()
+        .find(|ancestor| has_exposed_role(*ancestor, TABLE_ROLES))
 }
 
 pub fn presentational_children_role(el: ElementRef) -> Option<&'static Role> {

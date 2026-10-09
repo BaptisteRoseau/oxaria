@@ -2,7 +2,7 @@
 
 use crate::page::{ElementRef, RenderedPage};
 use crate::rules::Finding;
-use crate::rules::aria_spec::{effective_role, is_hidden};
+use crate::rules::aria_spec::{TABLE_ROLES, effective_role, is_hidden};
 use crate::rules::markup::start_tag_first;
 
 /// a25f45: each id in a cell's `headers` must be another cell of the same
@@ -25,8 +25,7 @@ fn is_cell(el: ElementRef) -> bool {
 /// The cell's table, when it is exposed as a table, grid or treegrid.
 fn exposed_table(cell: ElementRef) -> Option<ElementRef> {
     let table = cell.nearest_ancestor("table")?;
-    let is_table_role = effective_role(table)
-        .is_some_and(|role| matches!(role.name, "table" | "grid" | "treegrid"));
+    let is_table_role = effective_role(table).is_some_and(|role| TABLE_ROLES.contains(&role.name));
     (is_table_role && !is_hidden(table)).then_some(table)
 }
 

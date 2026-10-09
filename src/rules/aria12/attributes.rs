@@ -11,7 +11,7 @@ use crate::rules::aria_spec::{
 };
 
 use super::support::{closest, is_unroled_custom_element, role_label};
-use super::tree::exposed_role;
+use super::tree::{exposed_role, table_of};
 use crate::rules::markup::quoted;
 
 const TREEGRID_ROW_ATTRIBUTES: &[&str] = &[
@@ -171,7 +171,8 @@ fn static_table_findings(el: ElementRef) -> Vec<Finding> {
 }
 
 fn restricted_row_attributes(row: ElementRef) -> Vec<Finding> {
-    let Some(table) = table_role(row).filter(|role| matches!(*role, "table" | "grid")) else {
+    let Some(table) = exposed_table_role(row).filter(|role| matches!(*role, "table" | "grid"))
+    else {
         return Vec::new();
     };
     TREEGRID_ROW_ATTRIBUTES
@@ -195,7 +196,7 @@ fn restricted_row_attributes(row: ElementRef) -> Vec<Finding> {
 }
 
 fn restricted_header_attributes(header: ElementRef) -> Vec<Finding> {
-    if table_role(header) != Some("table") {
+    if exposed_table_role(header) != Some("table") {
         return Vec::new();
     }
     EDITABLE_GRID_HEADER_ATTRIBUTES
@@ -243,11 +244,8 @@ fn native_span_findings(el: ElementRef) -> Vec<Finding> {
 
 /// The role of the nearest ancestor exposed as `table`, `grid` or
 /// `treegrid`.
-fn table_role(el: ElementRef) -> Option<&'static str> {
-    el.ancestors()
-        .filter_map(exposed_role)
-        .map(|role| role.name)
-        .find(|name| matches!(*name, "table" | "grid" | "treegrid"))
+fn exposed_table_role(el: ElementRef) -> Option<&'static str> {
+    table_of(el).and_then(exposed_role).map(|role| role.name)
 }
 
 /// ARIA-ATTR008: `aria-roledescription` only describes an element with a

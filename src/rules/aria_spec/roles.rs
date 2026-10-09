@@ -7,6 +7,8 @@ use super::role_data::ROLES;
 /// `standards/overlap.md`.
 pub const ROLE_SYNONYMS: &[(&str, &str)] = &[("image", "img")];
 
+pub const TABLE_ROLES: &[&str] = &["table", "grid", "treegrid"];
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum NameFrom {
     Author,

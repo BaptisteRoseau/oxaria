@@ -8,12 +8,13 @@
 
 use crate::page::{ElementRef, RenderedPage};
 use crate::rules::Finding;
-use crate::rules::aria_spec::{Role, aria_idrefs, first_valid_role, is_aria_true, is_hidden};
+use crate::rules::aria_spec::{
+    Role, TABLE_ROLES, aria_idrefs, first_valid_role, is_aria_true, is_hidden,
+};
 
 use super::support::or_list;
 use super::tree::{Tree, exposed_role, has_exposed_role};
 
-const CAPTIONED_TABLE_ROLES: &[&str] = &["table", "grid", "treegrid"];
 const SPINBUTTON_PARTS: &[(&str, usize)] = &[("textbox", 1), ("button", 2)];
 
 /// The element's explicit role, when it is also the role it's exposed with.
@@ -255,7 +256,7 @@ fn misplaced_caption(
     let is_last = children.last() == Some(&caption);
     let (is_placed, place) = match parent_role {
         "figure" => (is_first || is_last, "the first or last child of its figure"),
-        role if CAPTIONED_TABLE_ROLES.contains(&role) => (is_first, "the first child of its table"),
+        role if TABLE_ROLES.contains(&role) => (is_first, "the first child of its table"),
         _ => return None,
     };
     (!is_placed).then(|| {
@@ -277,7 +278,7 @@ fn unreferenced_caption(
         .into_iter()
         .filter_map(|id| parent.page().element_by_id(id))
         .any(|label| label == caption || label.ancestors().any(|a| a == caption));
-    let is_captionable = parent_role == "figure" || CAPTIONED_TABLE_ROLES.contains(&parent_role);
+    let is_captionable = parent_role == "figure" || TABLE_ROLES.contains(&parent_role);
     let id = caption.attr("id").unwrap_or("caption");
     (is_captionable && !is_referenced).then(|| {
         Finding::error(
