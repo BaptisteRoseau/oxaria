@@ -31,7 +31,7 @@ pub fn check_redundant_semantics(page: &RenderedPage) -> Vec<Finding> {
 
 fn redundant_role(el: ElementRef) -> Option<Finding> {
     let explicit = canonical(first_valid_role(el)?.name);
-    let implicit = canonical(implicit_role_name(el)?);
+    let implicit = canonical(implicit_role_name_or_summary_button(el)?);
     let is_redundant = explicit == implicit && !is_accepted_redundancy(el, explicit);
     is_redundant.then(|| {
         let tag = start_tag(el, &["type", "role"]);
@@ -47,7 +47,7 @@ fn redundant_role(el: ElementRef) -> Option<Finding> {
     })
 }
 
-fn implicit_role_name(el: ElementRef) -> Option<&'static str> {
+fn implicit_role_name_or_summary_button(el: ElementRef) -> Option<&'static str> {
     match is_details_summary(el) {
         true => Some("button"),
         false => implicit_role(el).map(|role| role.name),
