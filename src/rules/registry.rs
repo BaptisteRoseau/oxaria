@@ -3,7 +3,7 @@ use std::sync::Arc;
 use tokio::task::JoinHandle;
 use tracing::error;
 
-use super::{CheckOptions, Finding, Standard, act, aria12, html_aria, wcag22};
+use super::{CheckOptions, Finding, Standard};
 use crate::page::RenderedPage;
 
 pub type RuleCheck = fn(&RenderedPage, &CheckOptions) -> Vec<Finding>;
@@ -20,35 +20,19 @@ impl Rule {
     }
 }
 
-fn rules(standard: Standard) -> &'static [Rule] {
-    match standard {
-        Standard::Wcag22 => wcag22::RULES,
-        Standard::Aria12 => aria12::RULES,
-        Standard::HtmlAria => html_aria::RULES,
-        Standard::Act => act::RULES,
-    }
-}
-
 fn rule_ids(standard: Standard) -> impl Iterator<Item = &'static str> {
-    rules(standard)
+    standard
+        .def()
+        .rules
         .iter()
         .flat_map(|rule| rule.ids.iter().copied())
-}
-
-fn rules_file(standard: Standard) -> &'static str {
-    match standard {
-        Standard::Wcag22 => include_str!("../../standards/wcag2.2-rules.md"),
-        Standard::Aria12 => include_str!("../../standards/wai-aria-1.2-rules.md"),
-        Standard::HtmlAria => include_str!("../../standards/html-aria-rules.md"),
-        Standard::Act => include_str!("../../standards/act-rules.md"),
-    }
 }
 
 /// `(rule ID, title)` of every rule of `standard`, each title taken from the
 /// `### <ID> - <title>` heading of its rule file under `standards/`.
 pub fn rule_titles(standard: Standard) -> Vec<(&'static str, &'static str)> {
     rule_ids(standard)
-        .map(|id| (id, title(rules_file(standard), id).unwrap_or_default()))
+        .map(|id| (id, title(standard.def().rules_file, id).unwrap_or_default()))
         .collect()
 }
 
@@ -67,7 +51,9 @@ pub async fn run_all(page: Arc<RenderedPage>, options: Arc<CheckOptions>) -> Vec
         .standards
         .iter()
         .flat_map(|&standard| {
-            rules(standard)
+            standard
+                .def()
+                .rules
                 .iter()
                 .map(move |rule| (standard, rule.check))
         })
@@ -127,7 +113,7 @@ pub(crate) mod tests {
         let mut findings = Vec::new();
         for html in pages {
             let page = page_from_html(html);
-            for rule in rules(standard) {
+            for rule in standard.def().rules {
                 let rule_findings = (rule.check)(&page, &options);
                 let undeclared: Vec<_> = rule_findings
                     .iter()
@@ -161,7 +147,7 @@ pub(crate) mod tests {
     #[test]
     fn title_is_found_under_a_shared_heading() {
         assert_eq!(
-            title(rules_file(Standard::Wcag22), "F41"),
+            title(Standard::Wcag22.def().rules_file, "F41"),
             Some("Don't redirect or reload the page with a timed meta refresh")
         );
     }

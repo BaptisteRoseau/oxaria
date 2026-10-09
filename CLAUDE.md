@@ -184,7 +184,7 @@ heuristic bolted onto `RenderedPage`.
 See [README.md](./README.md#architecture) for the module tree. Notes beyond what's there:
 
 - **One module directory per standard under `src/rules/`** (`wcag22/`, `aria12/`, `html_aria/`,
-  `act/`, plus their shared `aria_spec/` data), each exposing a `RULES` table (every check with the rule IDs it reports) and `reference_url()`, so rules of different standards
+  `act/`, plus their shared `aria_spec/` data), each exposing one `DEF` (`StandardDef`: its name, a `RULES` table of every check with the rule IDs it reports, its rules file and `reference_url()`), so rules of different standards
   can be added without touching shared files. Rule functions don't know their standard: the
   registry (`rules/registry.rs`) pairs each list with its `Standard` and stamps it on every
   finding. Failures of the checker itself (`FETCH`, `HTTP`, `SCAN`, ...) have no standard. In

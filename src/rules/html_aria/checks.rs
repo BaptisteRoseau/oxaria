@@ -1,7 +1,17 @@
-use super::{attributes, content_model, deprecated, native_attributes, roles, syntax};
-use crate::rules::Rule;
+use super::{
+    attributes, content_model, deprecated, native_attributes, reference::reference_url, roles,
+    syntax,
+};
+use crate::rules::{Rule, StandardDef};
 
-pub const RULES: &[Rule] = &[
+pub const DEF: StandardDef = StandardDef {
+    name: "ARIA in HTML",
+    rules: RULES,
+    rules_file: include_str!("../../../standards/html-aria-rules.md"),
+    reference_url,
+};
+
+const RULES: &[Rule] = &[
     Rule::new(&["HTMLARIA002"], roles::check_redundant_semantics),
     Rule::new(&["HTMLARIA003"], roles::check_generic_role),
     Rule::new(&["HTMLARIA004"], roles::check_abstract_role),

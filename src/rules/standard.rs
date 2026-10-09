@@ -2,7 +2,7 @@ use std::fmt;
 
 use clap::ValueEnum;
 
-use super::{act, aria12, html_aria, wcag22};
+use super::{Rule, act, aria12, html_aria, wcag22};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, ValueEnum)]
 pub enum Standard {
@@ -16,6 +16,15 @@ pub enum Standard {
     Act,
 }
 
+/// Everything a standard brings: its display name, its rules, the `standards/` file
+/// their titles come from, and where its rules are documented.
+pub struct StandardDef {
+    pub name: &'static str,
+    pub rules: &'static [Rule],
+    pub rules_file: &'static str,
+    pub reference_url: fn(&str) -> Option<String>,
+}
+
 impl Standard {
     pub const ALL: [Standard; 4] = [
         Standard::Wcag22,
@@ -24,23 +33,22 @@ impl Standard {
         Standard::Act,
     ];
 
-    pub fn name(self) -> &'static str {
+    pub fn def(self) -> &'static StandardDef {
         match self {
-            Standard::Wcag22 => "WCAG 2.2",
-            Standard::Aria12 => "WAI-ARIA 1.2",
-            Standard::HtmlAria => "ARIA in HTML",
-            Standard::Act => "ACT",
+            Standard::Wcag22 => &wcag22::DEF,
+            Standard::Aria12 => &aria12::DEF,
+            Standard::HtmlAria => &html_aria::DEF,
+            Standard::Act => &act::DEF,
         }
+    }
+
+    pub fn name(self) -> &'static str {
+        self.def().name
     }
 
     /// The W3C page documenting one of this standard's rules.
     pub fn reference_url(self, rule_id: &str) -> Option<String> {
-        match self {
-            Standard::Wcag22 => wcag22::reference_url(rule_id),
-            Standard::Aria12 => aria12::reference_url(rule_id),
-            Standard::HtmlAria => html_aria::reference_url(rule_id),
-            Standard::Act => act::reference_url(rule_id),
-        }
+        (self.def().reference_url)(rule_id)
     }
 }
 

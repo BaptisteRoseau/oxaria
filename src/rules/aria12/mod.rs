@@ -19,5 +19,4 @@ mod usage;
 mod values;
 mod widgets;
 
-pub use checks::RULES;
-pub use reference::reference_url;
+pub use checks::DEF;

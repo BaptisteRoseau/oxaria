@@ -10,5 +10,4 @@ mod reference;
 mod roles;
 mod syntax;
 
-pub use checks::RULES;
-pub use reference::reference_url;
+pub use checks::DEF;

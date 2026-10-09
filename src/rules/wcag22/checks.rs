@@ -1,10 +1,18 @@
 use super::{
     aria, authentication, autocomplete, contrast, document, focus, forms, frames, headings, images,
-    label_in_name, language, links, multimedia, navigation, scripting, tables, target_size, timing,
+    label_in_name, language, links, multimedia, navigation, reference::reference_url, scripting,
+    tables, target_size, timing,
 };
-use crate::rules::Rule;
+use crate::rules::{Rule, StandardDef};
 
-pub const RULES: &[Rule] = &[
+pub const DEF: StandardDef = StandardDef {
+    name: "WCAG 2.2",
+    rules: RULES,
+    rules_file: include_str!("../../../standards/wcag2.2-rules.md"),
+    reference_url,
+};
+
+const RULES: &[Rule] = &[
     Rule::new(&["F65"], images::check_missing_alt),
     Rule::new(&["F30"], images::check_non_alternative_alt),
     Rule::new(&["H44"], forms::check_missing_label),

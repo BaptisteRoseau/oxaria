@@ -1,10 +1,17 @@
 use super::{
-    aria, autocomplete, contrast, controls, focus, images, language, orientation, refresh, spacing,
-    tables, zoom,
+    aria, autocomplete, contrast, controls, focus, images, language, orientation,
+    reference::reference_url, refresh, spacing, tables, zoom,
 };
-use crate::rules::Rule;
+use crate::rules::{Rule, StandardDef};
 
-pub const RULES: &[Rule] = &[
+pub const DEF: StandardDef = StandardDef {
+    name: "ACT",
+    rules: RULES,
+    rules_file: include_str!("../../../standards/act-rules.md"),
+    reference_url,
+};
+
+const RULES: &[Rule] = &[
     Rule::new(&["2779a5"], language::check_page_title),
     Rule::new(&["b5c3f8"], language::check_html_lang),
     Rule::new(&["bf051a"], language::check_html_lang_valid),

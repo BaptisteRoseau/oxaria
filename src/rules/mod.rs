@@ -20,4 +20,4 @@ pub use options::{
 #[cfg(test)]
 pub use registry::RuleCheck;
 pub use registry::{Rule, rule_titles, run_all};
-pub use standard::Standard;
+pub use standard::{Standard, StandardDef};

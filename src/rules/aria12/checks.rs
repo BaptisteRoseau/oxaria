@@ -1,10 +1,17 @@
 use super::{
-    attributes, deprecated, focus, idrefs, keyshortcuts, landmarks, presentation, roles, sets,
-    structure, usage, values, widgets,
+    attributes, deprecated, focus, idrefs, keyshortcuts, landmarks, presentation,
+    reference::reference_url, roles, sets, structure, usage, values, widgets,
 };
-use crate::rules::Rule;
+use crate::rules::{Rule, StandardDef};
 
-pub const RULES: &[Rule] = &[
+pub const DEF: StandardDef = StandardDef {
+    name: "WAI-ARIA 1.2",
+    rules: RULES,
+    rules_file: include_str!("../../../standards/wai-aria-1.2-rules.md"),
+    reference_url,
+};
+
+const RULES: &[Rule] = &[
     Rule::new(&["ARIA-ROLE002"], roles::check_abstract_role),
     Rule::new(&["ARIA-ROLE003"], roles::check_explicit_generic),
     Rule::new(&["ARIA-ATTR001"], attributes::check_unknown_attribute),
