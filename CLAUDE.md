@@ -77,8 +77,10 @@ An earlier plan split rules into an `HtmlRule` trait (static DOM/attribute check
 tests/behavior wouldn't change by default. The user explicitly rejected both parts of that: no
 CLI flag ("the user should not have to choose"), and no trait split -- every rule takes
 `&RenderedPage`, full stop, and rendering is unconditional. This is why `rules::RuleCheck` is a
-plain `fn(&RenderedPage, &CheckOptions) -> Vec<Finding>` type alias rather than a trait object --
-with only one rule shape, a trait would add indirection without buying anything.
+plain `fn(&RenderedPage) -> Vec<Finding>` type alias rather than a trait object -- with only one
+rule shape, a trait would add indirection without buying anything. The few rules that read a CLI
+threshold (contrast, target size) are registered with `Rule::with_options` and also take
+`&CheckOptions`; `registry::Check` is the enum of the two fn pointer shapes.
 
 ### Why `RenderedPage` is an arena, not borrowed references
 

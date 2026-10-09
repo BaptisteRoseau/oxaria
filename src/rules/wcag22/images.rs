@@ -2,7 +2,7 @@
 
 use crate::page::{ElementRef, RenderedPage};
 
-use crate::rules::{CheckOptions, Finding};
+use crate::rules::Finding;
 
 const PLACEHOLDER_ALT_VALUES: &[&str] = &[
     "image",
@@ -15,7 +15,7 @@ const PLACEHOLDER_ALT_VALUES: &[&str] = &[
 ];
 
 /// F65: every `img` must carry an `alt` attribute, even an empty one.
-pub fn check_missing_alt(page: &RenderedPage, _options: &CheckOptions) -> Vec<Finding> {
+pub fn check_missing_alt(page: &RenderedPage) -> Vec<Finding> {
     page.by_tag("img")
         .filter(|img| img.attr("alt").is_none())
         .map(|img| {
@@ -41,7 +41,7 @@ fn missing_alt_help(img: ElementRef) -> String {
 
 /// F30: an `alt` value that is a filename or a generic placeholder ("image", "spacer", …) is not
 /// a real text alternative.
-pub fn check_non_alternative_alt(page: &RenderedPage, _options: &CheckOptions) -> Vec<Finding> {
+pub fn check_non_alternative_alt(page: &RenderedPage) -> Vec<Finding> {
     page.by_tag("img")
         .filter_map(non_alternative_finding)
         .collect()
@@ -95,7 +95,7 @@ mod tests {
     #[test]
     fn missing_alt_is_flagged() {
         let p = page_from_html(r#"<img src="photo.jpg">"#);
-        let findings = check_missing_alt(&p, &CheckOptions::default());
+        let findings = check_missing_alt(&p);
         assert_eq!(findings.len(), 1);
         assert_eq!(findings[0].rule_id, "F65");
     }
@@ -103,10 +103,7 @@ mod tests {
     #[test]
     fn missing_alt_help_reuses_the_src() {
         let p = page_from_html(r#"<img src="photo.jpg">"#);
-        let help = check_missing_alt(&p, &CheckOptions::default())[0]
-            .help
-            .clone()
-            .unwrap();
+        let help = check_missing_alt(&p)[0].help.clone().unwrap();
         assert!(
             help.contains(r#"<img src="photo.jpg" alt="...">"#),
             "{help}"
@@ -116,29 +113,26 @@ mod tests {
     #[test]
     fn non_alternative_help_quotes_the_alt() {
         let p = page_from_html(r#"<img src="a.jpg" alt="chart.jpg">"#);
-        let help = check_non_alternative_alt(&p, &CheckOptions::default())[0]
-            .help
-            .clone()
-            .unwrap();
+        let help = check_non_alternative_alt(&p)[0].help.clone().unwrap();
         assert!(help.starts_with(r#"replace "chart.jpg" with"#), "{help}");
     }
 
     #[test]
     fn empty_alt_is_not_flagged_as_missing() {
         let p = page_from_html(r#"<img src="deco.png" alt="">"#);
-        assert!(check_missing_alt(&p, &CheckOptions::default()).is_empty());
+        assert!(check_missing_alt(&p).is_empty());
     }
 
     #[test]
     fn descriptive_alt_is_not_flagged_as_missing() {
         let p = page_from_html(r#"<img src="photo.jpg" alt="A red bicycle">"#);
-        assert!(check_missing_alt(&p, &CheckOptions::default()).is_empty());
+        assert!(check_missing_alt(&p).is_empty());
     }
 
     #[test]
     fn placeholder_word_alt_is_flagged() {
         let p = page_from_html(r#"<img src="a.jpg" alt="image">"#);
-        let findings = check_non_alternative_alt(&p, &CheckOptions::default());
+        let findings = check_non_alternative_alt(&p);
         assert_eq!(findings.len(), 1);
         assert_eq!(findings[0].rule_id, "F30");
     }
@@ -146,30 +140,24 @@ mod tests {
     #[test]
     fn numbered_placeholder_word_alt_is_flagged() {
         let p = page_from_html(r#"<img src="a.jpg" alt="picture1">"#);
-        assert_eq!(
-            check_non_alternative_alt(&p, &CheckOptions::default()).len(),
-            1
-        );
+        assert_eq!(check_non_alternative_alt(&p).len(), 1);
     }
 
     #[test]
     fn filename_alt_is_flagged() {
         let p = page_from_html(r#"<img src="a.jpg" alt="Oct.jpg">"#);
-        assert_eq!(
-            check_non_alternative_alt(&p, &CheckOptions::default()).len(),
-            1
-        );
+        assert_eq!(check_non_alternative_alt(&p).len(), 1);
     }
 
     #[test]
     fn descriptive_alt_is_not_flagged_as_non_alternative() {
         let p = page_from_html(r#"<img src="a.jpg" alt="Quarterly sales rose 12%">"#);
-        assert!(check_non_alternative_alt(&p, &CheckOptions::default()).is_empty());
+        assert!(check_non_alternative_alt(&p).is_empty());
     }
 
     #[test]
     fn empty_alt_is_not_flagged_as_non_alternative() {
         let p = page_from_html(r#"<img src="a.jpg" alt="">"#);
-        assert!(check_non_alternative_alt(&p, &CheckOptions::default()).is_empty());
+        assert!(check_non_alternative_alt(&p).is_empty());
     }
 }

@@ -4,10 +4,10 @@ use std::collections::HashSet;
 
 use crate::page::{ElementRef, RenderedPage};
 
-use crate::rules::{CheckOptions, Finding};
+use crate::rules::Finding;
 
 /// F91: a table with data rows but no `th` cells leaves row/column headers unmarked.
-pub fn check_table_missing_headers(page: &RenderedPage, _options: &CheckOptions) -> Vec<Finding> {
+pub fn check_table_missing_headers(page: &RenderedPage) -> Vec<Finding> {
     page.by_tag("table")
         .filter(|table| !is_presentation_table(*table))
         .filter(|table| has_data_rows(*table))
@@ -40,7 +40,7 @@ fn has_header_cells(table: ElementRef) -> bool {
 
 /// H63: a `th` should declare `scope`, unless it is instead referenced by a `td`'s `headers`
 /// attribute (the complex-table association method from H43).
-pub fn check_header_missing_scope(page: &RenderedPage, _options: &CheckOptions) -> Vec<Finding> {
+pub fn check_header_missing_scope(page: &RenderedPage) -> Vec<Finding> {
     let referenced_ids = referenced_header_ids(page);
     page.by_tag("th")
         .filter(|th| th.attr("scope").is_none())
@@ -82,10 +82,7 @@ fn is_referenced(th: ElementRef, referenced_ids: &HashSet<&str>) -> bool {
 /// F46 (layout table carrying data-table markup) / F92 (data table hidden by
 /// `role="presentation"`): header cells, a caption, or a summary contradict the role, so
 /// either the markup or the role misrepresents the table.
-pub fn check_presentation_table_semantics(
-    page: &RenderedPage,
-    _options: &CheckOptions,
-) -> Vec<Finding> {
+pub fn check_presentation_table_semantics(page: &RenderedPage) -> Vec<Finding> {
     page.by_tag("table")
         .filter(|table| is_presentation_table(*table))
         .filter_map(|table| {
@@ -143,7 +140,7 @@ fn own_elements(table: ElementRef) -> Vec<ElementRef> {
 
 /// F90: every id in a cell's `headers` must name a `th` of the same table, or the cell is
 /// announced with the wrong headers (or none).
-pub fn check_headers_reference(page: &RenderedPage, _options: &CheckOptions) -> Vec<Finding> {
+pub fn check_headers_reference(page: &RenderedPage) -> Vec<Finding> {
     page.all()
         .filter(|el| matches!(el.tag(), "td" | "th"))
         .filter_map(|cell| {
@@ -194,7 +191,7 @@ mod tests {
         let p = page_from_html(
             "<table><tr><th>Name</th><th>Score</th></tr><tr><th>Alex</th><td>92</td></tr></table>",
         );
-        let helps: Vec<_> = check_header_missing_scope(&p, &CheckOptions::default())
+        let helps: Vec<_> = check_header_missing_scope(&p)
             .into_iter()
             .map(|finding| finding.help.unwrap())
             .collect();
@@ -208,7 +205,7 @@ mod tests {
     #[test]
     fn table_without_th_is_flagged() {
         let p = page_from_html("<table><tr><td>Month</td><td>Revenue</td></tr></table>");
-        let findings = check_table_missing_headers(&p, &CheckOptions::default());
+        let findings = check_table_missing_headers(&p);
         assert_eq!(findings.len(), 1);
         assert_eq!(findings[0].rule_id, "F91");
     }
@@ -218,26 +215,26 @@ mod tests {
         let p = page_from_html(
             r#"<table><tr><th scope="col">Month</th></tr><tr><td>January</td></tr></table>"#,
         );
-        assert!(check_table_missing_headers(&p, &CheckOptions::default()).is_empty());
+        assert!(check_table_missing_headers(&p).is_empty());
     }
 
     #[test]
     fn presentation_table_is_not_flagged() {
         let p =
             page_from_html(r#"<table role="presentation"><tr><td>A</td><td>B</td></tr></table>"#);
-        assert!(check_table_missing_headers(&p, &CheckOptions::default()).is_empty());
+        assert!(check_table_missing_headers(&p).is_empty());
     }
 
     #[test]
     fn table_without_data_rows_is_not_flagged() {
         let p = page_from_html("<table><tr><th>Header only</th></tr></table>");
-        assert!(check_table_missing_headers(&p, &CheckOptions::default()).is_empty());
+        assert!(check_table_missing_headers(&p).is_empty());
     }
 
     #[test]
     fn th_without_scope_is_flagged() {
         let p = page_from_html("<table><tr><th>Name</th></tr></table>");
-        let findings = check_header_missing_scope(&p, &CheckOptions::default());
+        let findings = check_header_missing_scope(&p);
         assert_eq!(findings.len(), 1);
         assert_eq!(findings[0].rule_id, "H63");
     }
@@ -245,7 +242,7 @@ mod tests {
     #[test]
     fn th_with_scope_is_not_flagged() {
         let p = page_from_html(r#"<table><tr><th scope="col">Name</th></tr></table>"#);
-        assert!(check_header_missing_scope(&p, &CheckOptions::default()).is_empty());
+        assert!(check_header_missing_scope(&p).is_empty());
     }
 
     #[test]
@@ -253,7 +250,7 @@ mod tests {
         let p = page_from_html(
             r#"<table><tr><th id="name-h">Name</th></tr><tr><td headers="name-h">Alex</td></tr></table>"#,
         );
-        assert!(check_header_missing_scope(&p, &CheckOptions::default()).is_empty());
+        assert!(check_header_missing_scope(&p).is_empty());
     }
 
     #[test]
@@ -262,7 +259,7 @@ mod tests {
             r#"<table role="presentation"><tr><th colspan=3>Page Title</th></tr>
                <tr><td>navigation</td><td>main</td><td>sidebar</td></tr></table>"#,
         );
-        let findings = check_presentation_table_semantics(&p, &CheckOptions::default());
+        let findings = check_presentation_table_semantics(&p);
         assert_eq!(findings.len(), 1);
         assert_eq!(findings[0].rule_id, "F46");
         assert!(
@@ -278,7 +275,7 @@ mod tests {
             r#"<table role="presentation" summary="Fruit colors"><caption>Fruits and their colors</caption>
                <tr><th>Name</th><th>Color</th></tr><tr><td scope="row">banana</td><td>yellow</td></tr></table>"#,
         );
-        let findings = check_presentation_table_semantics(&p, &CheckOptions::default());
+        let findings = check_presentation_table_semantics(&p);
         assert!(
             findings[0]
                 .message
@@ -293,7 +290,7 @@ mod tests {
         let p = page_from_html(
             r#"<table role="none" summary=""><tr><td>A</td><td>B</td></tr></table>"#,
         );
-        assert!(check_presentation_table_semantics(&p, &CheckOptions::default()).is_empty());
+        assert!(check_presentation_table_semantics(&p).is_empty());
     }
 
     #[test]
@@ -303,7 +300,7 @@ mod tests {
                <table><tr><th scope="col">Name</th></tr><tr><td>Alex</td></tr></table>
                </td></tr></table>"#,
         );
-        assert!(check_presentation_table_semantics(&p, &CheckOptions::default()).is_empty());
+        assert!(check_presentation_table_semantics(&p).is_empty());
     }
 
     #[test]
@@ -312,7 +309,7 @@ mod tests {
             r#"<table><tr><th id="h">Homework</th><td id="d">x</td></tr>
                <tr><td headers="h">15%</td><td headers="h e1 d">10%</td></tr></table>"#,
         );
-        let findings = check_headers_reference(&p, &CheckOptions::default());
+        let findings = check_headers_reference(&p);
         assert_eq!(findings.len(), 1);
         assert_eq!(findings[0].rule_id, "F90");
         assert!(
@@ -328,9 +325,6 @@ mod tests {
             r#"<table><tr><th id="other">Other</th></tr></table>
                <table><tr><th id="h">H</th></tr><tr><td headers="other">1</td></tr></table>"#,
         );
-        assert_eq!(
-            check_headers_reference(&p, &CheckOptions::default()).len(),
-            1
-        );
+        assert_eq!(check_headers_reference(&p).len(), 1);
     }
 }

@@ -2,11 +2,11 @@
 
 use crate::page::{ElementRef, RenderedPage};
 
-use crate::rules::{CheckOptions, Finding};
+use crate::rules::Finding;
 
 /// G87: a prerecorded video needs a captions (or subtitles) track for deaf and hard-of-hearing
 /// users to follow its audio.
-pub fn check_video_missing_captions(page: &RenderedPage, _options: &CheckOptions) -> Vec<Finding> {
+pub fn check_video_missing_captions(page: &RenderedPage) -> Vec<Finding> {
     page.by_tag("video")
         .filter(|video| !has_captions_track(*video))
         .map(|video| {
@@ -32,10 +32,7 @@ fn has_captions_track(video: ElementRef) -> bool {
 
 /// G186: an autoplaying video without visible controls gives users no way to pause or stop
 /// it, which WCAG 2.2.2 requires for content that plays automatically.
-pub fn check_autoplay_without_controls(
-    page: &RenderedPage,
-    _options: &CheckOptions,
-) -> Vec<Finding> {
+pub fn check_autoplay_without_controls(page: &RenderedPage) -> Vec<Finding> {
     page.all()
         .filter(|el| el.tag() == "video" && el.has_attr("autoplay"))
         .filter(|video| video.attr("controls").is_none())
@@ -52,10 +49,7 @@ pub fn check_autoplay_without_controls(
 
 /// F93: an `audio` or `video` element that starts playing sound on its own, with no controls,
 /// talks over screen readers with no way to stop it.
-pub fn check_autoplay_audio_without_controls(
-    page: &RenderedPage,
-    _options: &CheckOptions,
-) -> Vec<Finding> {
+pub fn check_autoplay_audio_without_controls(page: &RenderedPage) -> Vec<Finding> {
     page.all()
         .filter(|el| matches!(el.tag(), "audio" | "video"))
         .filter(|media| media.has_attr("autoplay") && !media.has_attr("muted"))
@@ -75,7 +69,7 @@ pub fn check_autoplay_audio_without_controls(
 }
 
 /// F16: a `marquee` scrolls for as long as the page is open, and offers no way to pause it.
-pub fn check_marquee(page: &RenderedPage, _options: &CheckOptions) -> Vec<Finding> {
+pub fn check_marquee(page: &RenderedPage) -> Vec<Finding> {
     page.by_tag("marquee")
         .map(|marquee| {
             Finding::error(
@@ -96,7 +90,7 @@ mod tests {
     #[test]
     fn video_without_captions_is_flagged() {
         let p = page_from_html(r#"<video src="a.mp4" controls></video>"#);
-        let findings = check_video_missing_captions(&p, &CheckOptions::default());
+        let findings = check_video_missing_captions(&p);
         assert_eq!(findings.len(), 1);
         assert_eq!(findings[0].rule_id, "G87");
     }
@@ -106,13 +100,13 @@ mod tests {
         let p = page_from_html(
             r#"<video src="a.mp4" controls><track kind="captions" src="a.vtt"></video>"#,
         );
-        assert!(check_video_missing_captions(&p, &CheckOptions::default()).is_empty());
+        assert!(check_video_missing_captions(&p).is_empty());
     }
 
     #[test]
     fn autoplay_without_controls_is_flagged() {
         let p = page_from_html(r#"<video src="a.mp4" autoplay></video>"#);
-        let findings = check_autoplay_without_controls(&p, &CheckOptions::default());
+        let findings = check_autoplay_without_controls(&p);
         assert_eq!(findings.len(), 1);
         assert_eq!(findings[0].rule_id, "G186");
     }
@@ -120,13 +114,13 @@ mod tests {
     #[test]
     fn autoplay_with_controls_is_not_flagged() {
         let p = page_from_html(r#"<video src="a.mp4" autoplay controls></video>"#);
-        assert!(check_autoplay_without_controls(&p, &CheckOptions::default()).is_empty());
+        assert!(check_autoplay_without_controls(&p).is_empty());
     }
 
     #[test]
     fn non_autoplay_video_is_not_flagged() {
         let p = page_from_html(r#"<video src="a.mp4"></video>"#);
-        assert!(check_autoplay_without_controls(&p, &CheckOptions::default()).is_empty());
+        assert!(check_autoplay_without_controls(&p).is_empty());
     }
 
     #[test]
@@ -134,7 +128,7 @@ mod tests {
         let p = page_from_html(
             r#"<video src="ads.cgi?kind=video" autoplay loop></video><audio src="a.mp3" autoplay></audio>"#,
         );
-        let findings = check_autoplay_audio_without_controls(&p, &CheckOptions::default());
+        let findings = check_autoplay_audio_without_controls(&p);
         assert_eq!(findings.len(), 2);
         assert_eq!(findings[0].rule_id, "F93");
         assert!(findings[1].message.starts_with("<audio autoplay>"));
@@ -145,13 +139,13 @@ mod tests {
         let p = page_from_html(
             r#"<video src="a.mp4" autoplay muted></video><audio src="a.mp3" autoplay controls></audio>"#,
         );
-        assert!(check_autoplay_audio_without_controls(&p, &CheckOptions::default()).is_empty());
+        assert!(check_autoplay_audio_without_controls(&p).is_empty());
     }
 
     #[test]
     fn marquee_is_flagged() {
         let p = page_from_html("<marquee>Breaking news: sale ends today!</marquee>");
-        let findings = check_marquee(&p, &CheckOptions::default());
+        let findings = check_marquee(&p);
         assert_eq!(findings.len(), 1);
         assert_eq!(findings[0].rule_id, "F16");
     }

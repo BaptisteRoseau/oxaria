@@ -7,8 +7,8 @@
 //! roles from their context (an `li` outside a list is `generic`).
 
 use crate::page::{ElementRef, RenderedPage};
+use crate::rules::Finding;
 use crate::rules::aria_spec::{Role, aria_idrefs, first_valid_role, is_aria_true, is_hidden};
-use crate::rules::{CheckOptions, Finding};
 
 use super::support::or_list;
 use super::tree::{Tree, exposed_role, has_exposed_role};
@@ -25,7 +25,7 @@ fn explicit_exposed_role(el: ElementRef) -> Option<&'static Role> {
 }
 
 /// ARIA-STRUCT001: a role with a required context means nothing outside it.
-pub fn check_required_context(page: &RenderedPage, _options: &CheckOptions) -> Vec<Finding> {
+pub fn check_required_context(page: &RenderedPage) -> Vec<Finding> {
     let tree = Tree::new(page);
     page.all()
         .filter(|el| !is_hidden(*el))
@@ -87,7 +87,7 @@ fn required_context_finding(el: ElementRef, role: &Role, actual: Option<&str>) -
 /// ARIA-STRUCT002: a container role that owns none of its required items
 /// is an empty widget to assistive technologies. Empty containers pass:
 /// script may fill them.
-pub fn check_required_owned(page: &RenderedPage, _options: &CheckOptions) -> Vec<Finding> {
+pub fn check_required_owned(page: &RenderedPage) -> Vec<Finding> {
     let tree = Tree::new(page);
     page.all()
         .filter(|el| !is_hidden(*el) && !is_busy(*el))
@@ -159,7 +159,7 @@ fn required_owned_finding(el: ElementRef, role: &Role, owned: &[ElementRef]) -> 
 
 /// ARIA-STRUCT003: a `group` in a `listbox` holds only options, and a
 /// `spinbutton` only its text field and two buttons.
-pub fn check_restricted_children(page: &RenderedPage, _options: &CheckOptions) -> Vec<Finding> {
+pub fn check_restricted_children(page: &RenderedPage) -> Vec<Finding> {
     let tree = Tree::new(page);
     page.all()
         .filter(|el| !is_hidden(*el))
@@ -225,7 +225,7 @@ fn spinbutton_finding(tree: &Tree, spinbutton: ElementRef) -> Option<Finding> {
 
 /// ARIA-STRUCT004: a `caption` comes first in its table (first or last in
 /// its figure), and names it through `aria-labelledby`.
-pub fn check_caption_placement(page: &RenderedPage, _options: &CheckOptions) -> Vec<Finding> {
+pub fn check_caption_placement(page: &RenderedPage) -> Vec<Finding> {
     page.all()
         .filter(|el| {
             !is_hidden(*el) && explicit_exposed_role(*el).is_some_and(|r| r.name == "caption")
@@ -303,8 +303,8 @@ mod tests {
     use super::*;
     use crate::page::testutil::page_from_html;
 
-    fn run(check: fn(&RenderedPage, &CheckOptions) -> Vec<Finding>, html: &str) -> Vec<Finding> {
-        check(&page_from_html(html), &CheckOptions::default())
+    fn run(check: fn(&RenderedPage) -> Vec<Finding>, html: &str) -> Vec<Finding> {
+        check(&page_from_html(html))
     }
 
     #[rstest]

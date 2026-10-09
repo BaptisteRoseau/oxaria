@@ -1,12 +1,12 @@
 //! ACT rule a25f45 for table cells' `headers` attributes.
 
 use crate::page::{ElementRef, RenderedPage};
+use crate::rules::Finding;
 use crate::rules::aria_spec::{effective_role, is_hidden};
-use crate::rules::{CheckOptions, Finding};
 
 /// a25f45: each id in a cell's `headers` must be another cell of the same
 /// table.
-pub fn check_headers_refer_to_cells(page: &RenderedPage, _options: &CheckOptions) -> Vec<Finding> {
+pub fn check_headers_refer_to_cells(page: &RenderedPage) -> Vec<Finding> {
     page.all()
         .filter(|el| is_cell(*el))
         .filter_map(|cell| Some((cell, cell.attr("headers")?, exposed_table(cell)?)))
@@ -78,7 +78,7 @@ mod tests {
     use crate::page::testutil::page_from_html;
 
     fn count(html: &str) -> usize {
-        check_headers_refer_to_cells(&page_from_html(html), &CheckOptions::default()).len()
+        check_headers_refer_to_cells(&page_from_html(html)).len()
     }
 
     #[rstest]
@@ -132,7 +132,7 @@ mod tests {
         let page = page_from_html(
             r#"<table><tr><th id="h1">P</th></tr><tr><td headers="h1 gone">1</td></tr></table>"#,
         );
-        let findings = check_headers_refer_to_cells(&page, &CheckOptions::default());
+        let findings = check_headers_refer_to_cells(&page);
         assert_eq!(
             findings[0].message,
             r#"<td headers="h1 gone"> refers to "gone", not another cell of the same table"#

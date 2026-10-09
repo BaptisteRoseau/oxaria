@@ -2,7 +2,7 @@
 
 use crate::page::{ElementRef, RenderedPage};
 
-use crate::rules::{CheckOptions, Finding};
+use crate::rules::Finding;
 
 const WIDGET_ROLES: &[&str] = &[
     "button", "link", "menuitem", "tab", "checkbox", "radio", "switch", "option",
@@ -11,7 +11,7 @@ const WIDGET_ROLES: &[&str] = &[
 /// F96: when `aria-label`/`aria-labelledby` overrides a control's visible label, the
 /// resulting name must still contain that label, or speech users can't activate the control by
 /// saying what they see.
-pub fn check_label_not_in_name(page: &RenderedPage, _options: &CheckOptions) -> Vec<Finding> {
+pub fn check_label_not_in_name(page: &RenderedPage) -> Vec<Finding> {
     page.all()
         .filter(|el| is_control(*el) && is_named_by_aria(*el))
         .filter_map(|control| Some((control, visible_label(control)?)))
@@ -84,7 +84,7 @@ mod tests {
     use crate::page::testutil::page_from_html;
 
     fn findings(html: &str) -> Vec<Finding> {
-        check_label_not_in_name(&page_from_html(html), &CheckOptions::default())
+        check_label_not_in_name(&page_from_html(html))
     }
 
     #[test]

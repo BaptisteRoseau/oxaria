@@ -111,9 +111,12 @@ mod tests {
 
     use super::*;
     use crate::page::testutil::page_from_html;
-    use crate::rules::{RuleCheck, Severity};
+    use crate::rules::Severity;
 
-    fn findings(check: RuleCheck, html: &str) -> Vec<Finding> {
+    fn findings(
+        check: fn(&RenderedPage, &CheckOptions) -> Vec<Finding>,
+        html: &str,
+    ) -> Vec<Finding> {
         check(&page_from_html(html), &CheckOptions::default())
     }
 

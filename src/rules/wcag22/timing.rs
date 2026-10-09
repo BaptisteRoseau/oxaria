@@ -2,7 +2,7 @@
 
 use crate::page::{ElementRef, RenderedPage};
 
-use crate::rules::{CheckOptions, Finding};
+use crate::rules::Finding;
 
 /// F40/F41 treat a delay under one second as instant and one over 20 hours as never reached.
 const SHORTEST_TIMED_DELAY: f64 = 1.0;
@@ -15,7 +15,7 @@ struct Refresh {
 
 /// F40 (timed redirect) / F41 (periodic reload): a `meta` refresh that fires after a delay
 /// changes the page under users who may still be reading it, with no way to stop it.
-pub fn check_timed_meta_refresh(page: &RenderedPage, _options: &CheckOptions) -> Vec<Finding> {
+pub fn check_timed_meta_refresh(page: &RenderedPage) -> Vec<Finding> {
     page.by_tag("meta")
         .filter(|meta| is_refresh(*meta))
         .filter_map(|meta| parse_refresh(meta.attr("content")?).map(|refresh| (meta, refresh)))
@@ -85,7 +85,7 @@ mod tests {
 
     fn findings(content: &str) -> Vec<Finding> {
         let html = format!(r#"<head><meta http-equiv="refresh" content="{content}"></head>"#);
-        check_timed_meta_refresh(&page_from_html(&html), &CheckOptions::default())
+        check_timed_meta_refresh(&page_from_html(&html))
     }
 
     #[test]
@@ -130,6 +130,6 @@ mod tests {
     #[test]
     fn other_meta_elements_are_ignored() {
         let p = page_from_html(r#"<head><meta name="viewport" content="5"></head>"#);
-        assert!(check_timed_meta_refresh(&p, &CheckOptions::default()).is_empty());
+        assert!(check_timed_meta_refresh(&p).is_empty());
     }
 }

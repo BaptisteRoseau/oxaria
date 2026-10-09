@@ -1,15 +1,15 @@
 //! ARIA in HTML's case requirement on `role` and `aria-*` token values.
 
 use crate::page::{ElementRef, RenderedPage};
+use crate::rules::Finding;
 use crate::rules::aria_spec::{Parsed, ValueType, aria_attributes, attribute, parse_value, role};
-use crate::rules::{CheckOptions, Finding};
 
 use super::markup::start_tag;
 
 /// HTMLARIA016: role tokens and `aria-*` token values not written in
 /// ASCII lowercase. Only tokens browsers would recognize once lowercased
 /// are reported; unknown ones are WAI-ARIA's rules' business.
-pub fn check_lowercase_tokens(page: &RenderedPage, _options: &CheckOptions) -> Vec<Finding> {
+pub fn check_lowercase_tokens(page: &RenderedPage) -> Vec<Finding> {
     page.all()
         .flat_map(|el| uppercase_role(el).into_iter().chain(uppercase_values(el)))
         .collect()
@@ -81,7 +81,7 @@ mod tests {
     use crate::page::testutil::page_from_html;
 
     fn run(html: &str) -> Vec<Finding> {
-        check_lowercase_tokens(&page_from_html(html), &CheckOptions::default())
+        check_lowercase_tokens(&page_from_html(html))
     }
 
     #[rstest]

@@ -5,7 +5,7 @@
 //! rotation declared outside the query (2.5deg, then 92.5deg) isn't.
 
 use crate::page::RenderedPage;
-use crate::rules::{CheckOptions, Finding};
+use crate::rules::Finding;
 
 /// How far from a quarter turn a rotation may be and still lock the page.
 const ANGLE_TOLERANCE_DEGREES: f64 = 1.0;
@@ -18,7 +18,7 @@ struct Rotation {
 
 /// b33eff: an orientation media query must not rotate content by a quarter
 /// turn to keep it in one orientation.
-pub fn check_orientation_lock(page: &RenderedPage, _options: &CheckOptions) -> Vec<Finding> {
+pub fn check_orientation_lock(page: &RenderedPage) -> Vec<Finding> {
     let css = strip_comments(&page.stylesheet_text());
     let mut rotations = Vec::new();
     collect_rotations(&css, None, &mut rotations);
@@ -206,7 +206,7 @@ mod tests {
 
     fn findings(css: &str) -> Vec<Finding> {
         let html = format!("<head><style>{css}</style></head><body>Page Content</body>");
-        check_orientation_lock(&page_from_html(&html), &CheckOptions::default())
+        check_orientation_lock(&page_from_html(&html))
     }
 
     #[rstest]

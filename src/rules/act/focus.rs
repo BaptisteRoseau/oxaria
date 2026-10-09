@@ -1,16 +1,13 @@
 //! ACT rule 307n5z for focusable content hidden by presentational children.
 
 use crate::page::{ElementRef, RenderedPage};
+use crate::rules::Finding;
 use crate::rules::aria_spec::{effective_role, is_tabbable};
-use crate::rules::{CheckOptions, Finding};
 
 /// 307n5z: an element whose role makes its children presentational (a
 /// button, checkbox, tab, image, ...) must not contain anything in the
 /// sequential focus order: assistive technologies never reach it.
-pub fn check_focusable_in_presentational_children(
-    page: &RenderedPage,
-    _options: &CheckOptions,
-) -> Vec<Finding> {
+pub fn check_focusable_in_presentational_children(page: &RenderedPage) -> Vec<Finding> {
     page.all()
         .filter_map(|el| Some((el, effective_role(el)?)))
         .filter(|(_, role)| role.children_presentational)
@@ -57,8 +54,7 @@ mod tests {
     use crate::page::testutil::page_from_html;
 
     fn count(html: &str) -> usize {
-        check_focusable_in_presentational_children(&page_from_html(html), &CheckOptions::default())
-            .len()
+        check_focusable_in_presentational_children(&page_from_html(html)).len()
     }
 
     #[rstest]

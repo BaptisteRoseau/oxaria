@@ -2,14 +2,14 @@
 //! `meta` refresh whose `content` is valid counts, as HTML only acts on it.
 
 use crate::page::{ElementRef, RenderedPage};
-use crate::rules::{CheckOptions, Finding};
+use crate::rules::Finding;
 
 /// A delay above 20 hours is considered never reached by bc659a.
 const LONGEST_TIMED_DELAY: u64 = 72_000;
 
 /// bc659a: the first valid meta refresh must be instant or wait more than
 /// 20 hours.
-pub fn check_refresh_delay(page: &RenderedPage, _options: &CheckOptions) -> Vec<Finding> {
+pub fn check_refresh_delay(page: &RenderedPage) -> Vec<Finding> {
     first_valid_refresh(page)
         .filter(|(_, delay)| (1..=LONGEST_TIMED_DELAY).contains(delay))
         .map(|(meta, delay)| {
@@ -24,7 +24,7 @@ pub fn check_refresh_delay(page: &RenderedPage, _options: &CheckOptions) -> Vec<
 
 /// bisz58: the first valid meta refresh must be instant, however long its
 /// delay.
-pub fn check_refresh_instant(page: &RenderedPage, _options: &CheckOptions) -> Vec<Finding> {
+pub fn check_refresh_instant(page: &RenderedPage) -> Vec<Finding> {
     first_valid_refresh(page)
         .filter(|(_, delay)| *delay > 0)
         .map(|(meta, delay)| {
@@ -89,7 +89,7 @@ mod tests {
 
     fn count(check: RuleCheck, head: &str) -> usize {
         let html = format!("<head>{head}</head><body><p>x</p></body>");
-        check(&page_from_html(&html), &CheckOptions::default()).len()
+        check(&page_from_html(&html)).len()
     }
 
     const INSTANT_REDIRECT: &str =

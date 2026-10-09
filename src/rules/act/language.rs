@@ -2,11 +2,11 @@
 
 use super::language_subtags::LANGUAGE_SUBTAGS;
 use crate::page::{ElementRef, RenderedPage};
+use crate::rules::Finding;
 use crate::rules::aria_spec::is_not_rendered;
-use crate::rules::{CheckOptions, Finding};
 
 /// 2779a5: the first HTML `title` element must contain text.
-pub fn check_page_title(page: &RenderedPage, _options: &CheckOptions) -> Vec<Finding> {
+pub fn check_page_title(page: &RenderedPage) -> Vec<Finding> {
     let message = match first_title(page).map(|title| title.text()) {
         Some(text) if !text.is_empty() => return Vec::new(),
         Some(_) => "the page's first <title> element is empty",
@@ -30,7 +30,7 @@ fn first_title(page: &RenderedPage) -> Option<ElementRef<'_>> {
 
 /// b5c3f8: the `html` element needs a `lang` attribute that isn't empty or
 /// only whitespace.
-pub fn check_html_lang(page: &RenderedPage, _options: &CheckOptions) -> Vec<Finding> {
+pub fn check_html_lang(page: &RenderedPage) -> Vec<Finding> {
     let Some(html) = page.by_tag("html").next() else {
         return Vec::new();
     };
@@ -47,7 +47,7 @@ pub fn check_html_lang(page: &RenderedPage, _options: &CheckOptions) -> Vec<Find
 
 /// bf051a: the `html` element's `lang` must start with a primary language
 /// subtag from the IANA registry.
-pub fn check_html_lang_valid(page: &RenderedPage, _options: &CheckOptions) -> Vec<Finding> {
+pub fn check_html_lang_valid(page: &RenderedPage) -> Vec<Finding> {
     page.by_tag("html")
         .next()
         .and_then(|html| Some((html, html.attr("lang")?)))
@@ -65,7 +65,7 @@ pub fn check_html_lang_valid(page: &RenderedPage, _options: &CheckOptions) -> Ve
 
 /// de46e4: every `lang` in the `body` on an element whose text inherits it
 /// must start with a known primary language subtag.
-pub fn check_element_lang_valid(page: &RenderedPage, _options: &CheckOptions) -> Vec<Finding> {
+pub fn check_element_lang_valid(page: &RenderedPage) -> Vec<Finding> {
     page.all()
         .filter_map(|el| Some((el, el.attr("lang")?)))
         .filter(|(el, lang)| !lang.is_empty() && is_in_body(*el))
@@ -146,7 +146,7 @@ mod tests {
     use crate::rules::RuleCheck;
 
     fn count(check: RuleCheck, html: &str) -> usize {
-        check(&page_from_html(html), &CheckOptions::default()).len()
+        check(&page_from_html(html)).len()
     }
 
     #[rstest]

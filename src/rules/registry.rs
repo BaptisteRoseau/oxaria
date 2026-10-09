@@ -6,17 +6,46 @@ use tracing::error;
 use super::{CheckOptions, Finding, Standard};
 use crate::page::RenderedPage;
 
-pub type RuleCheck = fn(&RenderedPage, &CheckOptions) -> Vec<Finding>;
+pub type RuleCheck = fn(&RenderedPage) -> Vec<Finding>;
+
+/// A rule's check; only the threshold-based rules read the CLI options.
+#[derive(Clone, Copy)]
+pub enum Check {
+    Page(RuleCheck),
+    WithOptions(fn(&RenderedPage, &CheckOptions) -> Vec<Finding>),
+}
 
 /// One rule: its check and every rule ID its findings can carry.
 pub struct Rule {
     pub ids: &'static [&'static str],
-    pub check: RuleCheck,
+    pub check: Check,
 }
 
 impl Rule {
     pub const fn new(ids: &'static [&'static str], check: RuleCheck) -> Self {
-        Self { ids, check }
+        Self {
+            ids,
+            check: Check::Page(check),
+        }
+    }
+
+    pub const fn with_options(
+        ids: &'static [&'static str],
+        check: fn(&RenderedPage, &CheckOptions) -> Vec<Finding>,
+    ) -> Self {
+        Self {
+            ids,
+            check: Check::WithOptions(check),
+        }
+    }
+}
+
+impl Check {
+    pub fn run(self, page: &RenderedPage, options: &CheckOptions) -> Vec<Finding> {
+        match self {
+            Check::Page(check) => check(page),
+            Check::WithOptions(check) => check(page, options),
+        }
     }
 }
 
@@ -75,12 +104,13 @@ pub async fn run_all(page: Arc<RenderedPage>, options: Arc<CheckOptions>) -> Vec
 
 fn spawn_rule(
     standard: Standard,
-    check: RuleCheck,
+    check: Check,
     page: Arc<RenderedPage>,
     options: Arc<CheckOptions>,
 ) -> JoinHandle<Vec<Finding>> {
     tokio::task::spawn_blocking(move || {
-        check(&page, &options)
+        check
+            .run(&page, &options)
             .into_iter()
             .map(|finding| finding.in_standard(standard))
             .collect()
@@ -114,7 +144,7 @@ pub(crate) mod tests {
         for html in pages {
             let page = page_from_html(html);
             for rule in standard.def().rules {
-                let rule_findings = (rule.check)(&page, &options);
+                let rule_findings = rule.check.run(&page, &options);
                 let undeclared: Vec<_> = rule_findings
                     .iter()
                     .filter(|f| !rule.ids.contains(&f.rule_id))

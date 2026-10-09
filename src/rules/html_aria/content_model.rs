@@ -1,8 +1,8 @@
 //! ARIA in HTML's "Allowed descendants of ARIA roles".
 
 use crate::page::{ElementRef, RenderedPage};
+use crate::rules::Finding;
 use crate::rules::aria_spec::{effective_role, first_valid_role, input_type, is_not_rendered};
-use crate::rules::{CheckOptions, Finding};
 
 use super::markup::start_tag;
 
@@ -97,7 +97,7 @@ enum Violation {
 /// once, against the nearest ancestor excluding it. The `main`, `form`,
 /// `meter` and `progress` limits only apply to explicit roles: HTML's own
 /// content model already covers the native elements.
-pub fn check_disallowed_descendants(page: &RenderedPage, _options: &CheckOptions) -> Vec<Finding> {
+pub fn check_disallowed_descendants(page: &RenderedPage) -> Vec<Finding> {
     page.all()
         .filter(|el| is_candidate(*el) && !is_not_rendered(*el))
         .filter_map(|el| {
@@ -192,7 +192,7 @@ mod tests {
     use crate::page::testutil::page_from_html;
 
     fn run(html: &str) -> Vec<Finding> {
-        check_disallowed_descendants(&page_from_html(html), &CheckOptions::default())
+        check_disallowed_descendants(&page_from_html(html))
     }
 
     #[rstest]

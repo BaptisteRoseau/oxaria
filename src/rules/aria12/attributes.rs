@@ -4,11 +4,11 @@
 //! `aria-roledescription` (ARIA-ATTR008).
 
 use crate::page::{ElementRef, RenderedPage};
+use crate::rules::Finding;
 use crate::rules::aria_spec::{
     ARIA_1_3_ATTRIBUTES, Parsed, Role, Scope, aria_attributes, attribute, attributes,
     effective_role, parse_value, roles,
 };
-use crate::rules::{CheckOptions, Finding};
 
 use super::support::{closest, has_value, is_unroled_custom_element, quoted, role_label};
 use super::tree::exposed_role;
@@ -25,7 +25,7 @@ const NATIVE_SPAN_ATTRIBUTES: &[(&str, &str)] =
 
 /// ARIA-ATTR001: an `aria-*` name WAI-ARIA doesn't define does nothing.
 /// The 1.3 draft's names are left alone: browsers already support some.
-pub fn check_unknown_attribute(page: &RenderedPage, _options: &CheckOptions) -> Vec<Finding> {
+pub fn check_unknown_attribute(page: &RenderedPage) -> Vec<Finding> {
     page.all()
         .flat_map(|el| {
             aria_attributes(el)
@@ -55,7 +55,7 @@ fn unknown_attribute_help(name: &str) -> String {
 
 /// ARIA-ATTR003: a role-specific state or property on a role that doesn't
 /// support it is ignored.
-pub fn check_unsupported_attribute(page: &RenderedPage, _options: &CheckOptions) -> Vec<Finding> {
+pub fn check_unsupported_attribute(page: &RenderedPage) -> Vec<Finding> {
     page.all()
         .filter(|el| !is_unroled_custom_element(*el))
         .flat_map(unsupported_attribute_findings)
@@ -104,7 +104,7 @@ fn unsupported_attribute_help(name: &str) -> String {
 
 /// ARIA-ATTR004: a prohibited state or property, such as a name on a
 /// `generic` element, is ignored.
-pub fn check_prohibited_attribute(page: &RenderedPage, _options: &CheckOptions) -> Vec<Finding> {
+pub fn check_prohibited_attribute(page: &RenderedPage) -> Vec<Finding> {
     page.all()
         .filter(|el| !is_unroled_custom_element(*el))
         .flat_map(prohibited_attribute_findings)
@@ -153,7 +153,7 @@ fn prohibited_attribute_help(name: &str, role: &Role) -> String {
 /// ARIA-ATTR005: hierarchy attributes belong to `treegrid` rows, editing
 /// attributes to `grid` headers, and native tables span with
 /// `colspan`/`rowspan`.
-pub fn check_static_table_attribute(page: &RenderedPage, _options: &CheckOptions) -> Vec<Finding> {
+pub fn check_static_table_attribute(page: &RenderedPage) -> Vec<Finding> {
     page.all().flat_map(static_table_findings).collect()
 }
 
@@ -252,7 +252,7 @@ fn table_role(el: ElementRef) -> Option<&'static str> {
 
 /// ARIA-ATTR008: `aria-roledescription` only describes an element with a
 /// role, and an empty one erases the role's description.
-pub fn check_role_description(page: &RenderedPage, _options: &CheckOptions) -> Vec<Finding> {
+pub fn check_role_description(page: &RenderedPage) -> Vec<Finding> {
     page.all()
         .filter(|el| !is_unroled_custom_element(*el))
         .filter_map(|el| {
@@ -291,8 +291,8 @@ mod tests {
     use super::*;
     use crate::page::testutil::page_from_html;
 
-    fn run(check: fn(&RenderedPage, &CheckOptions) -> Vec<Finding>, html: &str) -> Vec<Finding> {
-        check(&page_from_html(html), &CheckOptions::default())
+    fn run(check: fn(&RenderedPage) -> Vec<Finding>, html: &str) -> Vec<Finding> {
+        check(&page_from_html(html))
     }
 
     #[rstest]

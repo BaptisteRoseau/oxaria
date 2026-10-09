@@ -2,11 +2,11 @@
 
 use crate::page::{ElementRef, RenderedPage};
 
-use crate::rules::{CheckOptions, Finding};
+use crate::rules::Finding;
 
 /// H64: an `iframe` needs a `title` (or ARIA name) so users can tell frames apart before
 /// entering one.
-pub fn check_untitled_iframe(page: &RenderedPage, _options: &CheckOptions) -> Vec<Finding> {
+pub fn check_untitled_iframe(page: &RenderedPage) -> Vec<Finding> {
     page.by_tag("iframe")
         .filter(|iframe| !is_hidden(*iframe))
         .filter(|iframe| !has_name(page, *iframe))
@@ -45,7 +45,7 @@ mod tests {
     use crate::page::testutil::page_from_html;
 
     fn findings(html: &str) -> Vec<Finding> {
-        check_untitled_iframe(&page_from_html(html), &CheckOptions::default())
+        check_untitled_iframe(&page_from_html(html))
     }
 
     #[test]

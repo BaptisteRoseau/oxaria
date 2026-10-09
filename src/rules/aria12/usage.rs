@@ -3,10 +3,10 @@
 //! (ARIA-USAGE003). The other choices depend on purpose and behavior.
 
 use crate::page::{ElementRef, RenderedPage};
+use crate::rules::Finding;
 use crate::rules::aria_spec::{
     aria_idrefs, first_valid_role, has_author_name, is_focusable, is_hidden,
 };
-use crate::rules::{CheckOptions, Finding};
 
 use super::support::{has_value, quoted};
 use super::time_string;
@@ -14,7 +14,7 @@ use super::tree::has_exposed_role;
 
 /// ARIA-USAGE002: a `term` isn't interactive, and a `time`'s text is a
 /// machine-readable date, time or duration.
-pub fn check_role_purpose(page: &RenderedPage, _options: &CheckOptions) -> Vec<Finding> {
+pub fn check_role_purpose(page: &RenderedPage) -> Vec<Finding> {
     page.all()
         .filter(|el| !is_hidden(*el))
         .filter_map(|el| match first_valid_role(el).map(|role| role.name) {
@@ -55,7 +55,7 @@ fn invalid_time_finding(el: ElementRef) -> Option<Finding> {
 
 /// ARIA-USAGE003: a placeholder isn't a label, an alert dialog's message
 /// is its description, and details are for everyone to see.
-pub fn check_naming_mechanism(page: &RenderedPage, _options: &CheckOptions) -> Vec<Finding> {
+pub fn check_naming_mechanism(page: &RenderedPage) -> Vec<Finding> {
     page.all()
         .filter(|el| !is_hidden(*el))
         .flat_map(|el| {
@@ -138,8 +138,8 @@ mod tests {
     use super::*;
     use crate::page::testutil::page_from_html;
 
-    fn run(check: fn(&RenderedPage, &CheckOptions) -> Vec<Finding>, html: &str) -> Vec<Finding> {
-        check(&page_from_html(html), &CheckOptions::default())
+    fn run(check: fn(&RenderedPage) -> Vec<Finding>, html: &str) -> Vec<Finding> {
+        check(&page_from_html(html))
     }
 
     #[rstest]

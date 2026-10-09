@@ -2,8 +2,8 @@
 //! explicit `generic` (ARIA-ROLE003).
 
 use crate::page::{ElementRef, RenderedPage};
+use crate::rules::Finding;
 use crate::rules::aria_spec::{explicit_roles, role};
-use crate::rules::{CheckOptions, Finding};
 
 /// Concrete roles to suggest for each abstract one.
 const CONCRETE_ALTERNATIVES: &[(&str, &str)] = &[
@@ -44,7 +44,7 @@ const CONCRETE_ALTERNATIVES: &[(&str, &str)] = &[
 
 /// ARIA-ROLE002: abstract roles only organize the role taxonomy; assistive
 /// technologies don't support them in content.
-pub fn check_abstract_role(page: &RenderedPage, _options: &CheckOptions) -> Vec<Finding> {
+pub fn check_abstract_role(page: &RenderedPage) -> Vec<Finding> {
     page.all().flat_map(abstract_role_findings).collect()
 }
 
@@ -73,7 +73,7 @@ fn abstract_role_help(token: &str) -> String {
 
 /// ARIA-ROLE003: `generic` exists for user agents to map elements such as
 /// `div` and `span`; authors remove or group semantics with other roles.
-pub fn check_explicit_generic(page: &RenderedPage, _options: &CheckOptions) -> Vec<Finding> {
+pub fn check_explicit_generic(page: &RenderedPage) -> Vec<Finding> {
     page.all()
         .filter(|el| explicit_roles(*el).iter().any(|token| token == "generic"))
         .map(|el| {
@@ -99,11 +99,11 @@ mod tests {
     use crate::page::testutil::page_from_html;
 
     fn abstract_roles(html: &str) -> Vec<Finding> {
-        check_abstract_role(&page_from_html(html), &CheckOptions::default())
+        check_abstract_role(&page_from_html(html))
     }
 
     fn generic_roles(html: &str) -> Vec<Finding> {
-        check_explicit_generic(&page_from_html(html), &CheckOptions::default())
+        check_explicit_generic(&page_from_html(html))
     }
 
     #[rstest]

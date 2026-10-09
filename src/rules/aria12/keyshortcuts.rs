@@ -1,7 +1,7 @@
 //! ARIA-ATTR007: the syntax of `aria-keyshortcuts`.
 
 use crate::page::RenderedPage;
-use crate::rules::{CheckOptions, Finding};
+use crate::rules::Finding;
 
 use super::support::quoted;
 
@@ -22,7 +22,7 @@ const MODIFIER_ALIASES: &[(&str, &str)] = &[
 
 /// ARIA-ATTR007: each shortcut is modifiers first, then exactly one other
 /// key, joined by `+`; shortcuts are separated by spaces.
-pub fn check_keyshortcuts_syntax(page: &RenderedPage, _options: &CheckOptions) -> Vec<Finding> {
+pub fn check_keyshortcuts_syntax(page: &RenderedPage) -> Vec<Finding> {
     page.all()
         .flat_map(|el| {
             let value = el.attr("aria-keyshortcuts").unwrap_or_default();
@@ -108,7 +108,7 @@ mod tests {
     use crate::page::testutil::page_from_html;
 
     fn run(html: &str) -> Vec<Finding> {
-        check_keyshortcuts_syntax(&page_from_html(html), &CheckOptions::default())
+        check_keyshortcuts_syntax(&page_from_html(html))
     }
 
     #[rstest]

@@ -1,14 +1,14 @@
 //! ACT rule b4f0c3 for zoom restrictions in the viewport `meta` element.
 
 use crate::page::{ElementRef, RenderedPage};
-use crate::rules::{CheckOptions, Finding};
+use crate::rules::Finding;
 
 /// `maximum-scale` below this stops users zooming to 200%.
 const MINIMUM_MAXIMUM_SCALE: f64 = 2.0;
 
 /// b4f0c3: a viewport `meta` must not disable zooming (`user-scalable`) or
 /// cap it below 200% (`maximum-scale`).
-pub fn check_viewport_zoom(page: &RenderedPage, _options: &CheckOptions) -> Vec<Finding> {
+pub fn check_viewport_zoom(page: &RenderedPage) -> Vec<Finding> {
     page.by_tag("meta")
         .filter(|meta| is_viewport(*meta))
         .filter_map(|meta| Some((meta, meta.attr("content")?)))
@@ -100,7 +100,7 @@ mod tests {
 
     fn count(content: &str) -> usize {
         let html = format!(r#"<head><meta name="viewport" content="{content}"></head>"#);
-        check_viewport_zoom(&page_from_html(&html), &CheckOptions::default()).len()
+        check_viewport_zoom(&page_from_html(&html)).len()
     }
 
     #[rstest]
@@ -134,7 +134,7 @@ mod tests {
         let page = page_from_html(
             r#"<head><meta name="viewport"><meta name="description" content="user-scalable=no"></head>"#,
         );
-        assert!(check_viewport_zoom(&page, &CheckOptions::default()).is_empty());
+        assert!(check_viewport_zoom(&page).is_empty());
     }
 
     #[test]

@@ -3,8 +3,8 @@
 //! attributes (ARIA-DEPR003).
 
 use crate::page::{ElementRef, RenderedPage};
+use crate::rules::Finding;
 use crate::rules::aria_spec::{effective_role, explicit_roles};
-use crate::rules::{CheckOptions, Finding};
 
 use super::support::{has_value, is_unroled_custom_element, quoted, role_label};
 
@@ -19,7 +19,7 @@ const FORMERLY_GLOBAL_ATTRIBUTES: &[&str] = &[
 ];
 
 /// ARIA-DEPR001: `directory` is deprecated in favor of `list`.
-pub fn check_directory_role(page: &RenderedPage, _options: &CheckOptions) -> Vec<Finding> {
+pub fn check_directory_role(page: &RenderedPage) -> Vec<Finding> {
     page.all()
         .filter(|el| explicit_roles(*el).iter().any(|token| token == "directory"))
         .map(|el| {
@@ -35,10 +35,7 @@ pub fn check_directory_role(page: &RenderedPage, _options: &CheckOptions) -> Vec
 
 /// ARIA-DEPR002: `aria-grabbed`/`aria-dropeffect` are deprecated and
 /// poorly supported.
-pub fn check_drag_and_drop_attributes(
-    page: &RenderedPage,
-    _options: &CheckOptions,
-) -> Vec<Finding> {
+pub fn check_drag_and_drop_attributes(page: &RenderedPage) -> Vec<Finding> {
     page.all()
         .flat_map(|el| {
             DRAG_AND_DROP_ATTRIBUTES
@@ -64,10 +61,7 @@ pub fn check_drag_and_drop_attributes(
 
 /// ARIA-DEPR003: `aria-disabled`, `aria-errormessage`, `aria-haspopup` and
 /// `aria-invalid` are deprecated on roles that don't list them.
-pub fn check_deprecated_global_attributes(
-    page: &RenderedPage,
-    _options: &CheckOptions,
-) -> Vec<Finding> {
+pub fn check_deprecated_global_attributes(page: &RenderedPage) -> Vec<Finding> {
     page.all()
         .filter(|el| !is_unroled_custom_element(*el))
         .flat_map(deprecated_attribute_findings)
@@ -115,8 +109,8 @@ mod tests {
     use super::*;
     use crate::page::testutil::page_from_html;
 
-    fn run(check: fn(&RenderedPage, &CheckOptions) -> Vec<Finding>, html: &str) -> Vec<Finding> {
-        check(&page_from_html(html), &CheckOptions::default())
+    fn run(check: fn(&RenderedPage) -> Vec<Finding>, html: &str) -> Vec<Finding> {
+        check(&page_from_html(html))
     }
 
     #[test]

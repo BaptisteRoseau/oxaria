@@ -2,12 +2,12 @@
 //! element allows, `aria-hidden`, and those the native element handles.
 
 use crate::page::{ElementRef, RenderedPage};
+use crate::rules::Finding;
 use crate::rules::aria_spec::{
     AllowedAria, AriaValue, Parsed, Role, allowed_aria, aria_attributes, attribute, effective_role,
     explicit_roles, first_valid_role, input_type, is_aria_true, is_focusable, parse_value,
     role as named_role, roles, tabindex,
 };
-use crate::rules::{CheckOptions, Finding};
 
 use super::markup::start_tag;
 
@@ -29,7 +29,7 @@ enum Disallowed {
 
 /// HTMLARIA007: `aria-*` attributes the element (or its role) doesn't
 /// allow. Unknown attribute names are left to WAI-ARIA's own rules.
-pub fn check_disallowed_aria(page: &RenderedPage, _options: &CheckOptions) -> Vec<Finding> {
+pub fn check_disallowed_aria(page: &RenderedPage) -> Vec<Finding> {
     page.all()
         .flat_map(|el| {
             aria_attributes(el)
@@ -136,7 +136,7 @@ fn supporting_roles(name: &str) -> String {
 }
 
 /// HTMLARIA009: `aria-hidden="true"` on `body` or on a focusable element.
-pub fn check_hidden_focusable(page: &RenderedPage, _options: &CheckOptions) -> Vec<Finding> {
+pub fn check_hidden_focusable(page: &RenderedPage) -> Vec<Finding> {
     page.all()
         .filter(|el| is_aria_true(*el, "aria-hidden"))
         .filter_map(|el| match el.tag() {
@@ -182,7 +182,7 @@ fn hidden_focusable_finding(el: ElementRef) -> Finding {
 }
 
 /// HTMLARIA010: `aria-hidden="true"` repeating the `hidden` attribute.
-pub fn check_hidden_twice(page: &RenderedPage, _options: &CheckOptions) -> Vec<Finding> {
+pub fn check_hidden_twice(page: &RenderedPage) -> Vec<Finding> {
     page.all()
         .filter(|el| el.has_attr("hidden") && is_aria_true(*el, "aria-hidden"))
         .map(hidden_twice_finding)
@@ -247,7 +247,7 @@ const ADVICE: &[Advice] = &[
 
 /// HTMLARIA011: `aria-*` attributes that native elements handle
 /// themselves.
-pub fn check_advised_against_aria(page: &RenderedPage, _options: &CheckOptions) -> Vec<Finding> {
+pub fn check_advised_against_aria(page: &RenderedPage) -> Vec<Finding> {
     page.all()
         .flat_map(|el| {
             ADVICE
@@ -300,8 +300,8 @@ mod tests {
     use super::*;
     use crate::page::testutil::page_from_html;
 
-    fn run(check: fn(&RenderedPage, &CheckOptions) -> Vec<Finding>, html: &str) -> Vec<Finding> {
-        check(&page_from_html(html), &CheckOptions::default())
+    fn run(check: fn(&RenderedPage) -> Vec<Finding>, html: &str) -> Vec<Finding> {
+        check(&page_from_html(html))
     }
 
     #[rstest]

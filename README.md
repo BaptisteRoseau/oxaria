@@ -237,7 +237,7 @@ vendor/
 └── litehtml/                # vendored, patched safe Rust wrapper
 ```
 
-Every rule has the same shape — `fn(&RenderedPage, &CheckOptions) -> Vec<Finding>` — and reads from the same rendered snapshot; there is no distinction between rules that need computed style/layout and rules that only need DOM/attribute data.
+Every rule has the same shape — `fn(&RenderedPage) -> Vec<Finding>`, plus `&CheckOptions` for the threshold-based contrast and target-size rules — and reads from the same rendered snapshot; there is no distinction between rules that need computed style/layout and rules that only need DOM/attribute data.
 
 ## Tests
 

@@ -3,8 +3,8 @@
 
 use super::name::accessible_name;
 use crate::page::{ElementRef, RenderedPage};
+use crate::rules::Finding;
 use crate::rules::aria_spec::{effective_role, first_valid_role, input_type, is_hidden};
-use crate::rules::{CheckOptions, Finding};
 
 const FORM_FIELD_ROLES: &[&str] = &[
     "checkbox",
@@ -34,7 +34,7 @@ const ROLELESS_FIELD_TYPES: &[&str] = &[
 
 /// 97a4e1: every element exposed as a button, except `input type="image"`
 /// (see 59796f), needs a non-empty accessible name.
-pub fn check_button_name(page: &RenderedPage, _options: &CheckOptions) -> Vec<Finding> {
+pub fn check_button_name(page: &RenderedPage) -> Vec<Finding> {
     unnamed(page, |el| {
         has_role(el, "button") && !(el.tag() == "input" && input_type(el) == "image")
     })
@@ -61,7 +61,7 @@ fn button_help(button: ElementRef) -> &'static str {
 }
 
 /// c487ae: every element exposed as a link needs a non-empty accessible name.
-pub fn check_link_name(page: &RenderedPage, _options: &CheckOptions) -> Vec<Finding> {
+pub fn check_link_name(page: &RenderedPage) -> Vec<Finding> {
     unnamed(page, |el| has_role(el, "link"))
         .map(|link| {
             Finding::error("c487ae", format!("{} has no accessible name", markup(link)))
@@ -89,7 +89,7 @@ fn has_image(el: ElementRef) -> bool {
 
 /// m6b1q3: every element exposed as a `menuitem` needs a non-empty
 /// accessible name.
-pub fn check_menuitem_name(page: &RenderedPage, _options: &CheckOptions) -> Vec<Finding> {
+pub fn check_menuitem_name(page: &RenderedPage) -> Vec<Finding> {
     unnamed(page, |el| has_role(el, "menuitem"))
         .map(|item| {
             Finding::error("m6b1q3", format!("{} has no accessible name", markup(item)))
@@ -104,7 +104,7 @@ pub fn check_menuitem_name(page: &RenderedPage, _options: &CheckOptions) -> Vec<
 
 /// 2t702h: the `summary` that toggles a `details` element needs a non-empty
 /// accessible name besides its disclosure marker.
-pub fn check_summary_name(page: &RenderedPage, _options: &CheckOptions) -> Vec<Finding> {
+pub fn check_summary_name(page: &RenderedPage) -> Vec<Finding> {
     unnamed(page, |el| is_details_summary(el) && has_no_explicit_role(el))
         .map(|summary| {
             Finding::error(
@@ -137,7 +137,7 @@ fn has_no_explicit_role(el: ElementRef) -> bool {
 
 /// e086e5: every form field (an element with a form field role, or an
 /// `input` type without a role) needs a non-empty accessible name.
-pub fn check_form_field_name(page: &RenderedPage, _options: &CheckOptions) -> Vec<Finding> {
+pub fn check_form_field_name(page: &RenderedPage) -> Vec<Finding> {
     unnamed(page, is_form_field)
         .map(|field| {
             Finding::error(
@@ -204,7 +204,7 @@ mod tests {
     use crate::rules::RuleCheck;
 
     fn count(check: RuleCheck, html: &str) -> usize {
-        check(&page_from_html(html), &CheckOptions::default()).len()
+        check(&page_from_html(html)).len()
     }
 
     #[rstest]
@@ -365,7 +365,7 @@ mod tests {
     #[test]
     fn messages_quote_the_element() {
         let page = page_from_html(r#"<input type="date">"#);
-        let findings = check_form_field_name(&page, &CheckOptions::default());
+        let findings = check_form_field_name(&page);
         assert_eq!(
             findings[0].message,
             r#"<input type="date"> has no accessible name"#

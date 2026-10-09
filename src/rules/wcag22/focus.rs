@@ -5,14 +5,11 @@
 
 use crate::page::RenderedPage;
 
-use crate::rules::{CheckOptions, Finding};
+use crate::rules::Finding;
 
 /// G195: removing the focus outline (`outline: none`/`0`) without declaring another visible
 /// indicator (border, box-shadow, background) leaves keyboard users unable to see where focus is.
-pub fn check_outline_removed_without_alternative(
-    page: &RenderedPage,
-    _options: &CheckOptions,
-) -> Vec<Finding> {
+pub fn check_outline_removed_without_alternative(page: &RenderedPage) -> Vec<Finding> {
     split_css_rules(&strip_comments(&page.stylesheet_text()))
         .into_iter()
         .filter(|(selector, _)| selector.to_lowercase().contains(":focus"))
@@ -138,14 +135,14 @@ mod tests {
         let p = page_from_html(
             "<style>/* legacy } */ a { color: red } a:focus { outline: none; }</style>",
         );
-        let findings = check_outline_removed_without_alternative(&p, &CheckOptions::default());
+        let findings = check_outline_removed_without_alternative(&p);
         assert_eq!(findings.len(), 1, "{findings:?}");
     }
 
     #[test]
     fn outline_none_without_alternative_is_flagged() {
         let p = page_from_html("<style>a:focus, button:focus { outline: none; }</style>");
-        let findings = check_outline_removed_without_alternative(&p, &CheckOptions::default());
+        let findings = check_outline_removed_without_alternative(&p);
         assert_eq!(findings.len(), 1);
         assert_eq!(findings[0].rule_id, "G195");
     }
@@ -155,18 +152,18 @@ mod tests {
         let p = page_from_html(
             "<style>a:focus-visible { outline: none; box-shadow: 0 0 0 3px blue; }</style>",
         );
-        assert!(check_outline_removed_without_alternative(&p, &CheckOptions::default()).is_empty());
+        assert!(check_outline_removed_without_alternative(&p).is_empty());
     }
 
     #[test]
     fn rule_without_focus_selector_is_ignored() {
         let p = page_from_html("<style>a { outline: none; }</style>");
-        assert!(check_outline_removed_without_alternative(&p, &CheckOptions::default()).is_empty());
+        assert!(check_outline_removed_without_alternative(&p).is_empty());
     }
 
     #[test]
     fn no_style_tag_is_not_flagged() {
         let p = page_from_html("<body></body>");
-        assert!(check_outline_removed_without_alternative(&p, &CheckOptions::default()).is_empty());
+        assert!(check_outline_removed_without_alternative(&p).is_empty());
     }
 }

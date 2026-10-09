@@ -4,10 +4,10 @@
 //! and focusable feed articles (ARIA-WIDGET007).
 
 use crate::page::{ElementRef, RenderedPage};
+use crate::rules::Finding;
 use crate::rules::aria_spec::{
     AriaValue, Parsed, aria_idrefs, aria_value, first_valid_role, is_focusable, is_hidden,
 };
-use crate::rules::{CheckOptions, Finding};
 
 use super::support::{has_value, is_aria_disabled};
 use super::tree::{Tree, exposed_role, has_exposed_role};
@@ -52,7 +52,7 @@ fn controlled<'a>(tree: &Tree<'a>, el: ElementRef<'a>) -> Option<ElementRef<'a>>
 
 /// ARIA-WIDGET001: since ARIA 1.2 the combobox is the text field itself,
 /// controls its popup, and always tells whether it's expanded.
-pub fn check_combobox_pattern(page: &RenderedPage, _options: &CheckOptions) -> Vec<Finding> {
+pub fn check_combobox_pattern(page: &RenderedPage) -> Vec<Finding> {
     let tree = Tree::new(page);
     page.all()
         .filter(|el| !is_hidden(*el) && first_valid_role(*el).is_some_and(|r| r.name == "combobox"))
@@ -135,7 +135,7 @@ fn missing_popup_kind(tree: &Tree, combobox: ElementRef) -> Problem {
 
 /// ARIA-WIDGET002: `aria-haspopup` tells what opens, so it must match the
 /// popup's role.
-pub fn check_popup_role_match(page: &RenderedPage, _options: &CheckOptions) -> Vec<Finding> {
+pub fn check_popup_role_match(page: &RenderedPage) -> Vec<Finding> {
     let tree = Tree::new(page);
     page.all()
         .filter_map(|trigger| {
@@ -171,7 +171,7 @@ fn popup_mismatch_finding(trigger: ElementRef, kind: &str, expected: &str) -> Fi
 
 /// ARIA-WIDGET003: suggestions in a list must be reachable from the field
 /// that offers them.
-pub fn check_autocomplete_popup(page: &RenderedPage, _options: &CheckOptions) -> Vec<Finding> {
+pub fn check_autocomplete_popup(page: &RenderedPage) -> Vec<Finding> {
     page.all()
         .filter(|el| !is_hidden(*el))
         .filter(|el| {
@@ -217,10 +217,7 @@ fn missing_popup_announcement(el: ElementRef) -> Problem {
 /// ARIA-WIDGET006: a popup trigger must be reachable from the keyboard.
 /// Items of composite widgets are left out: their widget may manage focus
 /// with `aria-activedescendant` or set roving `tabindex` from script.
-pub fn check_unfocusable_popup_trigger(
-    page: &RenderedPage,
-    _options: &CheckOptions,
-) -> Vec<Finding> {
+pub fn check_unfocusable_popup_trigger(page: &RenderedPage) -> Vec<Finding> {
     page.all()
         .filter(|el| popup_kind(*el).is_some() && !is_hidden(*el) && !is_aria_disabled(*el))
         .filter(|el| !is_focusable(*el) && !el.descendants().any(is_focusable))
@@ -248,10 +245,7 @@ pub fn check_unfocusable_popup_trigger(
 
 /// ARIA-WIDGET007: readers move through a feed article by article, which
 /// needs each article to be focusable.
-pub fn check_unfocusable_feed_article(
-    page: &RenderedPage,
-    _options: &CheckOptions,
-) -> Vec<Finding> {
+pub fn check_unfocusable_feed_article(page: &RenderedPage) -> Vec<Finding> {
     let tree = Tree::new(page);
     page.all()
         .filter(|el| has_exposed_role(*el, &["feed"]) && !is_hidden(*el))
@@ -275,8 +269,8 @@ mod tests {
     use super::*;
     use crate::page::testutil::page_from_html;
 
-    fn run(check: fn(&RenderedPage, &CheckOptions) -> Vec<Finding>, html: &str) -> Vec<Finding> {
-        check(&page_from_html(html), &CheckOptions::default())
+    fn run(check: fn(&RenderedPage) -> Vec<Finding>, html: &str) -> Vec<Finding> {
+        check(&page_from_html(html))
     }
 
     const ARIA_12_COMBOBOX: &str = r#"<label for="tag_combo">Tag</label>

@@ -2,8 +2,8 @@
 //! native HTML equivalents.
 
 use crate::page::{ElementRef, RenderedPage};
+use crate::rules::Finding;
 use crate::rules::aria_spec::{AriaValue, NATIVE_EQUIVALENTS, Parsed, aria_value, input_type};
-use crate::rules::{CheckOptions, Finding};
 
 use super::markup::{attribute, start_tag};
 
@@ -148,13 +148,13 @@ const REPETITIONS: &[Pairing] = &[
 
 /// HTMLARIA013: an `aria-*` attribute contradicting (or, for `checked`
 /// and `placeholder`, standing in for) its native equivalent.
-pub fn check_conflicting_aria(page: &RenderedPage, _options: &CheckOptions) -> Vec<Finding> {
+pub fn check_conflicting_aria(page: &RenderedPage) -> Vec<Finding> {
     pairing_findings(page, CONFLICTS, "HTMLARIA013", "conflicts with")
 }
 
 /// HTMLARIA014: an `aria-*` attribute repeating its native equivalent, or
 /// `aria-valuemin`/`aria-valuemax` on an element with native `min`/`max`.
-pub fn check_repeated_aria(page: &RenderedPage, _options: &CheckOptions) -> Vec<Finding> {
+pub fn check_repeated_aria(page: &RenderedPage) -> Vec<Finding> {
     pairing_findings(page, REPETITIONS, "HTMLARIA014", "duplicates")
 }
 
@@ -279,8 +279,8 @@ mod tests {
     use super::*;
     use crate::page::testutil::page_from_html;
 
-    fn run(check: fn(&RenderedPage, &CheckOptions) -> Vec<Finding>, html: &str) -> Vec<Finding> {
-        check(&page_from_html(html), &CheckOptions::default())
+    fn run(check: fn(&RenderedPage) -> Vec<Finding>, html: &str) -> Vec<Finding> {
+        check(&page_from_html(html))
     }
 
     #[rstest]

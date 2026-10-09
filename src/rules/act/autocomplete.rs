@@ -1,11 +1,11 @@
 //! ACT rule 73f2c2 for `autocomplete` values.
 
 use crate::page::{ElementRef, RenderedPage};
+use crate::rules::Finding;
 use crate::rules::aria_spec::{
     effective_role, input_type, is_aria_true, is_disabled, is_not_rendered, is_tabbable,
 };
 use crate::rules::wcag22::is_valid_autocomplete;
-use crate::rules::{CheckOptions, Finding};
 
 /// `input` types whose value the user doesn't type, so autofill doesn't
 /// apply.
@@ -15,7 +15,7 @@ const FIXED_VALUE_TYPES: &[&str] = &[
 
 /// 73f2c2: an `autocomplete` value other than `on`/`off` must be a valid
 /// autofill detail token list, on a field the user can fill in.
-pub fn check_autocomplete_valid(page: &RenderedPage, _options: &CheckOptions) -> Vec<Finding> {
+pub fn check_autocomplete_valid(page: &RenderedPage) -> Vec<Finding> {
     page.all()
         .filter(|el| is_fillable_field(*el))
         .filter_map(|field| Some((field, field.attr("autocomplete")?)))
@@ -64,7 +64,7 @@ mod tests {
     use crate::page::testutil::page_from_html;
 
     fn count(html: &str) -> usize {
-        check_autocomplete_valid(&page_from_html(html), &CheckOptions::default()).len()
+        check_autocomplete_valid(&page_from_html(html)).len()
     }
 
     #[rstest]

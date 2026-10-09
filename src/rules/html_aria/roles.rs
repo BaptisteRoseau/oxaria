@@ -2,11 +2,11 @@
 //! abstract roles.
 
 use crate::page::{ElementRef, RenderedPage};
+use crate::rules::Finding;
 use crate::rules::aria_spec::{
     AriaValue, Parsed, Role, aria_value, explicit_roles, first_valid_role, implicit_role, role,
     roles,
 };
-use crate::rules::{CheckOptions, Finding};
 
 use super::markup::start_tag;
 
@@ -23,7 +23,7 @@ const SUGGESTED_ROLE_COUNT: usize = 5;
 
 /// HTMLARIA002: a `role` or `aria-level` repeating the element's implicit
 /// semantics.
-pub fn check_redundant_semantics(page: &RenderedPage, _options: &CheckOptions) -> Vec<Finding> {
+pub fn check_redundant_semantics(page: &RenderedPage) -> Vec<Finding> {
     page.all()
         .flat_map(|el| redundant_role(el).into_iter().chain(redundant_level(el)))
         .collect()
@@ -113,7 +113,7 @@ fn is_details_summary(el: ElementRef) -> bool {
 
 /// HTMLARIA003: `role="generic"` anywhere, or `generic`/`document` on
 /// `html`.
-pub fn check_generic_role(page: &RenderedPage, _options: &CheckOptions) -> Vec<Finding> {
+pub fn check_generic_role(page: &RenderedPage) -> Vec<Finding> {
     page.all()
         .filter_map(|el| discouraged_role(el).map(|role| generic_role_finding(el, role)))
         .collect()
@@ -148,7 +148,7 @@ fn generic_role_finding(el: ElementRef, role: &str) -> Finding {
 }
 
 /// HTMLARIA004: a `role` token naming an abstract WAI-ARIA role.
-pub fn check_abstract_role(page: &RenderedPage, _options: &CheckOptions) -> Vec<Finding> {
+pub fn check_abstract_role(page: &RenderedPage) -> Vec<Finding> {
     page.all()
         .flat_map(|el| {
             explicit_roles(el)
@@ -203,8 +203,8 @@ mod tests {
     use super::*;
     use crate::page::testutil::page_from_html;
 
-    fn run(check: fn(&RenderedPage, &CheckOptions) -> Vec<Finding>, html: &str) -> Vec<Finding> {
-        check(&page_from_html(html), &CheckOptions::default())
+    fn run(check: fn(&RenderedPage) -> Vec<Finding>, html: &str) -> Vec<Finding> {
+        check(&page_from_html(html))
     }
 
     #[rstest]

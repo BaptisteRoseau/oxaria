@@ -35,7 +35,7 @@ const RULES: &[Rule] = &[
         &["307n5z"],
         focus::check_focusable_in_presentational_children,
     ),
-    Rule::new(&["afw4f7"], contrast::check_contrast_minimum),
+    Rule::with_options(&["afw4f7"], contrast::check_contrast_minimum),
     Rule::new(&["bc659a"], refresh::check_refresh_delay),
     Rule::new(&["bisz58"], refresh::check_refresh_instant),
     Rule::new(&["b4f0c3"], zoom::check_viewport_zoom),

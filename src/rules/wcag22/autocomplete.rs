@@ -2,7 +2,7 @@
 
 use crate::page::{ElementRef, RenderedPage};
 
-use crate::rules::{CheckOptions, Finding};
+use crate::rules::Finding;
 
 /// The WCAG 2.2 input purposes (`guidelines/input-purposes.html`) that aren't contact
 /// details, plus `one-time-code`, which the HTML autofill list added later.
@@ -71,7 +71,7 @@ const CONTACT_QUALIFIERS: &[&str] = &["home", "work", "mobile", "fax", "pager"];
 
 /// F107: an `autocomplete` value outside the HTML autofill grammar identifies no input
 /// purpose, so neither browsers nor assistive technology can act on it.
-pub fn check_invalid_autocomplete(page: &RenderedPage, _options: &CheckOptions) -> Vec<Finding> {
+pub fn check_invalid_autocomplete(page: &RenderedPage) -> Vec<Finding> {
     page.all()
         .filter(|el| is_autofillable(*el))
         .filter_map(|control| Some((control, control.attr("autocomplete")?)))
@@ -151,7 +151,7 @@ mod tests {
         let p = page_from_html(
             r#"<label for="b">Birthday:</label><input autocomplete="birthday" id="b" type="text">"#,
         );
-        let findings = check_invalid_autocomplete(&p, &CheckOptions::default());
+        let findings = check_invalid_autocomplete(&p);
         assert_eq!(findings.len(), 1);
         assert_eq!(findings[0].rule_id, "F107");
         assert!(findings[0].message.contains("\"birthday\""));
@@ -162,7 +162,7 @@ mod tests {
         let p = page_from_html(
             r#"<input type="hidden" autocomplete="nope"><form autocomplete="nope"></form>"#,
         );
-        assert!(check_invalid_autocomplete(&p, &CheckOptions::default()).is_empty());
+        assert!(check_invalid_autocomplete(&p).is_empty());
     }
 
     #[rstest]

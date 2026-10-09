@@ -2,11 +2,11 @@
 
 use crate::page::{ElementRef, RenderedPage};
 
-use crate::rules::{CheckOptions, Finding};
+use crate::rules::Finding;
 
 /// G1: a page should offer a link (usually the first focusable element) that jumps past repeated
 /// navigation straight to the main content, and its target must actually exist.
-pub fn check_missing_skip_link(page: &RenderedPage, _options: &CheckOptions) -> Vec<Finding> {
+pub fn check_missing_skip_link(page: &RenderedPage) -> Vec<Finding> {
     match find_skip_link(page) {
         None => vec![
             Finding::error(
@@ -66,7 +66,7 @@ mod tests {
     #[test]
     fn dangling_skip_link_help_names_the_missing_id() {
         let p = page_from_html(r##"<a href="#content">Skip to content</a><main></main>"##);
-        let findings = check_missing_skip_link(&p, &CheckOptions::default());
+        let findings = check_missing_skip_link(&p);
         assert_eq!(
             findings[0].help.as_deref(),
             Some(r#"add id="content" to the main content, e.g. <main id="content">"#)
@@ -76,7 +76,7 @@ mod tests {
     #[test]
     fn missing_skip_link_is_flagged() {
         let p = page_from_html(r#"<body><nav></nav><main id="main"></main></body>"#);
-        let findings = check_missing_skip_link(&p, &CheckOptions::default());
+        let findings = check_missing_skip_link(&p);
         assert_eq!(findings.len(), 1);
         assert_eq!(findings[0].rule_id, "G1");
     }
@@ -86,13 +86,13 @@ mod tests {
         let p = page_from_html(
             r##"<body><a href="#main">Skip to main content</a><main id="main"></main></body>"##,
         );
-        assert!(check_missing_skip_link(&p, &CheckOptions::default()).is_empty());
+        assert!(check_missing_skip_link(&p).is_empty());
     }
 
     #[test]
     fn dangling_skip_link_target_is_flagged() {
         let p = page_from_html(r##"<body><a href="#main">Skip to main content</a></body>"##);
-        let findings = check_missing_skip_link(&p, &CheckOptions::default());
+        let findings = check_missing_skip_link(&p);
         assert_eq!(findings.len(), 1);
         assert_eq!(findings[0].rule_id, "G1");
     }

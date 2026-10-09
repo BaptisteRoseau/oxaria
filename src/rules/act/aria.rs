@@ -1,11 +1,11 @@
 //! ACT rules for `aria-*` attribute names and values and `role` values.
 
 use crate::page::{ElementRef, RenderedPage};
+use crate::rules::Finding;
 use crate::rules::aria_spec::{
     ARIA_1_3_ATTRIBUTES, Attribute, Parsed, ValueType, aria_attributes, attribute, attributes,
     concrete_role, explicit_roles, is_hidden, parse_value, roles,
 };
-use crate::rules::{CheckOptions, Finding};
 
 /// The Graphics-ARIA and DPub-ARIA 1.1 roles: ACT accepts every WAI-ARIA
 /// specification, and the shared role table only holds WAI-ARIA 1.2.
@@ -61,7 +61,7 @@ const MAX_SUGGESTION_DISTANCE: usize = 2;
 
 /// 5f99a7: every `aria-*` attribute must be defined in a WAI-ARIA
 /// specification.
-pub fn check_aria_attribute_defined(page: &RenderedPage, _options: &CheckOptions) -> Vec<Finding> {
+pub fn check_aria_attribute_defined(page: &RenderedPage) -> Vec<Finding> {
     page.all()
         .flat_map(|el| {
             aria_attributes(el)
@@ -97,7 +97,7 @@ fn undefined_attribute_finding(el: ElementRef, name: &str, value: &str) -> Findi
 
 /// 6a7281: a non-empty ARIA state or property must have a value valid for
 /// its value type.
-pub fn check_aria_value_valid(page: &RenderedPage, _options: &CheckOptions) -> Vec<Finding> {
+pub fn check_aria_value_valid(page: &RenderedPage) -> Vec<Finding> {
     page.all()
         .flat_map(|el| {
             aria_attributes(el)
@@ -158,7 +158,7 @@ fn expected_value(attribute: &Attribute) -> String {
 
 /// 674b10: a non-empty `role` attribute on an element that isn't hidden
 /// must contain at least one valid, non-abstract role.
-pub fn check_role_valid(page: &RenderedPage, _options: &CheckOptions) -> Vec<Finding> {
+pub fn check_role_valid(page: &RenderedPage) -> Vec<Finding> {
     page.all()
         .filter(|el| !explicit_roles(*el).is_empty() && !is_hidden(*el))
         .filter(|el| !explicit_roles(*el).iter().any(|token| is_valid_role(token)))
@@ -229,7 +229,7 @@ mod tests {
     use crate::rules::RuleCheck;
 
     fn findings(check: RuleCheck, html: &str) -> Vec<Finding> {
-        check(&page_from_html(html), &CheckOptions::default())
+        check(&page_from_html(html))
     }
 
     #[rstest]

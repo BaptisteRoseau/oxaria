@@ -3,10 +3,10 @@
 //! pointing inside its widget (ARIA-IDREF003).
 
 use crate::page::{ElementRef, RenderedPage};
+use crate::rules::Finding;
 use crate::rules::aria_spec::{
     AriaValue, Parsed, aria_idrefs, aria_value, first_valid_role, is_hidden,
 };
-use crate::rules::{CheckOptions, Finding};
 
 use super::support::shortened;
 use super::tree::{Tree, exposed_role};
@@ -28,7 +28,7 @@ const CONTROLLING_ROLES: &[&str] = &["combobox", "searchbox", "textbox"];
 
 /// ARIA-IDREF001: a reference to a missing or duplicated id relates the
 /// element to nothing, or to an arbitrary element.
-pub fn check_unresolved_reference(page: &RenderedPage, _options: &CheckOptions) -> Vec<Finding> {
+pub fn check_unresolved_reference(page: &RenderedPage) -> Vec<Finding> {
     let tree = Tree::new(page);
     page.all()
         .flat_map(|el| {
@@ -77,7 +77,7 @@ fn unresolved_reference(tree: &Tree, el: ElementRef, name: &str, id: &str) -> Op
 }
 
 /// ARIA-IDREF002: an element has one owner, and ownership can't loop.
-pub fn check_aria_owns_conflict(page: &RenderedPage, _options: &CheckOptions) -> Vec<Finding> {
+pub fn check_aria_owns_conflict(page: &RenderedPage) -> Vec<Finding> {
     let tree = Tree::new(page);
     let owns: Vec<(ElementRef, &str)> = page
         .all()
@@ -136,10 +136,7 @@ fn circular_ownership_finding(tree: &Tree, owner: ElementRef, id: &str) -> Optio
 
 /// ARIA-IDREF003: the active descendant must be inside the widget that
 /// has focus, or inside the popup a text field controls.
-pub fn check_active_descendant_ownership(
-    page: &RenderedPage,
-    _options: &CheckOptions,
-) -> Vec<Finding> {
+pub fn check_active_descendant_ownership(page: &RenderedPage) -> Vec<Finding> {
     let tree = Tree::new(page);
     page.all()
         .filter(|el| !is_hidden(*el))
@@ -188,8 +185,8 @@ mod tests {
     use super::*;
     use crate::page::testutil::page_from_html;
 
-    fn run(check: fn(&RenderedPage, &CheckOptions) -> Vec<Finding>, html: &str) -> Vec<Finding> {
-        check(&page_from_html(html), &CheckOptions::default())
+    fn run(check: fn(&RenderedPage) -> Vec<Finding>, html: &str) -> Vec<Finding> {
+        check(&page_from_html(html))
     }
 
     #[rstest]

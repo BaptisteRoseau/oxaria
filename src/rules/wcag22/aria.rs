@@ -4,7 +4,7 @@ use std::collections::BTreeMap;
 
 use crate::page::RenderedPage;
 
-use crate::rules::{CheckOptions, Finding};
+use crate::rules::Finding;
 
 /// Each reference attribute with the technique that uses it.
 const REFERENCE_ATTRIBUTES: &[(&str, &str)] =
@@ -12,7 +12,7 @@ const REFERENCE_ATTRIBUTES: &[(&str, &str)] =
 
 /// IDS001: duplicate `id` values break `for`, `aria-labelledby`/`aria-describedby`, and fragment
 /// navigation, since only one element can be resolved for a given id.
-pub fn check_duplicate_ids(page: &RenderedPage, _options: &CheckOptions) -> Vec<Finding> {
+pub fn check_duplicate_ids(page: &RenderedPage) -> Vec<Finding> {
     id_counts(page)
         .into_iter()
         .filter(|(_, count)| *count > 1)
@@ -43,7 +43,7 @@ fn duplicate_id_message(id: &str, count: usize) -> String {
 
 /// ARIA16/ARIA1: `aria-labelledby`/`aria-describedby` must reference an id that actually exists,
 /// otherwise the accessible name/description computation silently fails.
-pub fn check_dangling_aria_reference(page: &RenderedPage, _options: &CheckOptions) -> Vec<Finding> {
+pub fn check_dangling_aria_reference(page: &RenderedPage) -> Vec<Finding> {
     REFERENCE_ATTRIBUTES
         .iter()
         .flat_map(|(attribute, rule_id)| dangling_references(page, attribute, rule_id))
@@ -91,7 +91,7 @@ mod tests {
     #[test]
     fn dangling_reference_help_names_the_missing_id() {
         let p = page_from_html(r#"<button aria-describedby="hint">Go</button>"#);
-        let findings = check_dangling_aria_reference(&p, &CheckOptions::default());
+        let findings = check_dangling_aria_reference(&p);
         assert!(
             findings[0]
                 .help
@@ -104,7 +104,7 @@ mod tests {
     #[test]
     fn duplicate_ids_are_flagged() {
         let p = page_from_html(r#"<input id="search"><input id="search">"#);
-        let findings = check_duplicate_ids(&p, &CheckOptions::default());
+        let findings = check_duplicate_ids(&p);
         assert_eq!(findings.len(), 1);
         assert_eq!(findings[0].rule_id, "IDS001");
     }
@@ -114,7 +114,7 @@ mod tests {
         let p = page_from_html(
             r#"<i id="c"></i><i id="c"></i><i id="a"></i><i id="a"></i><i id="b"></i><i id="b"></i>"#,
         );
-        let messages: Vec<_> = check_duplicate_ids(&p, &CheckOptions::default())
+        let messages: Vec<_> = check_duplicate_ids(&p)
             .into_iter()
             .map(|f| f.message)
             .collect();
@@ -126,13 +126,13 @@ mod tests {
     #[test]
     fn unique_ids_are_not_flagged() {
         let p = page_from_html(r#"<input id="a"><input id="b">"#);
-        assert!(check_duplicate_ids(&p, &CheckOptions::default()).is_empty());
+        assert!(check_duplicate_ids(&p).is_empty());
     }
 
     #[test]
     fn dangling_aria_labelledby_is_flagged() {
         let p = page_from_html(r#"<input aria-labelledby="missing">"#);
-        let findings = check_dangling_aria_reference(&p, &CheckOptions::default());
+        let findings = check_dangling_aria_reference(&p);
         assert_eq!(findings.len(), 1);
         assert_eq!(findings[0].rule_id, "ARIA16");
     }
@@ -140,7 +140,7 @@ mod tests {
     #[test]
     fn dangling_aria_describedby_is_reported_as_aria1() {
         let p = page_from_html(r#"<input aria-describedby="missing">"#);
-        let findings = check_dangling_aria_reference(&p, &CheckOptions::default());
+        let findings = check_dangling_aria_reference(&p);
         assert_eq!(findings.len(), 1);
         assert_eq!(findings[0].rule_id, "ARIA1");
     }
@@ -148,15 +148,12 @@ mod tests {
     #[test]
     fn resolved_aria_labelledby_is_not_flagged() {
         let p = page_from_html(r#"<span id="lbl">Name</span><input aria-labelledby="lbl">"#);
-        assert!(check_dangling_aria_reference(&p, &CheckOptions::default()).is_empty());
+        assert!(check_dangling_aria_reference(&p).is_empty());
     }
 
     #[test]
     fn dangling_aria_describedby_is_flagged() {
         let p = page_from_html(r#"<input aria-describedby="missing">"#);
-        assert_eq!(
-            check_dangling_aria_reference(&p, &CheckOptions::default()).len(),
-            1
-        );
+        assert_eq!(check_dangling_aria_reference(&p).len(), 1);
     }
 }

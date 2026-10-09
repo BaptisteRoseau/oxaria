@@ -3,8 +3,8 @@
 //! of one list.
 
 use crate::page::{ElementRef, RenderedPage};
+use crate::rules::Finding;
 use crate::rules::aria_spec::{AriaValue, Parsed, aria_value, is_hidden};
-use crate::rules::{CheckOptions, Finding};
 
 use super::tree::{exposed_role, has_exposed_role};
 
@@ -17,10 +17,7 @@ struct Group<'a> {
     members: Vec<ElementRef<'a>>,
 }
 
-pub fn check_multiple_current_or_sorted(
-    page: &RenderedPage,
-    _options: &CheckOptions,
-) -> Vec<Finding> {
+pub fn check_multiple_current_or_sorted(page: &RenderedPage) -> Vec<Finding> {
     let current = groups(page, current_value, set_of)
         .into_iter()
         .filter(|group| group.members.len() > 1)
@@ -134,7 +131,7 @@ mod tests {
     use crate::page::testutil::page_from_html;
 
     fn run(html: &str) -> Vec<Finding> {
-        check_multiple_current_or_sorted(&page_from_html(html), &CheckOptions::default())
+        check_multiple_current_or_sorted(&page_from_html(html))
     }
 
     #[rstest]

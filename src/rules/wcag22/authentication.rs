@@ -2,13 +2,13 @@
 
 use crate::page::{ElementRef, RenderedPage};
 
-use crate::rules::{CheckOptions, Finding};
+use crate::rules::Finding;
 
 const SECRET_AUTOCOMPLETE: &[&str] = &["current-password", "new-password", "one-time-code"];
 
 /// AUT001: blocking paste into a password or code field stops password managers and forces
 /// users to transcribe it, which the Understanding document for 3.3.8 calls out as a failure.
-pub fn check_paste_blocked(page: &RenderedPage, _options: &CheckOptions) -> Vec<Finding> {
+pub fn check_paste_blocked(page: &RenderedPage) -> Vec<Finding> {
     page.by_tag("input")
         .filter(|input| is_secret_field(*input))
         .filter(|input| input.attr("onpaste").is_some_and(cancels_event))
@@ -43,7 +43,7 @@ mod tests {
     use crate::page::testutil::page_from_html;
 
     fn findings(html: &str) -> Vec<Finding> {
-        check_paste_blocked(&page_from_html(html), &CheckOptions::default())
+        check_paste_blocked(&page_from_html(html))
     }
 
     #[test]

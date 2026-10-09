@@ -3,7 +3,7 @@
 
 use crate::page::{ElementRef, RenderedPage};
 
-use crate::rules::{CheckOptions, Finding};
+use crate::rules::Finding;
 
 const ACTIVATION_HANDLERS: &[&str] = &[
     "onclick",
@@ -45,7 +45,7 @@ const NATIVE_CONTROLS: &[&str] = &[
 
 /// F42: an element that navigates from a script handler instead of being a link is left out
 /// of the links list and, unless focusable, the tab order.
-pub fn check_emulated_link(page: &RenderedPage, _options: &CheckOptions) -> Vec<Finding> {
+pub fn check_emulated_link(page: &RenderedPage) -> Vec<Finding> {
     page.all()
         .filter(|el| !NATIVE_CONTROLS.contains(&el.tag()) && el.attr("role") != Some("link"))
         .filter(|el| navigates(*el))
@@ -73,7 +73,7 @@ fn navigates(el: ElementRef) -> bool {
 
 /// F59: a `div` or `span` scripted into a control exposes no role, so assistive technology
 /// doesn't announce it as one.
-pub fn check_control_without_role(page: &RenderedPage, _options: &CheckOptions) -> Vec<Finding> {
+pub fn check_control_without_role(page: &RenderedPage) -> Vec<Finding> {
     page.all()
         .filter(|el| matches!(el.tag(), "div" | "span"))
         .filter(|el| el.attr("role").is_none_or(|role| role.trim().is_empty()))
@@ -94,7 +94,7 @@ pub fn check_control_without_role(page: &RenderedPage, _options: &CheckOptions) 
 
 /// F54: a function bound only to pointer events (mousedown, touchstart, …) can't be invoked
 /// from the keyboard.
-pub fn check_pointer_only_handler(page: &RenderedPage, _options: &CheckOptions) -> Vec<Finding> {
+pub fn check_pointer_only_handler(page: &RenderedPage) -> Vec<Finding> {
     page.all()
         .filter(|el| handlers(*el, KEYBOARD_HANDLERS).next().is_none())
         .filter_map(|el| Some((el, first_attr(el, POINTER_ONLY_HANDLERS)?)))
@@ -113,7 +113,7 @@ pub fn check_pointer_only_handler(page: &RenderedPage, _options: &CheckOptions) 
 }
 
 /// F55: blurring an element as soon as it gets focus takes keyboard users' focus away.
-pub fn check_focus_removed_on_focus(page: &RenderedPage, _options: &CheckOptions) -> Vec<Finding> {
+pub fn check_focus_removed_on_focus(page: &RenderedPage) -> Vec<Finding> {
     page.all()
         .filter(|el| {
             el.attr("onfocus")
@@ -150,7 +150,7 @@ mod tests {
     use crate::page::testutil::page_from_html;
 
     fn run(check: crate::rules::RuleCheck, html: &str) -> Vec<Finding> {
-        check(&page_from_html(html), &CheckOptions::default())
+        check(&page_from_html(html))
     }
 
     #[test]

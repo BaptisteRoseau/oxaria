@@ -2,7 +2,7 @@
 
 use crate::page::{ElementRef, RenderedPage};
 
-use crate::rules::{CheckOptions, Finding};
+use crate::rules::Finding;
 
 /// Authoring-tool defaults and filler text listed by F25, lowercased.
 const PLACEHOLDER_TITLES: &[&str] = &[
@@ -20,7 +20,7 @@ const PLACEHOLDER_TITLES: &[&str] = &[
 const PAGE_EXTENSIONS: &[&str] = &[".html", ".htm", ".php", ".asp", ".aspx", ".jsp"];
 
 /// H25: the document needs a non-empty `title` element in its `head`.
-pub fn check_missing_title(page: &RenderedPage, _options: &CheckOptions) -> Vec<Finding> {
+pub fn check_missing_title(page: &RenderedPage) -> Vec<Finding> {
     match document_title(page).is_some_and(|title| !title.is_empty()) {
         true => Vec::new(),
         false => vec![
@@ -34,7 +34,7 @@ pub fn check_missing_title(page: &RenderedPage, _options: &CheckOptions) -> Vec<
 
 /// F25: a title that is an authoring-tool default, filler text, or a bare filename does not
 /// identify the page.
-pub fn check_placeholder_title(page: &RenderedPage, _options: &CheckOptions) -> Vec<Finding> {
+pub fn check_placeholder_title(page: &RenderedPage) -> Vec<Finding> {
     document_title(page)
         .filter(|title| is_placeholder_title(title))
         .map(|title| {
@@ -82,7 +82,7 @@ mod tests {
     #[test]
     fn missing_title_is_flagged() {
         let p = page_from_html("<html><head></head><body><p>x</p></body></html>");
-        let findings = check_missing_title(&p, &CheckOptions::default());
+        let findings = check_missing_title(&p);
         assert_eq!(findings.len(), 1);
         assert_eq!(findings[0].rule_id, "H25");
     }
@@ -90,19 +90,19 @@ mod tests {
     #[test]
     fn empty_title_is_flagged() {
         let p = page_from_html("<html><head><title>  </title></head></html>");
-        assert_eq!(check_missing_title(&p, &CheckOptions::default()).len(), 1);
+        assert_eq!(check_missing_title(&p).len(), 1);
     }
 
     #[test]
     fn svg_title_does_not_count_as_the_page_title() {
         let p = page_from_html("<html><body><svg><title>Icon</title></svg></body></html>");
-        assert_eq!(check_missing_title(&p, &CheckOptions::default()).len(), 1);
+        assert_eq!(check_missing_title(&p).len(), 1);
     }
 
     #[test]
     fn present_title_is_not_flagged() {
         let p = page_from_html("<html><head><title>Contact us</title></head></html>");
-        assert!(check_missing_title(&p, &CheckOptions::default()).is_empty());
+        assert!(check_missing_title(&p).is_empty());
     }
 
     #[rstest]
@@ -112,7 +112,7 @@ mod tests {
     #[case("spk12.html")]
     fn placeholder_title_is_flagged(#[case] title: &str) {
         let p = page_from_html(&format!("<html><head><title>{title}</title></head></html>"));
-        let findings = check_placeholder_title(&p, &CheckOptions::default());
+        let findings = check_placeholder_title(&p);
         assert_eq!(findings.len(), 1, "{title}");
         assert_eq!(findings[0].rule_id, "F25");
     }
@@ -123,6 +123,6 @@ mod tests {
     #[case("HTML 5.2 changes")]
     fn descriptive_title_is_not_flagged(#[case] title: &str) {
         let p = page_from_html(&format!("<html><head><title>{title}</title></head></html>"));
-        assert!(check_placeholder_title(&p, &CheckOptions::default()).is_empty());
+        assert!(check_placeholder_title(&p).is_empty());
     }
 }

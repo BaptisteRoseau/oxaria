@@ -1,8 +1,8 @@
 //! ARIA-LMK001: one `banner`, `main` and `contentinfo` per document.
 
 use crate::page::{ElementRef, RenderedPage};
+use crate::rules::Finding;
 use crate::rules::aria_spec::{first_valid_role, is_hidden};
-use crate::rules::{CheckOptions, Finding};
 
 use super::tree::{exposed_role, has_presentational_children_ancestor};
 
@@ -16,7 +16,7 @@ const UNIQUE_LANDMARKS: &[(&str, &str)] = &[
 /// landmarks.
 const NESTED_DOCUMENT_ROLES: &[&str] = &["document", "application"];
 
-pub fn check_duplicate_landmark(page: &RenderedPage, _options: &CheckOptions) -> Vec<Finding> {
+pub fn check_duplicate_landmark(page: &RenderedPage) -> Vec<Finding> {
     let landmarks: Vec<(ElementRef, &str, Option<ElementRef>)> = page
         .all()
         .filter(|el| !is_hidden(*el) && !has_presentational_children_ancestor(*el))
@@ -73,7 +73,7 @@ mod tests {
     use crate::page::testutil::page_from_html;
 
     fn run(html: &str) -> Vec<Finding> {
-        check_duplicate_landmark(&page_from_html(html), &CheckOptions::default())
+        check_duplicate_landmark(&page_from_html(html))
     }
 
     #[rstest]

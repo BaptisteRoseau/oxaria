@@ -2,9 +2,9 @@
 //! attribute, which users' own text-spacing styles can't override.
 
 use crate::page::{ElementRef, RenderedPage};
+use crate::rules::Finding;
 use crate::rules::aria_spec::is_not_rendered;
 use crate::rules::wcag22::renders_own_text;
-use crate::rules::{CheckOptions, Finding};
 
 const POINTS_TO_PIXELS: f64 = 4.0 / 3.0;
 /// Absorbs float error, so that a spacing of exactly the minimum passes.
@@ -30,16 +30,13 @@ const WORD_SPACING: SpacingRule = SpacingRule {
 
 /// 24afc2: `letter-spacing` set with `!important` in a `style` attribute
 /// must be at least 0.12 times the font size.
-pub fn check_important_letter_spacing(
-    page: &RenderedPage,
-    _options: &CheckOptions,
-) -> Vec<Finding> {
+pub fn check_important_letter_spacing(page: &RenderedPage) -> Vec<Finding> {
     spacing_findings(page, &LETTER_SPACING)
 }
 
 /// 9e45ec: `word-spacing` set with `!important` in a `style` attribute must
 /// be at least 0.16 times the font size.
-pub fn check_important_word_spacing(page: &RenderedPage, _options: &CheckOptions) -> Vec<Finding> {
+pub fn check_important_word_spacing(page: &RenderedPage) -> Vec<Finding> {
     spacing_findings(page, &WORD_SPACING)
 }
 
@@ -133,7 +130,7 @@ mod tests {
     const TEXT: &str = "The toy brought back fond memories.";
 
     fn count(check: RuleCheck, html: &str) -> usize {
-        check(&page_from_html(html), &CheckOptions::default()).len()
+        check(&page_from_html(html)).len()
     }
 
     #[rstest]
@@ -195,7 +192,7 @@ mod tests {
     #[test]
     fn message_quotes_the_locked_value() {
         let page = page_from_html(r#"<p style="letter-spacing: 0.1em !important">Text</p>"#);
-        let findings = check_important_letter_spacing(&page, &CheckOptions::default());
+        let findings = check_important_letter_spacing(&page);
         assert_eq!(
             findings[0].message,
             r#"<p> locks letter-spacing at "0.1em !important" (0.10 times the font size, below 0.12)"#

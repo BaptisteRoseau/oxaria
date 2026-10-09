@@ -3,8 +3,8 @@
 //! (ARIA-FOCUS006). Focus movement itself needs script.
 
 use crate::page::{ElementRef, RenderedPage};
+use crate::rules::Finding;
 use crate::rules::aria_spec::{Role, first_valid_role, is_focusable, is_hidden};
-use crate::rules::{CheckOptions, Finding};
 
 use super::support::is_aria_disabled;
 use super::tree::{exposed_role, has_exposed_role, has_presentational_children_ancestor};
@@ -30,7 +30,7 @@ const DIALOG_ROLES: &[&str] = &["dialog", "alertdialog"];
 
 /// ARIA-FOCUS001: a custom widget must be focusable to be operable from
 /// the keyboard.
-pub fn check_unfocusable_widget(page: &RenderedPage, _options: &CheckOptions) -> Vec<Finding> {
+pub fn check_unfocusable_widget(page: &RenderedPage) -> Vec<Finding> {
     page.all()
         .filter(|el| !is_hidden(*el) && !is_aria_disabled(*el))
         .filter_map(|el| Some((el, explicit_widget(el)?)))
@@ -72,10 +72,7 @@ fn has_managed_focus(el: ElementRef) -> bool {
 
 /// ARIA-FOCUS006: a dialog needs something to put focus on. Empty dialogs
 /// pass: script may fill them when they open.
-pub fn check_dialog_without_focusable(
-    page: &RenderedPage,
-    _options: &CheckOptions,
-) -> Vec<Finding> {
+pub fn check_dialog_without_focusable(page: &RenderedPage) -> Vec<Finding> {
     page.all()
         .filter(|el| has_exposed_role(*el, DIALOG_ROLES) && !is_hidden(*el))
         .filter(|dialog| !dialog.text().is_empty())
@@ -101,8 +98,8 @@ mod tests {
     use super::*;
     use crate::page::testutil::page_from_html;
 
-    fn run(check: fn(&RenderedPage, &CheckOptions) -> Vec<Finding>, html: &str) -> Vec<Finding> {
-        check(&page_from_html(html), &CheckOptions::default())
+    fn run(check: fn(&RenderedPage) -> Vec<Finding>, html: &str) -> Vec<Finding> {
+        check(&page_from_html(html))
     }
 
     #[rstest]

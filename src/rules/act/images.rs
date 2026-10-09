@@ -3,11 +3,11 @@
 
 use super::name::accessible_name;
 use crate::page::{ElementRef, RenderedPage};
+use crate::rules::Finding;
 use crate::rules::aria_spec::{
     Parsed, attribute, concrete_role, effective_role, explicit_roles, first_valid_role, input_type,
     is_focusable, is_hidden, parse_value,
 };
-use crate::rules::{CheckOptions, Finding};
 
 const SVG_IMAGE_ROLES: &[&str] = &["img", "graphics-document", "graphics-symbol"];
 
@@ -22,7 +22,7 @@ const MEDIA_EXTENSIONS: &[&str] = &[
 
 /// 23a2a8: every `img` element and element with the `img` role needs a
 /// non-empty accessible name, unless it is exposed as `none`/`presentation`.
-pub fn check_image_name(page: &RenderedPage, _options: &CheckOptions) -> Vec<Finding> {
+pub fn check_image_name(page: &RenderedPage) -> Vec<Finding> {
     page.all()
         .filter(|el| is_html_image(*el) && !is_hidden(*el))
         .filter(|img| !is_exposed_as_presentational(*img))
@@ -68,7 +68,7 @@ fn image_name_help(img: ElementRef) -> &'static str {
 /// 46ca7f: an element marked decorative (`role="none"`/`"presentation"`, or
 /// an `img` with `alt=""`) must not be exposed again by a global ARIA
 /// attribute or by being focusable.
-pub fn check_decorative_exposed(page: &RenderedPage, _options: &CheckOptions) -> Vec<Finding> {
+pub fn check_decorative_exposed(page: &RenderedPage) -> Vec<Finding> {
     page.all()
         .filter(|el| is_marked_decorative(*el) && !is_hidden(*el))
         .filter_map(|el| Some((el, exposure(el)?)))
@@ -129,7 +129,7 @@ fn global_aria_attributes(el: ElementRef) -> Vec<String> {
 
 /// 59796f: an `input type="image"` needs a name from `alt`, `aria-label`,
 /// `aria-labelledby` or `title`; otherwise it is announced as "Submit Query".
-pub fn check_image_button_name(page: &RenderedPage, _options: &CheckOptions) -> Vec<Finding> {
+pub fn check_image_button_name(page: &RenderedPage) -> Vec<Finding> {
     page.by_tag("input")
         .filter(|input| input_type(*input) == "image" && !is_hidden(*input))
         .filter(|input| accessible_name(*input).is_empty())
@@ -150,7 +150,7 @@ pub fn check_image_button_name(page: &RenderedPage, _options: &CheckOptions) -> 
 
 /// 7d6734: an SVG element with an explicit `img`, `graphics-document` or
 /// `graphics-symbol` role needs a non-empty accessible name.
-pub fn check_svg_image_name(page: &RenderedPage, _options: &CheckOptions) -> Vec<Finding> {
+pub fn check_svg_image_name(page: &RenderedPage) -> Vec<Finding> {
     page.all()
         .filter(|el| is_svg_element(*el) && !is_hidden(*el))
         .filter_map(|el| Some((el, svg_image_role(el)?)))
@@ -185,7 +185,7 @@ fn svg_image_role(el: ElementRef) -> Option<String> {
 
 /// 8fc3b6: an `object` without a role that embeds an image, audio or video
 /// needs a non-empty accessible name.
-pub fn check_object_name(page: &RenderedPage, _options: &CheckOptions) -> Vec<Finding> {
+pub fn check_object_name(page: &RenderedPage) -> Vec<Finding> {
     page.by_tag("object")
         .filter(|object| first_valid_role(*object).is_none() && !is_hidden(*object))
         .filter(|object| embeds_media(*object))
@@ -233,7 +233,7 @@ mod tests {
     use crate::rules::RuleCheck;
 
     fn count(check: RuleCheck, html: &str) -> usize {
-        check(&page_from_html(html), &CheckOptions::default()).len()
+        check(&page_from_html(html)).len()
     }
 
     #[rstest]
@@ -265,7 +265,7 @@ mod tests {
     #[test]
     fn image_message_quotes_the_markup() {
         let page = page_from_html(r#"<img src="w3c.png">"#);
-        let findings = check_image_name(&page, &CheckOptions::default());
+        let findings = check_image_name(&page);
         assert_eq!(
             findings[0].message,
             r#"<img src="w3c.png"> has no accessible name"#
@@ -296,7 +296,7 @@ mod tests {
     #[test]
     fn decorative_message_names_the_exposing_attribute() {
         let page = page_from_html(r#"<svg role="none" aria-label="Yellow circle"></svg>"#);
-        let findings = check_decorative_exposed(&page, &CheckOptions::default());
+        let findings = check_decorative_exposed(&page);
         assert_eq!(
             findings[0].message,
             r#"<svg role="none"> is marked decorative but is exposed by aria-label="Yellow circle""#

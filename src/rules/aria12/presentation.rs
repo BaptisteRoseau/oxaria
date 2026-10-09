@@ -4,11 +4,11 @@
 //! presentational (ARIA-PRES003).
 
 use crate::page::{ElementRef, RenderedPage};
+use crate::rules::Finding;
 use crate::rules::aria_spec::{
     Parsed, Role, aria_attributes, attribute, first_valid_role, is_aria_hidden, is_focusable,
     is_hidden, parse_value,
 };
-use crate::rules::{CheckOptions, Finding};
 
 use super::support::quoted;
 use super::tree::{
@@ -40,7 +40,7 @@ const STRUCTURAL_ROLES: &[&str] = &[
 
 /// ARIA-PRES001: user agents ignore `none`/`presentation` on a focusable
 /// element or one with a global ARIA attribute.
-pub fn check_ignored_presentation(page: &RenderedPage, _options: &CheckOptions) -> Vec<Finding> {
+pub fn check_ignored_presentation(page: &RenderedPage) -> Vec<Finding> {
     page.all()
         .filter(|el| is_presentational(*el) && !is_aria_hidden(*el))
         .filter_map(|el| {
@@ -93,10 +93,7 @@ fn global_attribute<'a>(el: ElementRef<'a>) -> Option<(&'a str, &'a str)> {
 }
 
 /// ARIA-PRES002: a presentational image's alt text is never exposed.
-pub fn check_presentational_image_alt(
-    page: &RenderedPage,
-    _options: &CheckOptions,
-) -> Vec<Finding> {
+pub fn check_presentational_image_alt(page: &RenderedPage) -> Vec<Finding> {
     page.by_tag("img")
         .filter(|img| is_presentational(*img))
         .filter_map(|img| Some((img, img.attr("alt").filter(|alt| !alt.trim().is_empty())?)))
@@ -117,10 +114,7 @@ pub fn check_presentational_image_alt(
 /// ARIA-PRES003: inside a role whose children are presentational,
 /// structure is flattened to text and focusable content becomes a hidden
 /// control.
-pub fn check_content_in_presentational_children(
-    page: &RenderedPage,
-    _options: &CheckOptions,
-) -> Vec<Finding> {
+pub fn check_content_in_presentational_children(page: &RenderedPage) -> Vec<Finding> {
     page.all()
         .filter(|el| !is_hidden(*el) && !has_presentational_children_ancestor(*el))
         .filter_map(|el| Some((el, presentational_children_role(el)?)))
@@ -185,8 +179,8 @@ mod tests {
     use super::*;
     use crate::page::testutil::page_from_html;
 
-    fn run(check: fn(&RenderedPage, &CheckOptions) -> Vec<Finding>, html: &str) -> Vec<Finding> {
-        check(&page_from_html(html), &CheckOptions::default())
+    fn run(check: fn(&RenderedPage) -> Vec<Finding>, html: &str) -> Vec<Finding> {
+        check(&page_from_html(html))
     }
 
     #[rstest]

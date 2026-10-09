@@ -2,10 +2,10 @@
 
 use crate::page::{ElementRef, RenderedPage};
 
-use crate::rules::{CheckOptions, Finding};
+use crate::rules::Finding;
 
 /// H42/G141: the page should have a top-level heading to anchor its outline.
-pub fn check_missing_h1(page: &RenderedPage, _options: &CheckOptions) -> Vec<Finding> {
+pub fn check_missing_h1(page: &RenderedPage) -> Vec<Finding> {
     match page.by_tag("h1").next().is_none() {
         true => vec![
             Finding::error("H42", "page has no <h1> element".to_string()).help(
@@ -19,7 +19,7 @@ pub fn check_missing_h1(page: &RenderedPage, _options: &CheckOptions) -> Vec<Fin
 
 /// G141: heading levels should nest sequentially; jumping forward more than one level (e.g. h2
 /// straight to h4) breaks the document outline for assistive technology.
-pub fn check_skipped_heading_level(page: &RenderedPage, _options: &CheckOptions) -> Vec<Finding> {
+pub fn check_skipped_heading_level(page: &RenderedPage) -> Vec<Finding> {
     let mut findings = Vec::new();
     let mut previous_level = 0u8;
     for (heading, level) in headings(page) {
@@ -37,7 +37,7 @@ pub fn check_skipped_heading_level(page: &RenderedPage, _options: &CheckOptions)
 
 /// F92: `role="presentation"` (or `none`) strips a heading's semantics, dropping it from the
 /// outline that assistive technology users navigate by.
-pub fn check_presentational_heading(page: &RenderedPage, _options: &CheckOptions) -> Vec<Finding> {
+pub fn check_presentational_heading(page: &RenderedPage) -> Vec<Finding> {
     headings(page)
         .into_iter()
         .filter(|(heading, _)| matches!(heading.attr("role"), Some("presentation" | "none")))
@@ -84,7 +84,7 @@ mod tests {
     #[test]
     fn skipped_level_help_names_the_expected_level() {
         let p = page_from_html("<h1>A</h1><h3>B</h3>");
-        let findings = check_skipped_heading_level(&p, &CheckOptions::default());
+        let findings = check_skipped_heading_level(&p);
         assert!(
             findings[0]
                 .help
@@ -97,7 +97,7 @@ mod tests {
     #[test]
     fn missing_h1_is_flagged() {
         let p = page_from_html("<h2>Section</h2>");
-        let findings = check_missing_h1(&p, &CheckOptions::default());
+        let findings = check_missing_h1(&p);
         assert_eq!(findings.len(), 1);
         assert_eq!(findings[0].rule_id, "H42");
     }
@@ -105,19 +105,19 @@ mod tests {
     #[test]
     fn present_h1_is_not_flagged() {
         let p = page_from_html("<h1>Title</h1>");
-        assert!(check_missing_h1(&p, &CheckOptions::default()).is_empty());
+        assert!(check_missing_h1(&p).is_empty());
     }
 
     #[test]
     fn sequential_headings_are_not_flagged() {
         let p = page_from_html("<h1>T</h1><h2>A</h2><h2>B</h2><h3>C</h3>");
-        assert!(check_skipped_heading_level(&p, &CheckOptions::default()).is_empty());
+        assert!(check_skipped_heading_level(&p).is_empty());
     }
 
     #[test]
     fn skipped_heading_level_is_flagged() {
         let p = page_from_html("<h1>T</h1><h4>Specifications</h4>");
-        let findings = check_skipped_heading_level(&p, &CheckOptions::default());
+        let findings = check_skipped_heading_level(&p);
         assert_eq!(findings.len(), 1);
         assert_eq!(findings[0].rule_id, "G141");
     }
@@ -125,7 +125,7 @@ mod tests {
     #[test]
     fn heading_going_backwards_is_not_flagged() {
         let p = page_from_html("<h1>T</h1><h2>A</h2><h3>B</h3><h2>C</h2>");
-        assert!(check_skipped_heading_level(&p, &CheckOptions::default()).is_empty());
+        assert!(check_skipped_heading_level(&p).is_empty());
     }
 
     #[test]
@@ -133,7 +133,7 @@ mod tests {
         let p = page_from_html(
             r#"<h1>T</h1><h2 role="presentation">Reviews</h2><h3 role="none">A</h3>"#,
         );
-        let findings = check_presentational_heading(&p, &CheckOptions::default());
+        let findings = check_presentational_heading(&p);
         assert_eq!(findings.len(), 2);
         assert_eq!(findings[0].rule_id, "F92");
     }
@@ -141,6 +141,6 @@ mod tests {
     #[test]
     fn heading_with_other_role_is_not_flagged() {
         let p = page_from_html(r#"<h2 role="heading">Reviews</h2><h3>Specs</h3>"#);
-        assert!(check_presentational_heading(&p, &CheckOptions::default()).is_empty());
+        assert!(check_presentational_heading(&p).is_empty());
     }
 }

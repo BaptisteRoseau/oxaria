@@ -2,10 +2,10 @@
 
 use crate::page::RenderedPage;
 
-use crate::rules::{CheckOptions, Finding};
+use crate::rules::Finding;
 
 /// H57: the `html` element must declare a non-empty `lang` attribute.
-pub fn check_missing_lang(page: &RenderedPage, _options: &CheckOptions) -> Vec<Finding> {
+pub fn check_missing_lang(page: &RenderedPage) -> Vec<Finding> {
     match has_lang(page) {
         true => Vec::new(),
         false => vec![
@@ -33,7 +33,7 @@ mod tests {
     #[test]
     fn missing_lang_is_flagged() {
         let p = page_from_html("<html><head></head><body></body></html>");
-        let findings = check_missing_lang(&p, &CheckOptions::default());
+        let findings = check_missing_lang(&p);
         assert_eq!(findings.len(), 1);
         assert_eq!(findings[0].rule_id, "H57");
     }
@@ -41,12 +41,12 @@ mod tests {
     #[test]
     fn empty_lang_is_flagged() {
         let p = page_from_html(r#"<html lang=""><body></body></html>"#);
-        assert_eq!(check_missing_lang(&p, &CheckOptions::default()).len(), 1);
+        assert_eq!(check_missing_lang(&p).len(), 1);
     }
 
     #[test]
     fn present_lang_is_not_flagged() {
         let p = page_from_html(r#"<html lang="en"><body></body></html>"#);
-        assert!(check_missing_lang(&p, &CheckOptions::default()).is_empty());
+        assert!(check_missing_lang(&p).is_empty());
     }
 }

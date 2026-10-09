@@ -1,13 +1,13 @@
 //! ARIA in HTML's requirement against deprecated roles and attributes.
 
 use crate::page::{ElementRef, RenderedPage};
+use crate::rules::Finding;
 use crate::rules::aria_spec::{DEPRECATED_ROLES, aria_attributes, attribute, explicit_roles};
-use crate::rules::{CheckOptions, Finding};
 
 use super::markup::start_tag;
 
 /// HTMLARIA015: deprecated `role` tokens and `aria-*` attributes.
-pub fn check_deprecated_aria(page: &RenderedPage, _options: &CheckOptions) -> Vec<Finding> {
+pub fn check_deprecated_aria(page: &RenderedPage) -> Vec<Finding> {
     page.all()
         .flat_map(|el| deprecated_roles(el).chain(deprecated_attributes(el)))
         .collect()
@@ -65,7 +65,7 @@ mod tests {
     use crate::page::testutil::page_from_html;
 
     fn run(html: &str) -> Vec<Finding> {
-        check_deprecated_aria(&page_from_html(html), &CheckOptions::default())
+        check_deprecated_aria(&page_from_html(html))
     }
 
     #[rstest]

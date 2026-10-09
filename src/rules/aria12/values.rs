@@ -3,11 +3,11 @@
 //! (ARIA-VAL005).
 
 use crate::page::{ElementRef, RenderedPage};
+use crate::rules::Finding;
 use crate::rules::aria_spec::{
     AriaValue, Attribute, Parsed, Role, ValueType, aria_attributes, aria_number, aria_value,
     attribute, first_valid_role, is_focusable, is_hidden, parse_value,
 };
-use crate::rules::{CheckOptions, Finding};
 
 use super::support::{closest, has_value, or_list, quoted};
 use super::tree::{exposed_role, has_exposed_role};
@@ -26,7 +26,7 @@ const RANGE_ROLES: &[&str] = &[
 const KNOWN_VALUE_ROLES: &[&str] = &["meter", "scrollbar", "separator", "slider"];
 
 /// ARIA-VAL001: a value of the wrong type is ignored or misread.
-pub fn check_value_type(page: &RenderedPage, _options: &CheckOptions) -> Vec<Finding> {
+pub fn check_value_type(page: &RenderedPage) -> Vec<Finding> {
     page.all()
         .flat_map(|el| {
             aria_attributes(el)
@@ -77,7 +77,7 @@ fn value_type_help(attribute: &Attribute, value: &str) -> String {
 
 /// ARIA-VAL002: levels, positions, counts, indexes and spans have lower
 /// bounds, and positions and indexes can't exceed the size they're in.
-pub fn check_integer_range(page: &RenderedPage, _options: &CheckOptions) -> Vec<Finding> {
+pub fn check_integer_range(page: &RenderedPage) -> Vec<Finding> {
     page.all()
         .flat_map(|el| {
             integer_problems(el)
@@ -157,7 +157,7 @@ fn index_within_table(el: ElementRef, index: &str, count: &str) -> Option<(Strin
 
 /// ARIA-VAL003: a range widget's minimum, maximum and value must agree,
 /// with the role's defaults for the ones left out.
-pub fn check_range_consistency(page: &RenderedPage, _options: &CheckOptions) -> Vec<Finding> {
+pub fn check_range_consistency(page: &RenderedPage) -> Vec<Finding> {
     page.all()
         .filter_map(|el| Some((el, explicit_range_role(el)?)))
         .flat_map(|(el, role)| {
@@ -246,7 +246,7 @@ fn text_without_value(el: ElementRef, role: &Role, now: Option<f64>) -> Option<(
 
 /// ARIA-VAL005: once some rows of a table carry `aria-rowindex`, the
 /// others must too, or their position in the full table is unknown.
-pub fn check_missing_row_index(page: &RenderedPage, _options: &CheckOptions) -> Vec<Finding> {
+pub fn check_missing_row_index(page: &RenderedPage) -> Vec<Finding> {
     let rows: Vec<(ElementRef, ElementRef)> = page
         .all()
         .filter(|el| has_exposed_role(*el, &["row"]) && !is_hidden(*el))
@@ -282,8 +282,8 @@ mod tests {
     use super::*;
     use crate::page::testutil::page_from_html;
 
-    fn run(check: fn(&RenderedPage, &CheckOptions) -> Vec<Finding>, html: &str) -> Vec<Finding> {
-        check(&page_from_html(html), &CheckOptions::default())
+    fn run(check: fn(&RenderedPage) -> Vec<Finding>, html: &str) -> Vec<Finding> {
+        check(&page_from_html(html))
     }
 
     #[rstest]
