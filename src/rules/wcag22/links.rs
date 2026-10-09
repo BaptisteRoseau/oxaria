@@ -169,7 +169,7 @@ mod tests {
     use rstest::rstest;
 
     use super::*;
-    use crate::page::testutil::page_from_html;
+    use crate::page::testutil::{page_from_html, page_from_html_at};
     use crate::rules::testutil::{help, rule_ids, run};
 
     #[test]
@@ -206,13 +206,6 @@ mod tests {
             expected,
             "{html}"
         );
-    }
-
-    fn page_at(html: &str, url: &str) -> RenderedPage {
-        RenderedPage {
-            url: Some(Url::parse(url).unwrap()),
-            ..page_from_html(html)
-        }
     }
 
     #[test]
@@ -293,7 +286,7 @@ mod tests {
         #[case] expected: usize,
     ) {
         let page = match url {
-            Some(url) => page_at(html, url),
+            Some(url) => page_from_html_at(html, url),
             None => page_from_html(html),
         };
         let findings = check_ambiguous_duplicate_link_text(&page);
@@ -309,7 +302,7 @@ mod tests {
 
     #[test]
     fn same_path_on_another_host_is_still_a_different_destination() {
-        let p = page_at(
+        let p = page_from_html_at(
             r#"<a href="/pricing">Pricing</a><a href="https://other.example/pricing">Pricing</a>"#,
             "https://github.com/",
         );

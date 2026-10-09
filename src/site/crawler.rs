@@ -22,7 +22,7 @@ use tracing::{error, info};
 use url::Url;
 
 use crate::error::{CheckerError, LeakingRedirect, RedirectRisk};
-use crate::page::{self, RenderedPage, RequestHeaders};
+use crate::page::{self, RequestHeaders};
 use crate::rules::{self, CheckOptions, Finding};
 
 use super::links::{extract_links, is_same_domain, visit_key};
@@ -245,12 +245,10 @@ async fn scan_page(
 async fn check_page(options: Arc<CheckOptions>, url: Url, body: String) -> PageScan {
     // litehtml rendering is synchronous and CPU-bound; keep it off the async
     // worker threads that are driving the other pages' requests.
-    let rendered = tokio::task::spawn_blocking(move || page::render(&body)).await;
+    let page_url = url.clone();
+    let rendered = tokio::task::spawn_blocking(move || page::render(&body, Some(page_url))).await;
     let page = match rendered {
-        Ok(Ok(page)) => Arc::new(RenderedPage {
-            url: Some(url.clone()),
-            ..page
-        }),
+        Ok(Ok(page)) => Arc::new(page),
         Ok(Err(err)) => return failure(Finding::error("RENDER", err.to_string()).on_page(&url)),
         Err(join_error) => {
             return failure(Finding::error("RENDER", join_error.to_string()).on_page(&url));

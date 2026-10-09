@@ -10,6 +10,7 @@ use litehtml::{
     Color, Document, DocumentContainer, DrawContext, Element, FontDescription, FontHandle,
     FontMetrics, MediaFeatures, MediaType, Position,
 };
+use url::Url;
 
 use crate::error::CheckerError;
 
@@ -25,7 +26,7 @@ const VIEWPORT_HEIGHT: f32 = 1024.0;
 /// so it's the one enumerated attribute that never came from the source.
 const ENGINE_ATTRIBUTES: &[&str] = &["list_index"];
 
-pub fn render(html: &str) -> Result<RenderedPage, CheckerError> {
+pub fn render(html: &str, url: Option<Url>) -> Result<RenderedPage, CheckerError> {
     // `document` holds an exclusive `&mut` borrow of `container` for its entire lifetime, so
     // `fonts` is a separate `Rc<RefCell<_>>` handle rather than a field read directly off
     // `container` -- that lets the tree walk below read font weights without needing to borrow
@@ -45,12 +46,7 @@ pub fn render(html: &str) -> Result<RenderedPage, CheckerError> {
         walk(root, None, &fonts.borrow(), &mut elements);
     }
 
-    Ok(RenderedPage {
-        elements,
-        stylesheets: extract_stylesheets(html),
-        url: None,
-        id_index: Default::default(),
-    })
+    Ok(RenderedPage::new(elements, extract_stylesheets(html), url))
 }
 
 #[derive(Clone, Copy)]
@@ -237,7 +233,7 @@ mod tests {
 
     #[test]
     fn renders_tag_and_attributes() {
-        let page = render("<img id=\"pic\" src=\"a.jpg\" alt=\"A red bicycle\">").unwrap();
+        let page = render("<img id=\"pic\" src=\"a.jpg\" alt=\"A red bicycle\">", None).unwrap();
         let img = page.by_tag("img").next().unwrap();
         assert_eq!(img.attr("id"), Some("pic"));
         assert_eq!(img.attr("src"), Some("a.jpg"));
@@ -246,9 +242,11 @@ mod tests {
 
     #[test]
     fn renders_every_source_attribute_with_lowercased_names() {
-        let page =
-            render(r#"<div ARIA-LabeledBy="x" data-state="open" aria-role="button">x</div>"#)
-                .unwrap();
+        let page = render(
+            r#"<div ARIA-LabeledBy="x" data-state="open" aria-role="button">x</div>"#,
+            None,
+        )
+        .unwrap();
         let div = page.by_tag("div").next().unwrap();
         assert_eq!(div.attr("aria-labeledby"), Some("x"));
         assert_eq!(div.attr("data-state"), Some("open"));
@@ -257,15 +255,18 @@ mod tests {
 
     #[test]
     fn engine_set_attributes_are_not_rendered() {
-        let page =
-            render(r#"<ol style="list-style-type:decimal"><li>a</li><li>b</li></ol>"#).unwrap();
+        let page = render(
+            r#"<ol style="list-style-type:decimal"><li>a</li><li>b</li></ol>"#,
+            None,
+        )
+        .unwrap();
         let li = page.by_tag("li").nth(1).unwrap();
         assert!(li.node().attrs.is_empty(), "{:?}", li.node().attrs);
     }
 
     #[test]
     fn text_nodes_have_no_attributes() {
-        let page = render("<p>Text</p>").unwrap();
+        let page = render("<p>Text</p>", None).unwrap();
         assert!(
             page.elements
                 .iter()
@@ -278,7 +279,7 @@ mod tests {
     fn renders_computed_color_from_class_selector() {
         let html = "<html><head><style>.low{color:#999999}</style></head>\
                      <body><p class=\"low\">Text</p></body></html>";
-        let page = render(html).unwrap();
+        let page = render(html, None).unwrap();
         let p = page.by_tag("p").next().unwrap();
         assert_eq!(p.color(), (0x99, 0x99, 0x99));
     }
@@ -286,7 +287,7 @@ mod tests {
     #[test]
     fn renders_own_background_color() {
         let html = "<p style=\"background-color:#ffffff\">Text</p>";
-        let page = render(html).unwrap();
+        let page = render(html, None).unwrap();
         let p = page.by_tag("p").next().unwrap();
         assert_eq!(p.background_color(), Some((0xff, 0xff, 0xff)));
     }
@@ -294,7 +295,7 @@ mod tests {
     #[test]
     fn background_color_walks_up_to_ancestor() {
         let html = "<body style=\"background-color:#eeeeee\"><span>Text</span></body>";
-        let page = render(html).unwrap();
+        let page = render(html, None).unwrap();
         let span = page.by_tag("span").next().unwrap();
         assert_eq!(span.background_color(), Some((0xee, 0xee, 0xee)));
     }
@@ -302,7 +303,7 @@ mod tests {
     #[test]
     fn renders_bounding_box() {
         let html = "<button style=\"width:40px;height:24px\">Go</button>";
-        let page = render(html).unwrap();
+        let page = render(html, None).unwrap();
         let button = page.by_tag("button").next().unwrap();
         let bbox = button.bounding_box();
         assert!((bbox.width - 40.0).abs() < 1.0);
@@ -311,7 +312,7 @@ mod tests {
 
     #[test]
     fn text_content_is_collected() {
-        let page = render("<button>Submit</button>").unwrap();
+        let page = render("<button>Submit</button>", None).unwrap();
         let button = page.by_tag("button").next().unwrap();
         assert_eq!(button.text(), "Submit");
     }
@@ -347,7 +348,7 @@ mod tests {
 
     #[test]
     fn invalid_html_with_null_byte_is_a_render_error() {
-        let result = render("<p>\0</p>");
+        let result = render("<p>\0</p>", None);
         assert!(result.is_err());
     }
 }

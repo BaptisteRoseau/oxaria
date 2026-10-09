@@ -73,10 +73,19 @@ pub struct RenderedPage {
     pub url: Option<Url>,
     /// id -> the indices of the elements carrying it, in document order. Built
     /// on first use, so `elements` must not change after a page is queried.
-    pub id_index: OnceLock<HashMap<String, Vec<usize>>>,
+    id_index: OnceLock<HashMap<String, Vec<usize>>>,
 }
 
 impl RenderedPage {
+    pub fn new(elements: Vec<RenderedElement>, stylesheets: Vec<String>, url: Option<Url>) -> Self {
+        Self {
+            elements,
+            stylesheets,
+            url,
+            id_index: OnceLock::new(),
+        }
+    }
+
     pub fn get(&self, index: usize) -> ElementRef<'_> {
         ElementRef { page: self, index }
     }

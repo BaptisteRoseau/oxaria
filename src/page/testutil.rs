@@ -9,6 +9,7 @@
 //! need to exercise contrast- or target-size-sensitive logic.
 
 use scraper::{ElementRef, Html, Node};
+use url::Url;
 
 use super::model::{
     DEFAULT_COLOR, DEFAULT_FONT_SIZE_PX, DEFAULT_FONT_WEIGHT, Rect, RenderedElement, RenderedPage,
@@ -17,16 +18,18 @@ use super::model::{
 use super::render::extract_stylesheets;
 
 pub fn page_from_html(html: &str) -> RenderedPage {
+    build(html, None)
+}
+
+pub fn page_from_html_at(html: &str, url: &str) -> RenderedPage {
+    build(html, Some(Url::parse(url).unwrap()))
+}
+
+fn build(html: &str, url: Option<Url>) -> RenderedPage {
     let document = Html::parse_document(html);
     let mut elements = Vec::new();
     walk(document.root_element(), None, &mut elements);
-
-    RenderedPage {
-        elements,
-        stylesheets: extract_stylesheets(html),
-        url: None,
-        id_index: Default::default(),
-    }
+    RenderedPage::new(elements, extract_stylesheets(html), url)
 }
 
 fn walk(element: ElementRef, parent: Option<usize>, elements: &mut Vec<RenderedElement>) -> usize {
