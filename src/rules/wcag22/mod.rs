@@ -27,5 +27,5 @@ pub use checks::DEF;
 #[cfg(test)]
 pub(crate) use checks::HELP_FIXTURES;
 pub(crate) use contrast::{
-    DEFAULT_CANVAS_BACKGROUND, Rgb, color_contrast, hex, is_large_text, passing_color,
+    DEFAULT_CANVAS_BACKGROUND, color_contrast, hex, is_large_text, passing_color,
 };

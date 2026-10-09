@@ -7,8 +7,10 @@ use std::sync::OnceLock;
 
 use url::Url;
 
+pub type Rgb = (u8, u8, u8);
+
 pub const TEXT_TAG: &str = "#text";
-pub const DEFAULT_COLOR: (u8, u8, u8) = (0, 0, 0);
+pub const DEFAULT_COLOR: Rgb = (0, 0, 0);
 pub const DEFAULT_FONT_SIZE_PX: f32 = 16.0;
 pub const DEFAULT_FONT_WEIGHT: u32 = 400;
 
@@ -33,8 +35,8 @@ pub struct RenderedElement {
     pub own_text: String,
     pub parent: Option<usize>,
     pub children: Vec<usize>,
-    pub color: (u8, u8, u8),
-    pub background_color: Option<(u8, u8, u8)>,
+    pub color: Rgb,
+    pub background_color: Option<Rgb>,
     pub font_size_px: f32,
     pub font_weight: u32,
     pub bounding_box: Rect,
@@ -236,11 +238,11 @@ impl<'a> ElementRef<'a> {
             .any(|child| child.is_text() && !child.node().own_text.trim().is_empty())
     }
 
-    pub fn color(&self) -> (u8, u8, u8) {
+    pub fn color(&self) -> Rgb {
         self.node().color
     }
 
-    pub fn background_color(&self) -> Option<(u8, u8, u8)> {
+    pub fn background_color(&self) -> Option<Rgb> {
         self.node().background_color
     }
 

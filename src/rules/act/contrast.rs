@@ -5,10 +5,10 @@
 
 use std::collections::HashSet;
 
-use crate::page::{ElementRef, RenderedPage};
+use crate::page::{ElementRef, RenderedPage, Rgb};
 use crate::rules::aria_spec::{effective_role, is_aria_true, is_disabled, is_not_rendered};
 use crate::rules::wcag22::{
-    DEFAULT_CANVAS_BACKGROUND, Rgb, color_contrast, hex, is_large_text, passing_color,
+    DEFAULT_CANVAS_BACKGROUND, color_contrast, hex, is_large_text, passing_color,
 };
 use crate::rules::{CheckOptions, Finding};
 

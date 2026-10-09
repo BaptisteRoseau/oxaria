@@ -5,11 +5,9 @@
 //! straight from the embedded rendering engine's computed style and cascade resolution, so this
 //! applies to every element that renders text, not just ones with an inline `style` attribute.
 
-use crate::page::{ElementRef, RenderedPage};
+use crate::page::{ElementRef, RenderedPage, Rgb};
 
 use crate::rules::{CheckOptions, Finding};
-
-pub(crate) type Rgb = (u8, u8, u8);
 
 pub(crate) const DEFAULT_CANVAS_BACKGROUND: Rgb = (255, 255, 255);
 const BLACK: Rgb = (0, 0, 0);

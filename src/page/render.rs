@@ -15,7 +15,8 @@ use url::Url;
 use crate::error::CheckerError;
 
 use super::model::{
-    DEFAULT_FONT_SIZE_PX, DEFAULT_FONT_WEIGHT, Rect, RenderedElement, RenderedPage, build_arena,
+    DEFAULT_FONT_SIZE_PX, DEFAULT_FONT_WEIGHT, Rect, RenderedElement, RenderedPage, Rgb,
+    build_arena,
 };
 
 const MASTER_CSS: &str = include_str!("master.css");
@@ -174,7 +175,7 @@ fn attributes(node: &Element) -> Vec<(String, String)> {
 /// declared `background-color`. CSS backgrounds never inherit automatically,
 /// but a page's *effective* visual background comes from whichever ancestor
 /// box is actually painted -- exactly what a real browser shows.
-fn effective_background_color(mut node: Element) -> Option<(u8, u8, u8)> {
+fn effective_background_color(mut node: Element) -> Option<Rgb> {
     loop {
         if let Some(color) = node.background_color() {
             return Some(to_rgb(color));
@@ -183,7 +184,7 @@ fn effective_background_color(mut node: Element) -> Option<(u8, u8, u8)> {
     }
 }
 
-fn to_rgb(color: Color) -> (u8, u8, u8) {
+fn to_rgb(color: Color) -> Rgb {
     (color.r, color.g, color.b)
 }
 

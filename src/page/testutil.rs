@@ -14,7 +14,7 @@ use url::Url;
 
 use super::model::{
     DEFAULT_COLOR, DEFAULT_FONT_SIZE_PX, DEFAULT_FONT_WEIGHT, Rect, RenderedElement, RenderedPage,
-    build_arena,
+    Rgb, build_arena,
 };
 use super::render::extract_stylesheets;
 
@@ -69,11 +69,11 @@ fn style_property<'a>(style: &'a str, property: &str) -> Option<&'a str> {
     })
 }
 
-fn declared_color(style: &str) -> Option<(u8, u8, u8)> {
+fn declared_color(style: &str) -> Option<Rgb> {
     parse_color(style_property(style, "color")?)
 }
 
-fn declared_background_color(style: &str) -> Option<(u8, u8, u8)> {
+fn declared_background_color(style: &str) -> Option<Rgb> {
     parse_color(style_property(style, "background-color")?)
 }
 
@@ -107,7 +107,7 @@ fn pixel_value(style: &str, property: &str) -> Option<f32> {
         .ok()
 }
 
-fn parse_color(value: &str) -> Option<(u8, u8, u8)> {
+fn parse_color(value: &str) -> Option<Rgb> {
     let value = value.trim();
     match () {
         _ if value.starts_with('#') => parse_hex_color(value),
@@ -116,7 +116,7 @@ fn parse_color(value: &str) -> Option<(u8, u8, u8)> {
     }
 }
 
-fn parse_hex_color(value: &str) -> Option<(u8, u8, u8)> {
+fn parse_hex_color(value: &str) -> Option<Rgb> {
     let hex = value.trim_start_matches('#');
     match hex.len() {
         3 => {
@@ -137,7 +137,7 @@ fn parse_hex_color(value: &str) -> Option<(u8, u8, u8)> {
     }
 }
 
-fn parse_rgb_function(value: &str) -> Option<(u8, u8, u8)> {
+fn parse_rgb_function(value: &str) -> Option<Rgb> {
     let inner = value.split_once('(')?.1.trim_end_matches(')');
     let mut parts = inner.split(',').map(|part| part.trim().parse::<u8>());
     Some((
@@ -147,7 +147,7 @@ fn parse_rgb_function(value: &str) -> Option<(u8, u8, u8)> {
     ))
 }
 
-fn named_color(name: &str) -> Option<(u8, u8, u8)> {
+fn named_color(name: &str) -> Option<Rgb> {
     Some(match name.to_lowercase().as_str() {
         "black" => (0, 0, 0),
         "white" => (255, 255, 255),

@@ -16,5 +16,5 @@ pub use fetch::{
     MAX_REDIRECTS, client_builder, is_renderable, is_url, load_html, redirect_refusal,
 };
 pub use headers::{HeaderArg, RequestHeaders, parse_header};
-pub use model::{ElementRef, RenderedPage};
+pub use model::{ElementRef, RenderedPage, Rgb};
 pub use render::render;
