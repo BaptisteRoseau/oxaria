@@ -21,8 +21,8 @@ use tokio::task::JoinSet;
 use tracing::{error, info};
 use url::Url;
 
-use crate::error::CheckerError;
-use crate::page::{self, RenderedPage};
+use crate::error::{CheckerError, LeakingRedirect, RedirectRisk};
+use crate::page::{self, RenderedPage, RequestHeaders};
 use crate::rules::{self, CheckOptions, Finding};
 
 use super::links::{extract_links, is_same_domain, visit_key};
@@ -37,6 +37,9 @@ struct PageScan {
     /// Set only when the page was rendered and checked -- the only thing
     /// `--full-site-scan-max-pages` counts.
     checked_url: Option<Url>,
+    /// Only fatal for the start URL: later pages can't leave the host, and
+    /// a later downgrade is reported on its own page.
+    refused_redirect: Option<LeakingRedirect>,
 }
 
 struct Crawl {
@@ -44,6 +47,9 @@ struct Crawl {
     /// then becomes wherever that URL finally redirected to.
     origin: Url,
     origin_resolved: bool,
+    /// With `-H` headers, even the start URL may not redirect to another host.
+    pins_host: bool,
+    refused_redirect: Option<LeakingRedirect>,
     context: Arc<RequestContext>,
     options: Arc<CheckOptions>,
     max_pages: Option<NonZeroUsize>,
@@ -63,11 +69,14 @@ impl Crawl {
         start: Url,
         options: Arc<CheckOptions>,
         max_pages: Option<NonZeroUsize>,
+        headers: RequestHeaders,
     ) -> Result<Self, CheckerError> {
         Ok(Crawl {
             origin: start.clone(),
             origin_resolved: false,
-            context: Arc::new(RequestContext::new()?),
+            pins_host: headers.pins_host(),
+            refused_redirect: None,
+            context: Arc::new(RequestContext::new(&headers)?),
             options,
             max_pages,
             queued: HashSet::from([visit_key(&start)]),
@@ -80,8 +89,8 @@ impl Crawl {
         })
     }
 
-    async fn run(mut self) -> Vec<Finding> {
-        loop {
+    async fn run(mut self) -> Result<Vec<Finding>, CheckerError> {
+        while self.refused_redirect.is_none() {
             self.start_tasks();
             match self.tasks.join_next().await {
                 Some(Ok((position, scan))) => self.collect(position, scan),
@@ -90,13 +99,16 @@ impl Crawl {
                 None => break,
             }
         }
+        if let Some(refused) = self.refused_redirect {
+            return Err(refused.into());
+        }
         info!("Checked {} HTML page(s)", self.checked);
         if self.checked == 0 && self.findings.is_empty() {
             self.findings.push(nothing_checked(&self.origin));
         }
         // A stable sort keeps each page's findings in rule order.
         self.findings.sort_by(|a, b| a.page.cmp(&b.page));
-        self.findings
+        Ok(self.findings)
     }
 
     fn start_tasks(&mut self) {
@@ -130,13 +142,21 @@ impl Crawl {
     }
 
     fn redirect_scope(&self) -> RedirectScope {
-        match self.origin_resolved {
+        match self.origin_resolved || self.pins_host {
             true => RedirectScope::SameHost(self.origin.host_str().unwrap_or_default().to_string()),
             false => RedirectScope::AnyHost,
         }
     }
 
     fn collect(&mut self, position: usize, scan: PageScan) {
+        match (scan.refused_redirect, self.origin_resolved) {
+            (Some(refused), false) => self.refused_redirect = Some(refused),
+            // Off-host links of later pages are skipped silently, as without -H.
+            (Some(refused), true) if refused.risk != RedirectRisk::OtherHost => self
+                .findings
+                .push(Finding::error("REDIRECT", refused.to_string()).on_page(&refused.from)),
+            _ => {}
+        }
         self.findings.extend(scan.findings);
         if let Some(checked_url) = scan.checked_url {
             self.checked += 1;
@@ -176,8 +196,9 @@ pub async fn crawl(
     start: Url,
     options: Arc<CheckOptions>,
     max_pages: Option<NonZeroUsize>,
+    headers: RequestHeaders,
 ) -> Result<Vec<Finding>, CheckerError> {
-    Ok(Crawl::new(start, options, max_pages)?.run().await)
+    Crawl::new(start, options, max_pages, headers)?.run().await
 }
 
 /// Otherwise a start URL that isn't HTML would read as a clean
@@ -209,8 +230,9 @@ async fn scan_page(
         }
         RequestOutcome::OffDomainRedirect(target) => {
             info!("Skipping {url}: redirects off-domain to {target}");
-            PageScan::default()
+            refused(url, target, RedirectRisk::OtherHost)
         }
+        RequestOutcome::RefusedRedirect(target, risk) => refused(url, target, risk),
         RequestOutcome::HttpError(status) => {
             failure(Finding::error("HTTP", format!("HTTP {status}")).on_page(&url))
         }
@@ -245,6 +267,14 @@ async fn check_page(options: Arc<CheckOptions>, url: Url, body: String) -> PageS
         findings,
         links,
         checked_url: Some(url),
+        ..PageScan::default()
+    }
+}
+
+fn refused(from: Url, to: Url, risk: RedirectRisk) -> PageScan {
+    PageScan {
+        refused_redirect: Some(LeakingRedirect { from, to, risk }),
+        ..PageScan::default()
     }
 }
 
@@ -305,9 +335,14 @@ mod tests {
 
     async fn run(server: &MockServer, max_pages: Option<usize>) -> Vec<Finding> {
         let max_pages = max_pages.and_then(NonZeroUsize::new);
-        crawl(start_url(server, "/"), options(), max_pages)
-            .await
-            .unwrap()
+        crawl(
+            start_url(server, "/"),
+            options(),
+            max_pages,
+            RequestHeaders::default(),
+        )
+        .await
+        .unwrap()
     }
 
     fn pages_with_findings(findings: &[Finding]) -> Vec<&str> {
@@ -534,6 +569,92 @@ mod tests {
         assert!(findings.is_empty(), "{findings:?}");
     }
 
+    fn custom_headers() -> RequestHeaders {
+        RequestHeaders::new(&[page::parse_header("Authorization: Bearer token").unwrap()])
+    }
+
+    #[tokio::test]
+    async fn with_headers_a_start_url_redirecting_to_another_host_is_refused() {
+        let server = MockServer::start().await;
+        let moved = MockServer::start().await;
+        let redirect =
+            ResponseTemplate::new(301).insert_header("location", format!("{}/", moved.uri()));
+        serve(&server, "/", redirect, 1).await;
+        serve(&moved, "/", page_linking_to(&[]), 0).await;
+
+        let result = crawl(start_url(&server, "/"), options(), None, custom_headers()).await;
+        match result {
+            Err(CheckerError::LeakingRedirect(refused)) => {
+                assert_eq!(refused.from, start_url(&server, "/"));
+                assert_eq!(refused.to.as_str(), format!("{}/", moved.uri()));
+                assert_eq!(refused.risk, RedirectRisk::OtherHost);
+            }
+            other => panic!("unexpected result: {other:?}"),
+        }
+    }
+
+    fn user_agent_header() -> RequestHeaders {
+        RequestHeaders::new(&[page::parse_header("User-Agent: custom/1.0").unwrap()])
+    }
+
+    async fn redirect_to_other_port(server: &MockServer, route: &str, other: &MockServer) {
+        let redirect =
+            ResponseTemplate::new(301).insert_header("location", start_url(other, "/").to_string());
+        serve(server, route, redirect, 1).await;
+    }
+
+    #[tokio::test]
+    async fn a_start_url_may_change_port_when_no_header_would_be_dropped() {
+        let server = MockServer::start().await;
+        let other_port = MockServer::start().await;
+        redirect_to_other_port(&server, "/", &other_port).await;
+        serve(&other_port, "/", page_linking_to(&["/b"]), 1).await;
+        serve(&other_port, "/b", page_linking_to(&[]), 1).await;
+
+        let findings = crawl(
+            start_url(&server, "/"),
+            options(),
+            None,
+            user_agent_header(),
+        )
+        .await
+        .unwrap();
+        assert!(findings.is_empty(), "{findings:?}");
+    }
+
+    #[tokio::test]
+    async fn a_start_url_changing_port_is_refused_when_a_header_would_be_dropped() {
+        let server = MockServer::start().await;
+        let other_port = MockServer::start().await;
+        redirect_to_other_port(&server, "/", &other_port).await;
+        serve(&other_port, "/", page_linking_to(&[]), 0).await;
+
+        let result = crawl(start_url(&server, "/"), options(), None, custom_headers()).await;
+        match result {
+            Err(CheckerError::LeakingRedirect(refused)) => {
+                assert_eq!(refused.risk, RedirectRisk::DroppedHeaders);
+            }
+            other => panic!("unexpected result: {other:?}"),
+        }
+    }
+
+    #[tokio::test]
+    async fn a_later_refused_redirect_is_reported_on_its_page_and_the_crawl_goes_on() {
+        let server = MockServer::start().await;
+        let other_port = MockServer::start().await;
+        serve(&server, "/", page_linking_to(&["/moved", "/b"]), 1).await;
+        redirect_to_other_port(&server, "/moved", &other_port).await;
+        serve(&server, "/b", page_linking_to(&[]), 1).await;
+        serve(&other_port, "/", page_linking_to(&[]), 0).await;
+
+        let findings = crawl(start_url(&server, "/"), options(), None, custom_headers())
+            .await
+            .unwrap();
+        assert_eq!(findings.len(), 1, "{findings:?}");
+        assert_eq!(findings[0].rule_id, "REDIRECT");
+        assert_eq!(findings[0].page_path(), Some("/moved"));
+    }
+
     #[tokio::test]
     async fn start_url_that_is_not_html_is_an_error_not_a_clean_pass() {
         let server = MockServer::start().await;
@@ -549,7 +670,8 @@ mod tests {
     #[tokio::test]
     async fn duplicate_links_are_scheduled_once() {
         let start = Url::parse("http://localhost/").unwrap();
-        let mut crawl = Crawl::new(start.clone(), options(), None).unwrap();
+        let mut crawl =
+            Crawl::new(start.clone(), options(), None, RequestHeaders::default()).unwrap();
         crawl.origin_resolved = true;
         crawl.level.clear();
         let link = |href: &str| start.join(href).unwrap();

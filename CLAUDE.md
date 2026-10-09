@@ -251,6 +251,22 @@ See [README.md](./README.md#architecture) for the module tree. Notes beyond what
   github.com/marketplace answering `400` (content negotiation picked JSON) and crates.io
   answering `403` (it requires a User-Agent). Keep the `*/*;q=0.8` fallback -- without it,
   API/PDF URLs may answer `406` and be reported as errors instead of being skipped.
+- **`-H/--header` follows curl** (explicitly requested), in `page/headers.rs`: `Name: value`
+  replaces a built-in header and repeats append, `Name:` removes, `Name;` sends empty.
+- **With any `-H`, a redirect is refused on a host change, an https -> http downgrade, or a
+  scheme/port change when a header reqwest strips was given** (`Authorization`, `Cookie`, ...:
+  its redirect policy drops them on any origin change and can't be told not to). All explicitly
+  requested, instead of curl's strip-credentials-and-continue: a crawl would get a `401` on
+  every page with no explanation. Any header counts for the host and downgrade rules, since an
+  `X-Api-Key` is as secret. `fetch::redirect_refusal` is the one definition, used by reqwest's
+  redirect policy in single-page mode and by `request()` in the crawler -- the crawler keeps
+  every header across its hand-followed redirects, but applies the same rule so both modes
+  behave alike. Only the start URL can change host (every later request is `SameHost` anyway);
+  a refused start URL stops the run with `CheckerError::LeakingRedirect` before anything is
+  checked, a refused later page is a per-page `REDIRECT` error, so a long crawl isn't aborted
+  halfway. A copy-pasteable re-run command was explicitly rejected: it would print the header
+  values (the shell has already expanded `$TOKEN`). The message says "your headers", not their
+  names (explicitly requested).
 - **Rate limiting is shared**: a single `RwLock<Instant>` in the shared `RequestContext` means a
   `429` seen by one task pauses every task, not just the one that got it.
 - **Logging**: one `Fetching <url>` line per requested URL, then an indented

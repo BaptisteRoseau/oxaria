@@ -1,6 +1,6 @@
 use std::process::{Command, Output};
 
-use wiremock::matchers::{method, path};
+use wiremock::matchers::{header, method, path};
 use wiremock::{Mock, MockServer, ResponseTemplate};
 
 /// `--report-github` defaults to `$GITHUB_STEP_SUMMARY`: without clearing it,
@@ -219,6 +219,88 @@ async fn full_site_scan_max_pages_stops_the_crawl() {
 
     assert_eq!(exit_code(&output), 0, "stdout:\n{}", stdout(&output));
     assert!(stdout(&output).contains("0 error(s), 0 warning(s)"));
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn headers_are_sent_with_every_full_site_scan_request() {
+    let server = MockServer::start().await;
+    let page = |body: &str| ResponseTemplate::new(200).set_body_raw(body.to_string(), "text/html");
+    for (route, body) in [
+        ("/", r#"<a href="/next">Next page</a>"#),
+        ("/next", "<p>Next</p>"),
+    ] {
+        Mock::given(method("GET"))
+            .and(path(route))
+            .and(header("authorization", "Bearer token"))
+            .and(header("user-agent", "custom/1.0"))
+            .respond_with(page(&format!(
+                "<html lang=\"en\"><head><title>Page</title></head><body>{body}</body></html>"
+            )))
+            .expect(1)
+            .mount(&server)
+            .await;
+    }
+
+    let output = run_async(
+        format!("{}/", server.uri()),
+        &[
+            "--header",
+            "Authorization: Bearer token",
+            "-H",
+            "User-Agent: custom/1.0",
+            "--full-site-scan",
+            "--target-size-threshold",
+            "0",
+        ],
+    )
+    .await;
+
+    let out = stdout(&output);
+    assert!(!out.contains("HTTP"), "stdout:\n{out}");
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn headers_refuse_a_redirect_to_another_host() {
+    let server = MockServer::start().await;
+    let moved = MockServer::start().await;
+    Mock::given(method("GET"))
+        .respond_with(ResponseTemplate::new(301).insert_header("location", moved.uri()))
+        .mount(&server)
+        .await;
+    Mock::given(method("GET"))
+        .respond_with(ResponseTemplate::new(200))
+        .expect(0)
+        .mount(&moved)
+        .await;
+    // `localhost` and `127.0.0.1` (the mock servers' URI) are different hosts.
+    let start = format!("http://localhost:{}/", server.address().port());
+    let target = format!("{}/", moved.uri());
+
+    let output = run_async(
+        start.clone(),
+        &["-H", "Authorization: Bearer s3cr3t", "--full-site-scan"],
+    )
+    .await;
+
+    let out = stdout(&output);
+    assert_eq!(exit_code(&output), 1, "stdout:\n{out}");
+    let expected = format!(
+        "[ERROR] REDIRECT: {start} redirects to {target}, which would leak your headers to \
+         another host; re-run on it directly if that is what you intended"
+    );
+    assert!(out.contains(&expected), "stdout:\n{out}");
+    let stderr = String::from_utf8_lossy(&output.stderr);
+    assert!(
+        !format!("{out}{stderr}").contains("s3cr3t"),
+        "header value printed"
+    );
+}
+
+#[test]
+fn malformed_header_is_rejected() {
+    let output = run("tests/assets/clean.html", &["-H", "no-colon"]);
+    assert_eq!(exit_code(&output), 2);
+    assert!(String::from_utf8_lossy(&output.stderr).contains("expected \"Name: value\""));
 }
 
 #[test]

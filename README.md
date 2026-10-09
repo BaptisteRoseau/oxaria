@@ -59,6 +59,8 @@ Options:
           Comma-separated standards whose rules are checked [default: wcag2.2 aria1.2 html-aria act] [possible values: wcag2.2, aria1.2, html-aria, act]
       --list-rules
           Print the rules of the selected standards instead of checking anything
+  -H, --header <HEADER>
+          Extra HTTP header to send, curl-style: "Name: value" sets it (replacing the built-in User-Agent/Accept), "Name:" removes it, "Name;" sends it empty. Repeat for several. With any header, a redirect to another host or from https to http is refused
       --full-site-scan
           When given a URL, also scan every same-domain page reachable through its links
       --full-site-scan-max-pages <FULL_SITE_SCAN_MAX_PAGES>
@@ -101,6 +103,9 @@ oxaria --list-rules --standards wcag2.2,act
 # Crawl and check every page of a site, capped at 200 checked HTML pages
 oxaria https://example.com --full-site-scan --full-site-scan-max-pages 200
 
+# Send extra HTTP headers, curl-style (repeat -H/--header for several)
+oxaria --header "Authorization: Bearer $TOKEN" -H "User-Agent: my-checker/1.0" --full-site-scan https://example.com/
+
 # CI: GitLab Code Quality + JUnit reports, nothing on stdout
 oxaria page.html -q --report-gitlab gl-code-quality.json --report-junit junit.xml
 ```
@@ -131,6 +136,8 @@ Each finding gives its standard and rule ID, the element it is about, a `help` h
 - Responses that aren't HTML (JSON, XML, PDF, images, ...) are skipped silently.
 - `4XX`/`5XX` responses are reported as `HTTP` errors, and network failures as `FETCH` errors. A scan that couldn't check any HTML page (e.g. the start URL returns JSON) reports a `SCAN` error rather than a clean pass.
 - Requests identify themselves as `oxaria/<version>` and ask for HTML (`Accept: text/html,…`), in both single-page and full-site mode.
+- `-H/--header` headers are sent with every request, in both modes, using curl's syntax: `"Name: value"` adds a header (replacing the built-in `User-Agent`/`Accept`; repeating a name sends every value), `"Name:"` removes it, `"Name;"` sends it with an empty value. `-H` is ignored for local files.
+- With any `-H`, a redirect is refused when it goes to another host (`example.com` → `www.example.com`), downgrades from `https` to `http`, or changes scheme or port while one of your headers is `Authorization`, `Cookie`, `Cookie2`, `Proxy-Authorization` or `WWW-Authenticate` (the HTTP client drops those on such a redirect). Other scheme or port changes are followed (`http://example.com` → `https://example.com:8443` with only `-H "User-Agent: …"`). If the start URL is refused, the check stops before checking anything and exits `1` with a `REDIRECT` error naming where it redirects, so you can re-run on that URL directly. A later page of a full-site scan that is refused gets its own `REDIRECT` error and the crawl goes on.
 - Rate limits are respected: `429` (and `503` with `Retry-After`) are retried up to 3 times after the `Retry-After` delay (1s when it is `0` or missing), and `RateLimit-*`/`X-RateLimit-*` headers pause all requests once the quota runs out.
 - Each report line includes the URL path of the page it belongs to, e.g. `[ERROR] WCAG 2.2 H57 /about: ...`. In the `--report-*` files, a crawled page is located by the full URL it was actually served from (after redirects).
 

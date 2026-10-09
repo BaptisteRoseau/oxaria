@@ -1,4 +1,5 @@
 use thiserror::Error;
+use url::Url;
 
 #[derive(Debug, Error)]
 pub enum CheckerError {
@@ -16,6 +17,48 @@ pub enum CheckerError {
 
     #[error("Failed to render HTML")]
     Render,
+
+    #[error(transparent)]
+    LeakingRedirect(#[from] Box<LeakingRedirect>),
+}
+
+/// Raised instead of following a redirect while `-H` headers are set, when
+/// following it would expose them.
+#[derive(Debug, Clone, PartialEq, Eq, Error)]
+#[error("{from} redirects to {to}, {risk}")]
+pub struct LeakingRedirect {
+    pub from: Url,
+    pub to: Url,
+    pub risk: RedirectRisk,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum RedirectRisk {
+    OtherHost,
+    Downgrade,
+    /// reqwest strips credential headers on a scheme, host or port change.
+    DroppedHeaders,
+}
+
+impl std::fmt::Display for RedirectRisk {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(match self {
+            RedirectRisk::OtherHost => {
+                "which would leak your headers to another host; re-run on it directly if that is \
+                 what you intended"
+            }
+            RedirectRisk::Downgrade => "which would send your headers unencrypted over http",
+            RedirectRisk::DroppedHeaders => {
+                "where your headers would not be sent; re-run on it directly instead"
+            }
+        })
+    }
+}
+
+impl From<LeakingRedirect> for CheckerError {
+    fn from(refused: LeakingRedirect) -> Self {
+        CheckerError::LeakingRedirect(Box::new(refused))
+    }
 }
 
 #[derive(Debug, Error)]
@@ -49,6 +92,7 @@ impl CheckerError {
             CheckerError::HttpFetch(_) | CheckerError::NotHtml(_) => "FETCH",
             CheckerError::InvalidUrl(_) | CheckerError::FileRead(_) => "INPUT",
             CheckerError::Render => "RENDER",
+            CheckerError::LeakingRedirect(_) => "REDIRECT",
         }
     }
 }

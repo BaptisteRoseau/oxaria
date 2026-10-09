@@ -14,8 +14,8 @@ use tokio::time::Instant;
 use tracing::info;
 use url::Url;
 
-use crate::error::CheckerError;
-use crate::page;
+use crate::error::{CheckerError, RedirectRisk};
+use crate::page::{self, RequestHeaders};
 
 use super::links::visit_key;
 
@@ -24,7 +24,6 @@ const DEFAULT_RETRY_DELAY: Duration = Duration::from_secs(1);
 #[cfg(test)]
 const DEFAULT_RETRY_DELAY: Duration = Duration::from_millis(10);
 const MAX_RETRIES: u32 = 3;
-const MAX_REDIRECTS: u32 = 10;
 /// `X-RateLimit-Reset` is epoch seconds on some servers (GitHub) and a
 /// delta on others; anything this large can only be an epoch timestamp.
 const EPOCH_SECONDS_THRESHOLD: u64 = 1_000_000_000;
@@ -40,6 +39,8 @@ pub enum RequestOutcome {
     AlreadyFetched(Url),
     NotRenderable,
     OffDomainRedirect(Url),
+    /// A hop refused because of `-H` headers (see [`page::redirect_refusal`]).
+    RefusedRedirect(Url, RedirectRisk),
     HttpError(StatusCode),
     Transport(reqwest::Error),
 }
@@ -67,19 +68,21 @@ impl RedirectScope {
 /// down all of them and a path fetched by one is never fetched by another.
 pub struct RequestContext {
     client: Client,
+    headers: RequestHeaders,
     next_allowed: RwLock<Instant>,
     fetched: RwLock<HashSet<String>>,
 }
 
 impl RequestContext {
-    pub fn new() -> Result<Self, CheckerError> {
+    pub fn new(headers: &RequestHeaders) -> Result<Self, CheckerError> {
         // Redirects are followed by hand in `request` so each hop can be
         // checked against the redirect scope before it is requested.
-        let client = page::client_builder()
+        let client = page::client_builder(headers)
             .redirect(redirect::Policy::none())
             .build()?;
         Ok(RequestContext {
             client,
+            headers: headers.clone(),
             next_allowed: RwLock::new(Instant::now()),
             fetched: RwLock::new(HashSet::new()),
         })
@@ -129,7 +132,7 @@ pub async fn request(context: &RequestContext, url: &Url, scope: &RedirectScope)
     let mut current = url.clone();
     let mut claimed_path: Option<String> = None;
     let mut retries = 0;
-    let mut redirects = 0;
+    let mut redirects: usize = 0;
 
     info!("Fetching {url}");
     loop {
@@ -167,7 +170,11 @@ pub async fn request(context: &RequestContext, url: &Url, scope: &RedirectScope)
                 Some(target) if !scope.allows(&target) => {
                     return RequestOutcome::OffDomainRedirect(target);
                 }
-                Some(target) if redirects < MAX_REDIRECTS => {
+                Some(target) if redirects < page::MAX_REDIRECTS => {
+                    if let Some(risk) = page::redirect_refusal(&context.headers, &current, &target)
+                    {
+                        return RequestOutcome::RefusedRedirect(target, risk);
+                    }
                     info!("  {current} redirects to {target}");
                     redirects += 1;
                     current = target;
@@ -280,7 +287,10 @@ mod tests {
 
     fn localhost_context(server: &MockServer) -> (RequestContext, Url) {
         let base = Url::parse(&format!("http://localhost:{}/", server.address().port())).unwrap();
-        (RequestContext::new().unwrap(), base)
+        (
+            RequestContext::new(&RequestHeaders::default()).unwrap(),
+            base,
+        )
     }
 
     fn retry_after_header(value: Option<&str>) -> HeaderMap {
@@ -361,7 +371,7 @@ mod tests {
 
     #[tokio::test(start_paused = true)]
     async fn deferring_delays_the_next_turn() {
-        let context = RequestContext::new().unwrap();
+        let context = RequestContext::new(&RequestHeaders::default()).unwrap();
         let start = Instant::now();
         context.defer(Duration::from_secs(3));
         context.wait_turn().await;
@@ -370,7 +380,7 @@ mod tests {
 
     #[tokio::test(start_paused = true)]
     async fn waiting_task_honors_a_deferral_made_while_it_sleeps() {
-        let context = Arc::new(RequestContext::new().unwrap());
+        let context = Arc::new(RequestContext::new(&RequestHeaders::default()).unwrap());
         let start = Instant::now();
         context.defer(Duration::from_secs(1));
         let waiter = tokio::spawn({
@@ -529,6 +539,30 @@ mod tests {
             }
             other => panic!("unexpected outcome: {other:?}"),
         }
+    }
+
+    #[tokio::test]
+    async fn request_sends_custom_headers() {
+        let server = MockServer::start().await;
+        Mock::given(method("GET"))
+            .and(header_values("user-agent", vec!["custom/1.0"]))
+            .and(header_values("authorization", vec!["Bearer token"]))
+            .respond_with(html("<p>hi</p>"))
+            .expect(1)
+            .mount(&server)
+            .await;
+        let (_, base) = localhost_context(&server);
+        let args: Vec<_> = ["User-Agent: custom/1.0", "Authorization: Bearer token"]
+            .iter()
+            .map(|arg| page::parse_header(arg).unwrap())
+            .collect();
+        let context = RequestContext::new(&RequestHeaders::new(&args)).unwrap();
+
+        let outcome = request(&context, &base, &localhost()).await;
+        assert!(
+            matches!(outcome, RequestOutcome::Html { .. }),
+            "{outcome:?}"
+        );
     }
 
     #[tokio::test]

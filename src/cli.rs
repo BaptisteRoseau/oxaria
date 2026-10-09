@@ -2,6 +2,8 @@ use std::num::NonZeroUsize;
 
 use clap::Parser;
 
+use crate::page::{HeaderArg, parse_header};
+
 use crate::rules::{
     DEFAULT_CONTRAST_THRESHOLD, DEFAULT_LARGE_TEXT_CONTRAST_THRESHOLD,
     DEFAULT_TARGET_SIZE_THRESHOLD, Standard,
@@ -47,6 +49,12 @@ pub struct CliConfig {
     /// Print the rules of the selected standards instead of checking anything
     #[arg(long)]
     pub list_rules: bool,
+
+    /// Extra HTTP header to send, curl-style: "Name: value" sets it (replacing the built-in
+    /// User-Agent/Accept), "Name:" removes it, "Name;" sends it empty. Repeat for several.
+    /// With any header, a redirect to another host or from https to http is refused
+    #[arg(short = 'H', long = "header", value_name = "HEADER", value_parser = parse_header)]
+    pub headers: Vec<HeaderArg>,
 
     /// When given a URL, also scan every same-domain page reachable through its links
     #[arg(long)]

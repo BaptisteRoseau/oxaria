@@ -69,24 +69,30 @@ async fn findings(config: &CliConfig) -> Vec<Finding> {
 
 async fn check(config: &CliConfig) -> Result<Vec<Finding>, CheckerError> {
     let options = Arc::new(CheckOptions::from(config));
-    match (config.full_site_scan, page::is_url(&config.path_or_url)) {
+    let is_url = page::is_url(&config.path_or_url);
+    if !is_url && !config.headers.is_empty() {
+        warn!("--header only applies to URLs; ignoring it for the local file");
+    }
+    let headers = page::RequestHeaders::new(&config.headers);
+    match (config.full_site_scan, is_url) {
         (true, true) => {
             let start = Url::parse(&config.path_or_url)?;
-            site::crawl(start, options, config.full_site_scan_max_pages).await
+            site::crawl(start, options, config.full_site_scan_max_pages, headers).await
         }
         (true, false) => {
             warn!("--full-site-scan only applies to URLs; scanning the single file");
-            check_single_page(&config.path_or_url, options).await
+            check_single_page(&config.path_or_url, options, &headers).await
         }
-        (false, _) => check_single_page(&config.path_or_url, options).await,
+        (false, _) => check_single_page(&config.path_or_url, options, &headers).await,
     }
 }
 
 async fn check_single_page(
     path_or_url: &str,
     options: Arc<CheckOptions>,
+    headers: &page::RequestHeaders,
 ) -> Result<Vec<Finding>, CheckerError> {
-    let loaded = page::load_html(path_or_url).await?;
+    let loaded = page::load_html(path_or_url, headers).await?;
     let page = Arc::new(page::RenderedPage {
         url: loaded.url,
         ..page::render(&loaded.html)?
