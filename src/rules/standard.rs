@@ -37,9 +37,9 @@ impl Standard {
     pub fn reference_url(self, rule_id: &str) -> Option<String> {
         match self {
             Standard::Wcag22 => wcag22::reference_url(rule_id),
-            Standard::Aria12 => Some(aria12::reference_url(rule_id)),
-            Standard::HtmlAria => Some(html_aria::reference_url(rule_id)),
-            Standard::Act => Some(act::reference_url(rule_id)),
+            Standard::Aria12 => aria12::reference_url(rule_id),
+            Standard::HtmlAria => html_aria::reference_url(rule_id),
+            Standard::Act => act::reference_url(rule_id),
         }
     }
 }

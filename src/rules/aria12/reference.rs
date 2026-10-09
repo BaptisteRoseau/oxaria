@@ -45,11 +45,11 @@ const ANCHORS: &[(&str, &str)] = &[
 ];
 
 /// Rules without an entry in [`ANCHORS`] link to the spec itself.
-pub fn reference_url(rule_id: &str) -> String {
-    match ANCHORS.iter().find(|(id, _)| *id == rule_id) {
+pub fn reference_url(rule_id: &str) -> Option<String> {
+    Some(match ANCHORS.iter().find(|(id, _)| *id == rule_id) {
         Some((_, anchor)) => format!("{SPEC_URL}#{anchor}"),
         None => SPEC_URL.to_string(),
-    }
+    })
 }
 
 #[cfg(test)]
@@ -58,14 +58,14 @@ mod tests {
 
     #[test]
     fn rules_without_an_anchor_link_to_the_spec() {
-        assert_eq!(reference_url("UNKNOWN"), SPEC_URL);
+        assert_eq!(reference_url("UNKNOWN").as_deref(), Some(SPEC_URL));
     }
 
     #[test]
     fn rules_link_to_the_section_they_cite() {
         assert_eq!(
-            reference_url("ARIA-PRES003"),
-            "https://www.w3.org/TR/wai-aria-1.2/#childrenArePresentational"
+            reference_url("ARIA-PRES003").as_deref(),
+            Some("https://www.w3.org/TR/wai-aria-1.2/#childrenArePresentational")
         );
     }
 
