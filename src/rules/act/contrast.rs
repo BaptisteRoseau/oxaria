@@ -29,7 +29,8 @@ fn contrast_finding(el: ElementRef, options: &CheckOptions) -> Option<Finding> {
     let ratio = color_contrast(foreground, background);
     let threshold = required_threshold(el, options);
     (ratio < threshold).then(|| {
-        Finding::warning(
+        Finding::warning_at(
+            el,
             "afw4f7",
             format!(
                 "<{}> text {} on {} has a contrast ratio of {ratio:.2}:1, below {threshold:.2}:1",
@@ -38,7 +39,6 @@ fn contrast_finding(el: ElementRef, options: &CheckOptions) -> Option<Finding> {
                 hex(background)
             ),
         )
-        .at(el)
         .help(fix_suggestion(foreground, background, threshold))
     })
 }

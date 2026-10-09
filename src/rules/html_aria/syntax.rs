@@ -21,14 +21,14 @@ fn uppercase_role(el: ElementRef) -> Option<Finding> {
         .split_ascii_whitespace()
         .any(|token| has_uppercase(token) && is_known_role(&token.to_ascii_lowercase()));
     has_uppercase_role.then(|| {
-        Finding::error(
+        Finding::error_at(
+            el,
             "HTMLARIA016",
             format!(
                 "{} writes a role token with uppercase letters",
                 start_tag(el, &["role"])
             ),
         )
-        .at(el)
         .help(lowercase_help("role", value))
     })
 }
@@ -41,14 +41,14 @@ fn uppercase_values(el: ElementRef<'_>) -> impl Iterator<Item = Finding> + '_ {
     aria_attributes(el)
         .filter(|(name, value)| has_uppercase(value) && is_valid_token_value(name, value))
         .map(move |(name, value)| {
-            Finding::error(
+            Finding::error_at(
+                el,
                 "HTMLARIA016",
                 format!(
                     "{} writes a token value with uppercase letters",
                     start_tag(el, &[name])
                 ),
             )
-            .at(el)
             .help(lowercase_help(name, value))
         })
 }

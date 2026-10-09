@@ -12,12 +12,15 @@ pub fn check_untitled_iframe(page: &RenderedPage) -> Vec<Finding> {
         .filter(|iframe| !has_name(page, *iframe))
         .map(|iframe| {
             let src = iframe.attr("src").unwrap_or("(no src)");
-            Finding::error("H64", format!("<iframe src=\"{src}\"> has no title"))
-                .at(iframe)
-                .help(
-                    "add a title describing the frame's content, \
+            Finding::error_at(
+                iframe,
+                "H64",
+                format!("<iframe src=\"{src}\"> has no title"),
+            )
+            .help(
+                "add a title describing the frame's content, \
                      e.g. <iframe src=\"...\" title=\"Advertisement\">",
-                )
+            )
         })
         .collect()
 }

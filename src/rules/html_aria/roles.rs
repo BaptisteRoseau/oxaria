@@ -35,11 +35,11 @@ fn redundant_role(el: ElementRef) -> Option<Finding> {
     let is_redundant = explicit == implicit && !is_accepted_redundancy(el, explicit);
     is_redundant.then(|| {
         let tag = start_tag(el, &["type", "role"]);
-        Finding::error(
+        Finding::error_at(
+            el,
             "HTMLARIA002",
             format!("{tag} sets role \"{explicit}\", which the element already has implicitly"),
         )
-        .at(el)
         .help(format!(
             "remove the role attribute: <{}> is already exposed as {explicit}",
             el.tag()
@@ -77,7 +77,8 @@ fn redundant_level(el: ElementRef) -> Option<Finding> {
     let is_redundant = keeps_heading_role
         && aria_value(el, "aria-level") == Some(Parsed::Valid(AriaValue::Integer(level)));
     is_redundant.then(|| {
-        Finding::error(
+        Finding::error_at(
+            el,
             "HTMLARIA002",
             format!(
                 "{} repeats the level <{}> already has",
@@ -85,7 +86,6 @@ fn redundant_level(el: ElementRef) -> Option<Finding> {
                 el.tag()
             ),
         )
-        .at(el)
         .help(format!(
             "remove aria-level: <{}> is already a level {level} heading",
             el.tag()
@@ -125,14 +125,14 @@ fn generic_role_finding(el: ElementRef, role: &str) -> Finding {
              remove the <{tag}>'s semantics"
         ),
     };
-    Finding::error(
+    Finding::error_at(
+        el,
         "HTMLARIA003",
         format!(
             "{} sets role \"{role}\", which authors should not use",
             start_tag(el, &["role"])
         ),
     )
-    .at(el)
     .help(help)
 }
 
@@ -147,14 +147,14 @@ pub fn check_abstract_role(page: &RenderedPage) -> Vec<Finding> {
 
 fn abstract_role_finding(el: ElementRef, abstract_role: &Role) -> Finding {
     let name = abstract_role.name;
-    Finding::error(
+    Finding::error_at(
+        el,
         "HTMLARIA004",
         format!(
             "{} uses the abstract role \"{name}\", which is only meant for the ARIA taxonomy",
             start_tag(el, &["role"])
         ),
     )
-    .at(el)
     .help(format!(
         "replace \"{name}\" with a concrete role that fits the widget, such as {}",
         concrete_subclasses(name)

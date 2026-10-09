@@ -172,7 +172,7 @@ mod tests {
 
     #[test]
     fn markup_in_messages_is_escaped() {
-        let finding = Finding::error("H44", r#"<input name="a&b"> isn't labelled"#.to_string());
+        let finding = Finding::error("H44", r#"<input name="a&b"> isn't labelled"#);
         let output = render("a.html", &[finding]);
         assert!(
             output.contains("&lt;input name=&quot;a&amp;b&quot;&gt; isn&apos;t labelled"),

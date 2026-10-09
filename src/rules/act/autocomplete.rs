@@ -22,14 +22,14 @@ pub fn check_autocomplete_valid(page: &RenderedPage) -> Vec<Finding> {
         .filter_map(|field| Some((field, field.non_empty_attr("autocomplete")?)))
         .filter(|(_, value)| !is_valid_autocomplete(value))
         .map(|(field, _)| {
-            Finding::error(
+            Finding::error_at(
+                field,
                 "73f2c2",
                 format!(
                     "{} is not a valid autofill token list",
                     start_tag_first(field, &["autocomplete"])
                 ),
             )
-            .at(field)
             .help(
                 "use space-separated tokens in this order: [section-*] [shipping|billing] \
                  [home|work|mobile|fax|pager, only before email/impp/tel*] <field name> \

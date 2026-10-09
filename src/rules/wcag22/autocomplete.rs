@@ -77,14 +77,14 @@ pub fn check_invalid_autocomplete(page: &RenderedPage) -> Vec<Finding> {
         .filter_map(|control| Some((control, control.attr("autocomplete")?)))
         .filter(|(_, value)| !is_valid_autocomplete(value))
         .map(|(control, value)| {
-            Finding::error(
+            Finding::error_at(
+                control,
                 "F107",
                 format!(
                     "<{}> has an invalid autocomplete value \"{value}\"",
                     control.tag()
                 ),
             )
-            .at(control)
             .help(
                 "use one of the input purposes from WCAG's list, e.g. autocomplete=\"email\" \
                  or \"bday\" (not \"birthday\"), optionally preceded by shipping/billing",

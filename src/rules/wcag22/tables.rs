@@ -13,12 +13,7 @@ pub fn check_table_missing_headers(page: &RenderedPage) -> Vec<Finding> {
         .filter(|table| has_data_rows(*table))
         .filter(|table| !has_header_cells(*table))
         .map(|table| {
-            Finding::error(
-                "F91",
-                "table has data rows but no <th> header cells".to_string(),
-            )
-            .at(table)
-            .help(
+            Finding::error_at(table, "F91", "table has data rows but no <th> header cells").help(
                 "mark the header cells up as <th scope=\"col\"> (or scope=\"row\"); \
                  if the table is only for layout, add role=\"presentation\"",
             )
@@ -46,12 +41,10 @@ pub fn check_header_missing_scope(page: &RenderedPage) -> Vec<Finding> {
         .filter(|th| th.attr("scope").is_none())
         .filter(|th| !is_referenced(*th, &referenced_ids))
         .map(|th| {
-            Finding::error("H63", "<th> has no scope attribute".to_string())
-                .at(th)
-                .help(format!(
-                    "add scope=\"{}\" to say which cells this header describes",
-                    likely_scope(th)
-                ))
+            Finding::error_at(th, "H63", "<th> has no scope attribute").help(format!(
+                "add scope=\"{}\" to say which cells this header describes",
+                likely_scope(th)
+            ))
         })
         .collect()
 }
@@ -87,7 +80,8 @@ pub fn check_presentation_table_semantics(page: &RenderedPage) -> Vec<Finding> {
         .filter_map(|table| {
             let markup = data_table_markup(table);
             (!markup.is_empty()).then(|| {
-                Finding::error(
+                Finding::error_at(
+                    table,
                     "F46",
                     format!(
                         "table with role=\"{}\" uses data-table markup: {}",
@@ -95,7 +89,6 @@ pub fn check_presentation_table_semantics(page: &RenderedPage) -> Vec<Finding> {
                         markup.join(", ")
                     ),
                 )
-                .at(table)
                 .help(
                     "if the table only lays content out, use <td> cells and drop the caption \
                      and summary; if it holds data, remove role=\"presentation\" (F92)",
@@ -148,7 +141,8 @@ pub fn check_headers_reference(page: &RenderedPage) -> Vec<Finding> {
                 .filter(|id| !header_ids.contains(id))
                 .collect();
             (!wrong.is_empty()).then(|| {
-                Finding::error(
+                Finding::error_at(
+                    cell,
                     "F90",
                     format!(
                         "<{}> headers=\"{tokens}\" references {} that is not a <th> of its table",
@@ -160,7 +154,6 @@ pub fn check_headers_reference(page: &RenderedPage) -> Vec<Finding> {
                             .join(", ")
                     ),
                 )
-                .at(cell)
                 .help(
                     "point headers at the ids of the <th> cells that head this cell, in this table",
                 )

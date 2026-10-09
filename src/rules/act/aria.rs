@@ -86,14 +86,14 @@ fn undefined_attribute_finding(el: ElementRef, name: &str, value: &str) -> Findi
         Some(known) => format!("did you mean {known}=\"{value}\"? otherwise remove it"),
         None => format!("{name} is ignored by browsers: remove it, or use a WAI-ARIA attribute"),
     };
-    Finding::error(
+    Finding::error_at(
+        el,
         "5f99a7",
         format!(
             "<{} {name}=\"{value}\"> uses an attribute WAI-ARIA doesn't define",
             el.tag()
         ),
     )
-    .at(el)
     .help(help)
 }
 
@@ -111,7 +111,8 @@ pub fn check_aria_value_valid(page: &RenderedPage) -> Vec<Finding> {
 }
 
 fn invalid_value_finding(el: ElementRef, attribute: &Attribute, value: &str) -> Finding {
-    Finding::error(
+    Finding::error_at(
+        el,
         "6a7281",
         format!(
             "<{} {}=\"{value}\"> has a value that isn't a valid {}",
@@ -120,7 +121,6 @@ fn invalid_value_finding(el: ElementRef, attribute: &Attribute, value: &str) -> 
             value_type_name(attribute.value_type)
         ),
     )
-    .at(el)
     .help(format!(
         "set {} to {}",
         attribute.name,
@@ -165,14 +165,14 @@ pub fn check_role_valid(page: &RenderedPage) -> Vec<Finding> {
         .filter(|el| !explicit_roles(*el).is_empty() && !is_hidden(*el))
         .filter(|el| !explicit_roles(*el).iter().any(|token| is_valid_role(token)))
         .map(|el| {
-            Finding::error(
+            Finding::error_at(
+                el,
                 "674b10",
                 format!(
                     "{} contains no valid WAI-ARIA role",
                     start_tag_first(el, &["role"])
                 ),
             )
-            .at(el)
             .help(role_help(el))
         })
         .collect()

@@ -39,11 +39,11 @@ fn non_descriptive_finding(link: ElementRef) -> Option<Finding> {
         return Some(empty_link_finding(link, href));
     }
     is_generic_phrase(&name).then(|| {
-        Finding::error(
+        Finding::error_at(
+            link,
             "H30",
             format!("link to \"{href}\" uses non-descriptive text \"{name}\""),
         )
-        .at(link)
         .help(format!(
             "replace \"{}\" with text saying where the link goes, so it makes sense on its own \
              (screen readers list a page's links out of context)",
@@ -56,14 +56,13 @@ fn non_descriptive_finding(link: ElementRef) -> Option<Finding> {
 /// alternative; any other nameless link is reported under H30.
 fn empty_link_finding(link: ElementRef, href: &str) -> Finding {
     match link.descendants().any(|el| el.tag() == "img") {
-        true => Finding::error(
+        true => Finding::error_at(
+            link,
             "F89",
             format!("link to \"{href}\" contains only an image with no text alternative"),
         )
-        .at(link)
         .help("give the image an alt saying where the link goes, e.g. alt=\"Acme home page\""),
-        false => Finding::error("H30", format!("link to \"{href}\" has no link text"))
-            .at(link)
+        false => Finding::error_at(link, "H30", format!("link to \"{href}\" has no link text"))
             .help(
                 "add text saying where the link goes, or an aria-label=\"...\" if it only shows an icon",
             ),

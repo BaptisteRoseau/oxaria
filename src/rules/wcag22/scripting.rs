@@ -50,14 +50,14 @@ pub fn check_emulated_link(page: &RenderedPage) -> Vec<Finding> {
         .filter(|el| !NATIVE_CONTROLS.contains(&el.tag()) && el.attr("role") != Some("link"))
         .filter(|el| navigates(*el))
         .map(|el| {
-            Finding::error(
+            Finding::error_at(
+                el,
                 "F42",
                 format!(
                     "<{}> navigates from a script handler instead of being a link",
                     el.tag()
                 ),
             )
-            .at(el)
             .help(
                 "use <a href=\"...\"> for navigation, which works with the keyboard \
                  and is listed as a link",
@@ -79,11 +79,11 @@ pub fn check_control_without_role(page: &RenderedPage) -> Vec<Finding> {
         .filter(|el| el.non_empty_attr("role").is_none())
         .filter(|el| handlers(*el, ACTIVATION_HANDLERS).next().is_some() && !navigates(*el))
         .map(|el| {
-            Finding::error(
+            Finding::error_at(
+                el,
                 "F59",
                 format!("<{}> has an event handler but no role", el.tag()),
             )
-            .at(el)
             .help(
                 "use a native control such as <button>, or add the fitting role \
                  (e.g. role=\"checkbox\") plus tabindex=\"0\" and keyboard handling",
@@ -99,11 +99,11 @@ pub fn check_pointer_only_handler(page: &RenderedPage) -> Vec<Finding> {
         .filter(|el| handlers(*el, KEYBOARD_HANDLERS).next().is_none())
         .filter_map(|el| Some((el, first_attr(el, POINTER_ONLY_HANDLERS)?)))
         .map(|(el, handler)| {
-            Finding::error(
+            Finding::error_at(
+                el,
                 "F54",
                 format!("<{}> has {handler} but no keyboard equivalent", el.tag()),
             )
-            .at(el)
             .help(
                 "trigger the function from onclick on a native control, \
                  or add onkeydown/onfocus handlers doing the same",
@@ -120,14 +120,14 @@ pub fn check_focus_removed_on_focus(page: &RenderedPage) -> Vec<Finding> {
                 .is_some_and(|code| code.contains("blur("))
         })
         .map(|el| {
-            Finding::error(
+            Finding::error_at(
+                el,
                 "F55",
                 format!(
                     "<{}> removes its own focus as soon as it receives it",
                     el.tag()
                 ),
             )
-            .at(el)
             .help(
                 "remove the blur() call; restyle the focus indicator in CSS \
                  if it looks out of place",

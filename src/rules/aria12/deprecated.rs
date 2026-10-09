@@ -24,11 +24,11 @@ pub fn check_directory_role(page: &RenderedPage) -> Vec<Finding> {
     page.all()
         .filter(|el| explicit_roles(*el).iter().any(|token| token == "directory"))
         .map(|el| {
-            Finding::error(
+            Finding::error_at(
+                el,
                 "ARIA-DEPR001",
                 format!("<{}> uses the deprecated role=\"directory\"", el.tag()),
             )
-            .at(el)
             .help("use role=\"list\", or a native <ul> or <ol> list, instead")
         })
         .collect()
@@ -43,14 +43,14 @@ pub fn check_drag_and_drop_attributes(page: &RenderedPage) -> Vec<Finding> {
                 .iter()
                 .filter(move |name| el.non_empty_attr(name).is_some())
                 .map(move |name| {
-                    Finding::error(
+                    Finding::error_at(
+                        el,
                         "ARIA-DEPR002",
                         format!(
                             "{} uses a deprecated drag-and-drop attribute",
                             quoted(name, el.attr(name).unwrap_or_default())
                         ),
                     )
-                    .at(el)
                     .help(format!(
                         "remove {name}, and give keyboard and screen reader users another way \
                          to move the item, such as a \"Move to\" button"
@@ -77,7 +77,8 @@ fn deprecated_attribute_findings(el: ElementRef) -> Vec<Finding> {
         .iter()
         .filter(|name| el.non_empty_attr(name).is_some() && role.deprecates(name))
         .map(|name| {
-            Finding::error(
+            Finding::error_at(
+                el,
                 "ARIA-DEPR003",
                 format!(
                     "{} is deprecated on {}",
@@ -85,7 +86,6 @@ fn deprecated_attribute_findings(el: ElementRef) -> Vec<Finding> {
                     role_label(el, role)
                 ),
             )
-            .at(el)
             .help(deprecated_attribute_help(name))
         })
         .collect()

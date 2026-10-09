@@ -40,11 +40,11 @@ pub fn check_refresh_instant(page: &RenderedPage) -> Vec<Finding> {
 
 fn refresh_finding(rule_id: &'static str, meta: ElementRef, delay: u64) -> Finding {
     let content = meta.attr("content").unwrap_or_default();
-    Finding::error(
+    Finding::error_at(
+        meta,
         rule_id,
         format!("<meta http-equiv=\"refresh\" content=\"{content}\"> refreshes after {delay}s"),
     )
-    .at(meta)
 }
 
 fn first_valid_refresh(page: &RenderedPage) -> Option<(ElementRef<'_>, u64)> {

@@ -53,20 +53,20 @@ fn refresh_url(rest: &str) -> Option<String> {
 fn refresh_finding(meta: ElementRef, refresh: &Refresh) -> Finding {
     let delay = refresh.delay;
     match &refresh.url {
-        Some(url) => Finding::error(
+        Some(url) => Finding::error_at(
+            meta,
             "F40",
             format!("<meta http-equiv=\"refresh\"> redirects to \"{url}\" after {delay}s"),
         )
-        .at(meta)
         .help(
             "redirect on the server (an HTTP 301), or use a delay of 0; \
              otherwise let users follow a link when they are ready",
         ),
-        None => Finding::error(
+        None => Finding::error_at(
+            meta,
             "F41",
             format!("<meta http-equiv=\"refresh\"> reloads the page every {delay}s"),
         )
-        .at(meta)
         .help("remove it, and let users reload or turn the automatic update off from the page"),
     }
 }

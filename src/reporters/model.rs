@@ -185,7 +185,7 @@ pub(crate) mod tests {
     }
 
     pub(crate) fn fatal(rule_id: &'static str) -> Finding {
-        Finding::error(rule_id, "boom".to_string())
+        Finding::error(rule_id, "boom")
     }
 
     pub(crate) fn on_page(finding: Finding, url: &str) -> Finding {

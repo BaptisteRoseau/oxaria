@@ -78,11 +78,11 @@ fn zoom_finding(meta: ElementRef, key: &str, value: &str) -> Finding {
         _ => "remove maximum-scale, or set it to at least 2 so users can zoom to 200%",
     };
     let content = meta.attr("content").unwrap_or_default();
-    Finding::error(
+    Finding::error_at(
+        meta,
         "b4f0c3",
         format!("<meta name=\"viewport\" content=\"{content}\"> restricts zoom with {key}={value}"),
     )
-    .at(meta)
     .help(help)
 }
 

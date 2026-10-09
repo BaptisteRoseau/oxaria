@@ -10,8 +10,7 @@ pub fn check_missing_label(page: &RenderedPage) -> Vec<Finding> {
         .filter(|el| is_labelable_control(*el))
         .filter(|control| control.accessible_name().is_empty())
         .map(|control| {
-            Finding::error("H44", missing_label_message(control))
-                .at(control)
+            Finding::error_at(control, "H44", missing_label_message(control))
                 .help(missing_label_help(control))
         })
         .collect()
@@ -56,8 +55,7 @@ pub fn check_unnamed_control(page: &RenderedPage) -> Vec<Finding> {
         .filter(|el| is_unnamed_control_candidate(*el))
         .filter(|control| control.accessible_name().is_empty())
         .map(|control| {
-            Finding::error("F68", unnamed_control_message(control))
-                .at(control)
+            Finding::error_at(control, "F68", unnamed_control_message(control))
                 .help(unnamed_control_help(control))
         })
         .collect()
@@ -94,8 +92,7 @@ pub fn check_required_not_indicated(page: &RenderedPage) -> Vec<Finding> {
         .filter(|el| el.has_attr("required"))
         .filter(|control| !required_is_indicated(page, *control))
         .map(|control| {
-            Finding::error("H90", required_not_indicated_message(control))
-                .at(control)
+            Finding::error_at(control, "H90", required_not_indicated_message(control))
                 .help(REQUIRED_NOT_INDICATED_HELP)
         })
         .collect()

@@ -9,11 +9,8 @@ pub fn check_missing_lang(page: &RenderedPage) -> Vec<Finding> {
     match has_lang(page) {
         true => Vec::new(),
         false => vec![
-            Finding::error(
-                "H57",
-                "<html> element has no non-empty lang attribute".to_string(),
-            )
-            .help("declare the page's main language, e.g. <html lang=\"en\">"),
+            Finding::error("H57", "<html> element has no non-empty lang attribute")
+                .help("declare the page's main language, e.g. <html lang=\"en\">"),
         ],
     }
 }

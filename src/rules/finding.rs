@@ -29,29 +29,37 @@ pub struct Finding {
 }
 
 impl Finding {
-    pub(crate) fn error(rule_id: &'static str, message: String) -> Self {
+    pub(crate) fn error(rule_id: &'static str, message: impl Into<String>) -> Self {
         Finding {
             rule_id,
             standard: None,
             severity: Severity::Error,
-            message,
+            message: message.into(),
             element: None,
             help: None,
             page: None,
         }
     }
 
-    pub(super) fn warning(rule_id: &'static str, message: String) -> Self {
+    pub(super) fn error_at(
+        element: ElementRef,
+        rule_id: &'static str,
+        message: impl Into<String>,
+    ) -> Self {
         Finding {
-            severity: Severity::Warning,
+            element: Some(element.selector()),
             ..Finding::error(rule_id, message)
         }
     }
 
-    pub(super) fn at(self, element: ElementRef) -> Self {
+    pub(super) fn warning_at(
+        element: ElementRef,
+        rule_id: &'static str,
+        message: impl Into<String>,
+    ) -> Self {
         Finding {
-            element: Some(element.selector()),
-            ..self
+            severity: Severity::Warning,
+            ..Finding::error_at(element, rule_id, message)
         }
     }
 

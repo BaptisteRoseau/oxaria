@@ -135,7 +135,7 @@ mod tests {
     fn quoted_markup_becomes_code_spans() {
         let finding = Finding {
             help: Some(r#"add <label for="a">...</label>"#.to_string()),
-            ..Finding::error("G87", "<video> has no track (at body > video)".to_string())
+            ..Finding::error("G87", "<video> has no track (at body > video)")
                 .in_standard(Standard::Wcag22)
         };
         assert_eq!(

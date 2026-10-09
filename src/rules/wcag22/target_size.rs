@@ -58,7 +58,8 @@ pub fn check_target_size(page: &RenderedPage, options: &CheckOptions) -> Vec<Fin
 fn target_size_finding(element: ElementRef, options: &CheckOptions) -> Option<Finding> {
     let smallest_dimension = measured_size(element)? as f64;
     (smallest_dimension < options.target_size_threshold).then(|| {
-        Finding::warning(
+        Finding::warning_at(
+            element,
             "TGT001",
             format!(
                 "<{}> target size is {smallest_dimension:.0}px, below the required {:.0}px",
@@ -66,7 +67,6 @@ fn target_size_finding(element: ElementRef, options: &CheckOptions) -> Option<Fi
                 options.target_size_threshold
             ),
         )
-        .at(element)
         .help(target_size_help(
             element,
             smallest_dimension,

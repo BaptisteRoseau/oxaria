@@ -33,7 +33,8 @@ pub fn check_value_type(page: &RenderedPage) -> Vec<Finding> {
                 .filter_map(|(name, value)| Some((attribute(name)?, value)))
                 .filter(|(attribute, value)| parse_value(attribute, value) == Parsed::Invalid)
                 .map(move |(attribute, value)| {
-                    Finding::error(
+                    Finding::error_at(
+                        el,
                         "ARIA-VAL001",
                         format!(
                             "{} is not a valid {} value",
@@ -41,7 +42,6 @@ pub fn check_value_type(page: &RenderedPage) -> Vec<Finding> {
                             attribute.name
                         ),
                     )
-                    .at(el)
                     .help(value_type_help(attribute, value))
                 })
         })
@@ -83,7 +83,7 @@ pub fn check_integer_range(page: &RenderedPage) -> Vec<Finding> {
             integer_problems(el)
                 .into_iter()
                 .map(move |(message, help)| {
-                    Finding::error("ARIA-VAL002", message).at(el).help(help)
+                    Finding::error_at(el, "ARIA-VAL002", message).help(help)
                 })
         })
         .collect()
@@ -164,7 +164,7 @@ pub fn check_range_consistency(page: &RenderedPage) -> Vec<Finding> {
             range_problems(el, role)
                 .into_iter()
                 .map(move |(message, help)| {
-                    Finding::error("ARIA-VAL003", message).at(el).help(help)
+                    Finding::error_at(el, "ARIA-VAL003", message).help(help)
                 })
         })
         .collect()
@@ -263,11 +263,11 @@ pub fn check_missing_row_index(page: &RenderedPage) -> Vec<Finding> {
             !row.non_empty_attr("aria-rowindex").is_some() && indexed_tables.contains(table)
         })
         .map(|(row, _)| {
-            Finding::error(
+            Finding::error_at(
+                *row,
                 "ARIA-VAL005",
-                "row has no aria-rowindex, although other rows of its table have one".to_string(),
+                "row has no aria-rowindex, although other rows of its table have one",
             )
-            .at(*row)
             .help("add aria-rowindex with the row's position in the full table, counting from 1")
         })
         .collect()

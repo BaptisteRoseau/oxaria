@@ -26,11 +26,11 @@ pub fn check_role_purpose(page: &RenderedPage) -> Vec<Finding> {
 }
 
 fn interactive_term_finding(el: ElementRef) -> Finding {
-    Finding::error(
+    Finding::error_at(
+        el,
         "ARIA-USAGE002",
         format!("role=\"term\" is set on an interactive <{}>", el.tag()),
     )
-    .at(el)
     .help(format!(
         "remove role=\"term\" from the <{}>, and wrap the term's text in a <dfn> (or an element \
          with role=\"term\") instead",
@@ -41,11 +41,11 @@ fn interactive_term_finding(el: ElementRef) -> Finding {
 fn invalid_time_finding(el: ElementRef) -> Option<Finding> {
     let text = el.text();
     (!text.is_empty() && !time_string::is_valid(&text)).then(|| {
-        Finding::error(
+        Finding::error_at(
+            el,
             "ARIA-USAGE002",
             format!("role=\"time\" holds \"{text}\", which is not a valid date or time"),
         )
-        .at(el)
         .help(
             "limit the text to a date, time or duration such as \"2019-11-18\", \"09:54:39\" or \
              \"4h 18m 3s\", or use a native <time datetime=\"...\"> for human-readable text",
@@ -75,7 +75,8 @@ fn placeholder_as_label(el: ElementRef) -> Option<Finding> {
         .attr("aria-placeholder")
         .filter(|_| el.non_empty_attr("aria-placeholder").is_some())?;
     (!has_author_name(el) && !has_label_element(el)).then(|| {
-        Finding::error(
+        Finding::error_at(
+            el,
             "ARIA-USAGE003",
             format!(
                 "{} is the only label of this <{}>",
@@ -83,7 +84,6 @@ fn placeholder_as_label(el: ElementRef) -> Option<Finding> {
                 el.tag()
             ),
         )
-        .at(el)
         .help(
             "label the field with aria-labelledby pointing at visible label text (or \
              aria-label); a placeholder is a hint that disappears once the user types",
@@ -104,11 +104,11 @@ fn alertdialog_without_description(el: ElementRef) -> Option<Finding> {
     let is_undescribed =
         has_exposed_role(el, &["alertdialog"]) && !el.non_empty_attr("aria-describedby").is_some();
     is_undescribed.then(|| {
-        Finding::error(
+        Finding::error_at(
+            el,
             "ARIA-USAGE003",
-            "alertdialog has no aria-describedby referencing its message".to_string(),
+            "alertdialog has no aria-describedby referencing its message",
         )
-        .at(el)
         .help("give the alert message an id and reference it with aria-describedby=\"<id>\"")
     })
 }
@@ -118,11 +118,11 @@ fn hidden_details(el: ElementRef) -> Vec<Finding> {
         .into_iter()
         .filter(|id| el.page().element_by_id(id).is_some_and(is_hidden))
         .map(|id| {
-            Finding::error(
+            Finding::error_at(
+                el,
                 "ARIA-USAGE003",
                 format!("aria-details=\"{id}\" references hidden content"),
             )
-            .at(el)
             .help(format!(
                 "make #{id} visible to every user (remove hidden or aria-hidden), or reference \
                  it with aria-describedby if it is only a description"

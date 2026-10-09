@@ -76,7 +76,8 @@ fn set_of(el: ElementRef) -> Option<ElementRef> {
 }
 
 fn multiple_current_finding(group: Group) -> Finding {
-    Finding::error(
+    Finding::error_at(
+        group.members[1],
         "ARIA-ATTR009",
         format!(
             "{} elements of one set have aria-current=\"{}\"",
@@ -84,7 +85,6 @@ fn multiple_current_finding(group: Group) -> Finding {
             group.value
         ),
     )
-    .at(group.members[1])
     .help(format!(
         "keep aria-current=\"{}\" on the one current item only (the first is at {})",
         group.value,
@@ -93,14 +93,14 @@ fn multiple_current_finding(group: Group) -> Finding {
 }
 
 fn multiple_sorted_finding(group: Group) -> Finding {
-    Finding::error(
+    Finding::error_at(
+        group.container,
         "ARIA-ATTR009",
         format!(
             "{} headers of one table have aria-sort set",
             group.members.len()
         ),
     )
-    .at(group.container)
     .help(
         "set aria-sort only on the header the table is currently sorted by, and remove it (or \
          set aria-sort=\"none\") on the others",

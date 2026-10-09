@@ -17,7 +17,8 @@ pub fn check_focusable_in_presentational_children(page: &RenderedPage) -> Vec<Fi
                 .descendants()
                 .find(|descendant| is_tabbable(*descendant))?;
             Some(
-                Finding::error(
+                Finding::error_at(
+                    el,
                     "307n5z",
                     format!(
                         "<{}> (role {}) contains focusable {}, which its role hides from \
@@ -27,7 +28,6 @@ pub fn check_focusable_in_presentational_children(page: &RenderedPage) -> Vec<Fi
                         start_tag_first(focusable, &["href", "tabindex"])
                     ),
                 )
-                .at(el)
                 .help(format!(
                     "move the <{}> out of the <{}> (e.g. next to it), or take it out of the \
                      tab order",

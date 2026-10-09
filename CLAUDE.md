@@ -343,7 +343,7 @@ See [README.md](./README.md#architecture) for the module tree. Notes beyond what
   derives locations from Java stack traces and ignores passing/skipped tests, so warnings are
   lost and URL locations come out garbled whatever we write. `--report-jenkins` is the complete
   Warnings NG route; JUnit is complete for Jenkins' `junit` step and GitLab.
-- **Findings name their element** (`Finding::at` -> `ElementRef::selector()`), because a page
+- **Findings name their element** (`Finding::error_at`/`warning_at` -> `ElementRef::selector()`), because a page
   can have 138 identical `<button> target size is 19px` warnings. The path is structural
   (`tag:nth-of-type(n)`, counting same-tag siblings), skips `html` and litehtml's tag-less
   anonymous boxes, and stops at the nearest element whose id is unique *and* CSS-safe (a

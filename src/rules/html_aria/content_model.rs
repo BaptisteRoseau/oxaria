@@ -156,14 +156,14 @@ fn descendant_finding(container: ElementRef, el: ElementRef, kind: Violation) ->
         Violation::Tabindex => "descendants with tabindex".to_string(),
         Violation::Element => format!("<{}> descendants", el.tag()),
     };
-    Finding::error(
+    Finding::error_at(
+        el,
         "HTMLARIA017",
         format!(
             "{descendant} is inside {}, whose {role} role allows no {limit}",
             start_tag(container, &["role"])
         ),
     )
-    .at(el)
     .help(descendant_help(container, el, kind, role))
 }
 

@@ -51,14 +51,14 @@ fn duplicate_landmark_finding(el: ElementRef, landmark: &str, first: ElementRef)
         .iter()
         .find(|(name, _)| *name == landmark)
         .map_or("", |(_, purpose)| purpose);
-    Finding::error(
+    Finding::error_at(
+        el,
         "ARIA-LMK001",
         format!(
             "second \"{landmark}\" landmark in the document (the first is {})",
             first.selector()
         ),
     )
-    .at(el)
     .help(format!(
         "keep one {landmark} landmark, for {purpose}; mark this one up as a region with a name, \
          or as complementary if it is related content"

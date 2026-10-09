@@ -72,7 +72,7 @@ fn unresolved_reference(el: ElementRef, name: &str, id: &str) -> Option<Finding>
             format!("give each element its own id, and point {name} at the right one"),
         ),
     };
-    Some(Finding::error("ARIA-IDREF001", message).at(el).help(help))
+    Some(Finding::error_at(el, "ARIA-IDREF001", message).help(help))
 }
 
 /// ARIA-IDREF002: an element has one owner, and ownership can't loop.
@@ -103,11 +103,11 @@ pub fn check_aria_owns_conflict(page: &RenderedPage) -> Vec<Finding> {
 }
 
 fn second_owner_finding(owner: ElementRef, id: &str, first: ElementRef) -> Finding {
-    Finding::error(
+    Finding::error_at(
+        owner,
         "ARIA-IDREF002",
         format!("id \"{id}\" is already in the aria-owns of another element"),
     )
-    .at(owner)
     .help(format!(
         "keep \"{id}\" in only one element's aria-owns (it is also owned by {})",
         first.selector()
@@ -122,11 +122,11 @@ fn circular_ownership_finding(tree: &Tree, owner: ElementRef, id: &str) -> Optio
         .chain([owner])
         .any(|ancestor| ancestor == owned);
     is_circular.then(|| {
-        Finding::error(
+        Finding::error_at(
+            owner,
             "ARIA-IDREF002",
             format!("aria-owns=\"{id}\" makes the element own itself or one of its owners"),
         )
-        .at(owner)
         .help(format!(
             "remove \"{id}\" from aria-owns: an element can't own one of its own ancestors"
         ))
@@ -166,11 +166,11 @@ fn is_in_controlled_popup(tree: &Tree, target: ElementRef, el: ElementRef) -> bo
 }
 
 fn active_descendant_finding(el: ElementRef, id: &str) -> Finding {
-    Finding::error(
+    Finding::error_at(
+        el,
         "ARIA-IDREF003",
         format!("aria-activedescendant=\"{id}\" points at an element outside this widget"),
     )
-    .at(el)
     .help(format!(
         "move #{id} inside the element, own it with aria-owns=\"{id}\", or (on a combobox or \
          text field) reference its popup with aria-controls"

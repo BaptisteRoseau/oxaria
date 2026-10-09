@@ -10,12 +10,7 @@ pub fn check_video_missing_captions(page: &RenderedPage) -> Vec<Finding> {
     page.by_tag("video")
         .filter(|video| !has_captions_track(*video))
         .map(|video| {
-            Finding::error(
-                "G87",
-                "<video> has no captions or subtitles track".to_string(),
-            )
-            .at(video)
-            .help(
+            Finding::error_at(video, "G87", "<video> has no captions or subtitles track").help(
                 "add <track kind=\"captions\" src=\"captions.vtt\" srclang=\"en\" \
                  label=\"English\"> inside it; a video without audio needs none",
             )
@@ -37,11 +32,11 @@ pub fn check_autoplay_without_controls(page: &RenderedPage) -> Vec<Finding> {
         .filter(|el| el.tag() == "video" && el.has_attr("autoplay"))
         .filter(|video| video.attr("controls").is_none())
         .map(|video| {
-            Finding::error(
+            Finding::error_at(
+                video,
                 "G186",
-                "<video autoplay> has no controls to pause it".to_string(),
+                "<video autoplay> has no controls to pause it",
             )
-            .at(video)
             .help("add the controls attribute, or remove autoplay (muted is not enough)")
         })
         .collect()
@@ -55,14 +50,14 @@ pub fn check_autoplay_audio_without_controls(page: &RenderedPage) -> Vec<Finding
         .filter(|media| media.has_attr("autoplay") && !media.has_attr("muted"))
         .filter(|media| !media.has_attr("controls"))
         .map(|media| {
-            Finding::error(
+            Finding::error_at(
+                media,
                 "F93",
                 format!(
                     "<{} autoplay> plays sound with no controls to pause or stop it",
                     media.tag()
                 ),
             )
-            .at(media)
             .help("add the controls attribute, add muted, or remove autoplay")
         })
         .collect()
@@ -72,11 +67,11 @@ pub fn check_autoplay_audio_without_controls(page: &RenderedPage) -> Vec<Finding
 pub fn check_marquee(page: &RenderedPage) -> Vec<Finding> {
     page.by_tag("marquee")
         .map(|marquee| {
-            Finding::error(
+            Finding::error_at(
+                marquee,
                 "F16",
-                "<marquee> scrolls content with no way to pause it".to_string(),
+                "<marquee> scrolls content with no way to pause it",
             )
-            .at(marquee)
             .help("show the text statically, or animate it with a visible pause button")
         })
         .collect()

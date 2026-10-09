@@ -42,9 +42,7 @@ pub fn check_button_name(page: &RenderedPage) -> Vec<Finding> {
         has_role(el, "button") && !(el.tag() == "input" && input_type(el) == "image")
     })
     .map(|button| {
-        Finding::error("97a4e1", no_name_message(button))
-            .at(button)
-            .help(button_help(button))
+        Finding::error_at(button, "97a4e1", no_name_message(button)).help(button_help(button))
     })
     .collect()
 }
@@ -63,11 +61,7 @@ fn button_help(button: ElementRef) -> &'static str {
 /// c487ae: every element exposed as a link needs a non-empty accessible name.
 pub fn check_link_name(page: &RenderedPage) -> Vec<Finding> {
     unnamed(page, |el| has_role(el, "link"))
-        .map(|link| {
-            Finding::error("c487ae", no_name_message(link))
-                .at(link)
-                .help(link_help(link))
-        })
+        .map(|link| Finding::error_at(link, "c487ae", no_name_message(link)).help(link_help(link)))
         .collect()
 }
 
@@ -92,12 +86,10 @@ fn has_image(el: ElementRef) -> bool {
 pub fn check_menuitem_name(page: &RenderedPage) -> Vec<Finding> {
     unnamed(page, |el| has_role(el, "menuitem"))
         .map(|item| {
-            Finding::error("m6b1q3", no_name_message(item))
-                .at(item)
-                .help(
-                    "give it visible text, or aria-label=\"...\" if it only shows an icon \
+            Finding::error_at(item, "m6b1q3", no_name_message(item)).help(
+                "give it visible text, or aria-label=\"...\" if it only shows an icon \
                  (an icon with alt=\"\" gives it no name)",
-                )
+            )
         })
         .collect()
 }
@@ -107,8 +99,7 @@ pub fn check_menuitem_name(page: &RenderedPage) -> Vec<Finding> {
 pub fn check_summary_name(page: &RenderedPage) -> Vec<Finding> {
     unnamed(page, |el| is_details_summary(el) && has_no_explicit_role(el))
         .map(|summary| {
-            Finding::error("2t702h", no_name_message(summary))
-                .at(summary)
+            Finding::error_at(summary, "2t702h", no_name_message(summary))
                 .help("give the <summary> text saying what the <details> reveals, e.g. <summary>Opening times</summary>")
         })
         .collect()
@@ -125,9 +116,7 @@ fn has_no_explicit_role(el: ElementRef) -> bool {
 pub fn check_form_field_name(page: &RenderedPage) -> Vec<Finding> {
     unnamed(page, is_form_field)
         .map(|field| {
-            Finding::error("e086e5", no_name_message(field))
-                .at(field)
-                .help(form_field_help(field))
+            Finding::error_at(field, "e086e5", no_name_message(field)).help(form_field_help(field))
         })
         .collect()
 }

@@ -19,9 +19,7 @@ pub fn check_missing_alt(page: &RenderedPage) -> Vec<Finding> {
     page.by_tag("img")
         .filter(|img| img.attr("alt").is_none())
         .map(|img| {
-            Finding::error("F65", missing_alt_message(img))
-                .at(img)
-                .help(missing_alt_help(img))
+            Finding::error_at(img, "F65", missing_alt_message(img)).help(missing_alt_help(img))
         })
         .collect()
 }
@@ -50,8 +48,7 @@ pub fn check_non_alternative_alt(page: &RenderedPage) -> Vec<Finding> {
 fn non_alternative_finding(img: ElementRef) -> Option<Finding> {
     let alt = img.attr("alt")?.trim();
     is_non_alternative_alt(alt).then(|| {
-        Finding::error("F30", non_alternative_message(img, alt))
-            .at(img)
+        Finding::error_at(img, "F30", non_alternative_message(img, alt))
             .help(non_alternative_help(alt))
     })
 }

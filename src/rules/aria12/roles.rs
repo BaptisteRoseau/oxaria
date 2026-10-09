@@ -52,11 +52,11 @@ fn abstract_role_findings(el: ElementRef) -> Vec<Finding> {
     abstract_roles(el)
         .map(|role| {
             let token = role.name;
-            Finding::error(
+            Finding::error_at(
+                el,
                 "ARIA-ROLE002",
                 format!("role=\"{token}\" is an abstract role, which content must not use"),
             )
-            .at(el)
             .help(abstract_role_help(token))
         })
         .collect()
@@ -76,11 +76,11 @@ pub fn check_explicit_generic(page: &RenderedPage) -> Vec<Finding> {
     page.all()
         .filter(|el| explicit_roles(*el).iter().any(|token| token == "generic"))
         .map(|el| {
-            Finding::error(
+            Finding::error_at(
+                el,
                 "ARIA-ROLE003",
                 format!("<{}> sets role=\"generic\" explicitly", el.tag()),
             )
-            .at(el)
             .help(
                 "remove the role (a <div> or <span> is already generic), use role=\"none\" to \
                  remove the element's semantics, or a role such as \"group\" to group and name \

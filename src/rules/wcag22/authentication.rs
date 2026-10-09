@@ -13,12 +13,8 @@ pub fn check_paste_blocked(page: &RenderedPage) -> Vec<Finding> {
         .filter(|input| is_secret_field(*input))
         .filter(|input| input.attr("onpaste").is_some_and(cancels_event))
         .map(|input| {
-            Finding::error(
-                "AUT001",
-                "password or code field blocks pasting".to_string(),
-            )
-            .at(input)
-            .help("remove the onpaste handler so users can paste from a password manager")
+            Finding::error_at(input, "AUT001", "password or code field blocks pasting")
+                .help("remove the onpaste handler so users can paste from a password manager")
         })
         .collect()
 }

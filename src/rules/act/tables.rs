@@ -56,7 +56,8 @@ fn headers_finding(cell: ElementRef, invalid: &[&str]) -> Finding {
             quoted[0]
         ),
     };
-    Finding::error(
+    Finding::error_at(
+        cell,
         "a25f45",
         format!(
             "{} refers to {}, not another cell of the same table",
@@ -64,7 +65,6 @@ fn headers_finding(cell: ElementRef, invalid: &[&str]) -> Finding {
             quoted.join(", ")
         ),
     )
-    .at(cell)
     .help(help)
 }
 

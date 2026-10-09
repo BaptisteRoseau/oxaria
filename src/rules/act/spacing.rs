@@ -47,7 +47,8 @@ fn spacing_findings(page: &RenderedPage, rule: &SpacingRule) -> Vec<Finding> {
         .filter_map(|(el, value)| Some((el, spacing_ratio(el, &value)?, value)))
         .filter(|(_, ratio, _)| *ratio + TOLERANCE < rule.minimum)
         .map(|(el, ratio, value)| {
-            Finding::error(
+            Finding::error_at(
+                el,
                 rule.id,
                 format!(
                     "<{}> locks {} at \"{value} !important\" ({ratio:.2} times the font size, \
@@ -57,7 +58,6 @@ fn spacing_findings(page: &RenderedPage, rule: &SpacingRule) -> Vec<Finding> {
                     rule.minimum
                 ),
             )
-            .at(el)
             .help(format!(
                 "drop !important so users' text-spacing styles can override it, or use \
                  {}: {}em or more",

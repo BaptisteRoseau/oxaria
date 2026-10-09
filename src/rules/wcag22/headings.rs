@@ -7,12 +7,10 @@ use crate::rules::Finding;
 /// H42/G141: the page should have a top-level heading to anchor its outline.
 pub fn check_missing_h1(page: &RenderedPage) -> Vec<Finding> {
     match page.by_tag("h1").next().is_none() {
-        true => vec![
-            Finding::error("H42", "page has no <h1> element".to_string()).help(
-                "mark the page's main title up as an <h1>, e.g. <h1>Order summary</h1>, \
+        true => vec![Finding::error("H42", "page has no <h1> element").help(
+            "mark the page's main title up as an <h1>, e.g. <h1>Order summary</h1>, \
                  instead of styling a <div> or <p> to look like one",
-            ),
-        ],
+        )],
         false => Vec::new(),
     }
 }
@@ -25,9 +23,12 @@ pub fn check_skipped_heading_level(page: &RenderedPage) -> Vec<Finding> {
     for (heading, level) in headings(page) {
         if previous_level > 0 && level > previous_level + 1 {
             findings.push(
-                Finding::error("G141", skipped_level_message(previous_level, level))
-                    .at(heading)
-                    .help(skipped_level_help(previous_level)),
+                Finding::error_at(
+                    heading,
+                    "G141",
+                    skipped_level_message(previous_level, level),
+                )
+                .help(skipped_level_help(previous_level)),
             );
         }
         previous_level = level;
@@ -42,14 +43,14 @@ pub fn check_presentational_heading(page: &RenderedPage) -> Vec<Finding> {
         .into_iter()
         .filter(|(heading, _)| matches!(heading.attr("role"), Some("presentation" | "none")))
         .map(|(heading, level)| {
-            Finding::error(
+            Finding::error_at(
+                heading,
                 "F92",
                 format!(
                     "<h{level}> has role=\"{}\", hiding that it is a heading",
                     heading.attr("role").unwrap_or_default()
                 ),
             )
-            .at(heading)
             .help(format!(
                 "remove the role; if the text is not a heading, use a <p> or <div> instead of <h{level}>"
             ))

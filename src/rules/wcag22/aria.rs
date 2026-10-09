@@ -56,8 +56,7 @@ fn dangling_references(
                 .split_whitespace()
                 .filter(|id| page.element_by_id(id).is_none())
                 .map(move |id| {
-                    Finding::error(rule_id, dangling_reference_message(attribute, id))
-                        .at(element)
+                    Finding::error_at(element, rule_id, dangling_reference_message(attribute, id))
                         .help(dangling_reference_help(attribute, id))
                 })
         })

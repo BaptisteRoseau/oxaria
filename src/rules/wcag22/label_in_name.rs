@@ -18,14 +18,14 @@ pub fn check_label_not_in_name(page: &RenderedPage) -> Vec<Finding> {
         .filter(|(control, label)| !contains_label(&control.accessible_name(), label))
         .map(|(control, label)| {
             let name = control.accessible_name();
-            Finding::error(
+            Finding::error_at(
+                control,
                 "F96",
                 format!(
                     "<{}> shows \"{label}\" but its accessible name is \"{name}\"",
                     control.tag()
                 ),
             )
-            .at(control)
             .help(format!(
                 "start the aria-label with the visible text, e.g. aria-label=\"{label} ...\", \
                  or drop it so the visible text is the name"

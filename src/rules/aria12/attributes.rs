@@ -34,11 +34,11 @@ pub fn check_unknown_attribute(page: &RenderedPage) -> Vec<Finding> {
                     attribute(name).is_none() && !ARIA_1_3_ATTRIBUTES.contains(name)
                 })
                 .map(move |(name, _)| {
-                    Finding::error(
+                    Finding::error_at(
+                        el,
                         "ARIA-ATTR001",
                         format!("{name} is not a WAI-ARIA 1.2 attribute"),
                     )
-                    .at(el)
                     .help(unknown_attribute_help(name))
                 })
         })
@@ -72,7 +72,8 @@ fn unsupported_attribute_findings(el: ElementRef) -> Vec<Finding> {
     aria_attributes(el)
         .filter(|(name, value)| is_role_specific(name, value) && !role.supports(name))
         .map(|(name, value)| {
-            Finding::error(
+            Finding::error_at(
+                el,
                 "ARIA-ATTR003",
                 format!(
                     "{} is not supported on {}",
@@ -80,7 +81,6 @@ fn unsupported_attribute_findings(el: ElementRef) -> Vec<Finding> {
                     role_label(el, role)
                 ),
             )
-            .at(el)
             .help(unsupported_attribute_help(name))
         })
         .collect()
@@ -119,7 +119,8 @@ fn prohibited_attribute_findings(el: ElementRef) -> Vec<Finding> {
     aria_attributes(el)
         .filter(|(name, value)| role.prohibits(name) && !value.trim().is_empty())
         .map(|(name, value)| {
-            Finding::error(
+            Finding::error_at(
+                el,
                 "ARIA-ATTR004",
                 format!(
                     "{} is prohibited on {}",
@@ -127,7 +128,6 @@ fn prohibited_attribute_findings(el: ElementRef) -> Vec<Finding> {
                     role_label(el, role)
                 ),
             )
-            .at(el)
             .help(prohibited_attribute_help(name, role))
         })
         .collect()
@@ -179,14 +179,14 @@ fn restricted_row_attributes(row: ElementRef) -> Vec<Finding> {
         .iter()
         .filter(|name| row.non_empty_attr(name).is_some())
         .map(|name| {
-            Finding::error(
+            Finding::error_at(
+                row,
                 "ARIA-ATTR005",
                 format!(
                     "{} is set on a row of a {table}",
                     quoted(name, row.attr(name).unwrap_or_default())
                 ),
             )
-            .at(row)
             .help(format!(
                 "remove {name}: rows only expand and nest in a treegrid (use role=\"treegrid\" \
                  if the rows really form a hierarchy)"
@@ -203,14 +203,14 @@ fn restricted_header_attributes(header: ElementRef) -> Vec<Finding> {
         .iter()
         .filter(|name| header.non_empty_attr(name).is_some())
         .map(|name| {
-            Finding::error(
+            Finding::error_at(
+                header,
                 "ARIA-ATTR005",
                 format!(
                     "{} is set on a header of a static table",
                     quoted(name, header.attr(name).unwrap_or_default())
                 ),
             )
-            .at(header)
             .help(format!(
                 "remove {name}: a table's content isn't editable (use role=\"grid\" if it is)"
             ))
@@ -228,7 +228,8 @@ fn native_span_findings(el: ElementRef) -> Vec<Finding> {
         .filter(|(name, _)| el.non_empty_attr(name).is_some())
         .map(|(name, native)| {
             let value = el.attr(name).unwrap_or_default().trim();
-            Finding::error(
+            Finding::error_at(
+                el,
                 "ARIA-ATTR005",
                 format!(
                     "<{}> in a native table uses {}",
@@ -236,7 +237,6 @@ fn native_span_findings(el: ElementRef) -> Vec<Finding> {
                     quoted(name, value)
                 ),
             )
-            .at(el)
             .help(format!("use {native}=\"{value}\" instead of {name}"))
         })
         .collect()
@@ -256,7 +256,7 @@ pub fn check_role_description(page: &RenderedPage) -> Vec<Finding> {
         .filter_map(|el| {
             let value = el.attr("aria-roledescription")?;
             role_description_problem(el, value)
-                .map(|(message, help)| Finding::error("ARIA-ATTR008", message).at(el).help(help))
+                .map(|(message, help)| Finding::error_at(el, "ARIA-ATTR008", message).help(help))
         })
         .collect()
 }

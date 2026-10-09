@@ -47,14 +47,14 @@ pub fn check_ignored_presentation(page: &RenderedPage) -> Vec<Finding> {
             let (reason, help) = presentation_conflict(el)?;
             let role = el.attr("role").unwrap_or_default().trim();
             Some(
-                Finding::error(
+                Finding::error_at(
+                    el,
                     "ARIA-PRES001",
                     format!(
                         "role=\"{role}\" is ignored on <{}> because {reason}",
                         el.tag()
                     ),
                 )
-                .at(el)
                 .help(help),
             )
         })
@@ -98,11 +98,11 @@ pub fn check_presentational_image_alt(page: &RenderedPage) -> Vec<Finding> {
         .filter(|img| is_presentational(*img))
         .filter_map(|img| Some((img, img.non_empty_attr("alt")?)))
         .map(|(img, alt)| {
-            Finding::error(
+            Finding::error_at(
+                img,
                 "ARIA-PRES002",
                 format!("presentational <img> has {}", quoted("alt", alt)),
             )
-            .at(img)
             .help(
                 "set alt=\"\" if the image is decoration; if it carries meaning, remove the \
                  presentational role so the alt text is exposed",
@@ -156,14 +156,14 @@ fn is_lost_role(role: &Role) -> bool {
 }
 
 fn lost_content_finding(child: ElementRef, reason: &str, container: &Role) -> Finding {
-    Finding::error(
+    Finding::error_at(
+        child,
         "ARIA-PRES003",
         format!(
             "{reason} is inside role \"{}\", whose children are presentational",
             container.name
         ),
     )
-    .at(child)
     .help(format!(
         "move the <{}> out of the {}, and keep only text or images inside the {}",
         child.tag(),

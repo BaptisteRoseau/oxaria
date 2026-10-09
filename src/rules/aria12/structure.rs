@@ -75,11 +75,11 @@ fn required_context_finding(el: ElementRef, role: &Role, actual: Option<&str>) -
         Some(actual) => format!(", but its closest ancestor with a role is \"{actual}\""),
         None => ", but no ancestor has a role".to_string(),
     };
-    Finding::error(
+    Finding::error_at(
+        el,
         "ARIA-STRUCT001",
         format!("role=\"{}\" must be inside {expected}{actual}", role.name),
     )
-    .at(el)
     .help(format!(
         "put it inside an element with role {expected}, or reference it from one with aria-owns"
     ))
@@ -144,14 +144,14 @@ fn required_owned_finding(el: ElementRef, role: &Role, owned: &[ElementRef]) -> 
         [] => "it only holds text or elements without a role".to_string(),
         roles => format!("it owns: {}", roles.join(", ")),
     };
-    Finding::error(
+    Finding::error_at(
+        el,
         "ARIA-STRUCT002",
         format!(
             "role=\"{}\" owns no element with role {required}",
             role.name
         ),
     )
-    .at(el)
     .help(format!(
         "give its items role {required} ({actual}), or set aria-busy=\"true\" while they load"
     ))
@@ -182,14 +182,14 @@ fn listbox_group_findings(tree: &Tree, group: ElementRef) -> Vec<Finding> {
         .filter_map(|item| Some((item, exposed_role(item)?)))
         .filter(|(_, role)| role.name != "option")
         .map(|(item, role)| {
-            Finding::error(
+            Finding::error_at(
+                item,
                 "ARIA-STRUCT003",
                 format!(
                     "a group in a listbox contains role \"{}\", but may only contain options",
                     role.name
                 ),
             )
-            .at(item)
             .help(
                 "keep only role=\"option\" items in the group, and name the group with \
                  aria-label or aria-labelledby instead of a heading inside it",
@@ -211,11 +211,11 @@ fn spinbutton_finding(tree: &Tree, spinbutton: ElementRef) -> Option<Finding> {
         .all(|part| SPINBUTTON_PARTS.iter().any(|(name, _)| name == part))
         && SPINBUTTON_PARTS.iter().all(fits);
     (!is_valid).then(|| {
-        Finding::error(
+        Finding::error_at(
+            spinbutton,
             "ARIA-STRUCT003",
             format!("a spinbutton contains roles {}", parts.join(", ")),
         )
-        .at(spinbutton)
         .help(
             "a spinbutton may only contain one textbox and two buttons (increment and \
              decrement); move anything else outside it",
@@ -260,11 +260,11 @@ fn misplaced_caption(
         _ => return None,
     };
     (!is_placed).then(|| {
-        Finding::error(
+        Finding::error_at(
+            caption,
             "ARIA-STRUCT004",
             format!("a caption of a {parent_role} isn't {place}"),
         )
-        .at(caption)
         .help(format!("move the caption so it is {place}"))
     })
 }
@@ -281,11 +281,11 @@ fn unreferenced_caption(
     let is_captionable = parent_role == "figure" || TABLE_ROLES.contains(&parent_role);
     let id = caption.attr("id").unwrap_or("caption");
     (is_captionable && !is_referenced).then(|| {
-        Finding::error(
+        Finding::error_at(
+            parent,
             "ARIA-STRUCT004",
             format!("the {parent_role} isn't named by its caption"),
         )
-        .at(parent)
         .help(format!(
             "give the caption an id and reference it from the {parent_role}, e.g. \
              aria-labelledby=\"{id}\""

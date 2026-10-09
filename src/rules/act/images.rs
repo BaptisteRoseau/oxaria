@@ -28,11 +28,11 @@ pub fn check_image_name(page: &RenderedPage) -> Vec<Finding> {
         .filter(|img| !is_exposed_as_presentational(*img))
         .filter(|img| accessible_name(*img).is_empty())
         .map(|img| {
-            Finding::error(
+            Finding::error_at(
+                img,
                 "23a2a8",
                 format!("{} has no accessible name", image_markup(img)),
             )
-            .at(img)
             .help(image_name_help(img))
         })
         .collect()
@@ -73,7 +73,8 @@ pub fn check_decorative_exposed(page: &RenderedPage) -> Vec<Finding> {
         .filter(|el| is_marked_decorative(*el) && !is_hidden(*el))
         .filter_map(|el| Some((el, exposure(el)?)))
         .map(|(el, reason)| {
-            Finding::error(
+            Finding::error_at(
+                el,
                 "46ca7f",
                 format!(
                     "<{}{}> is marked decorative but {reason}",
@@ -81,7 +82,6 @@ pub fn check_decorative_exposed(page: &RenderedPage) -> Vec<Finding> {
                     decorative_marking(el)
                 ),
             )
-            .at(el)
             .help(
                 "remove the ARIA attributes and tabindex that expose it, or drop the decorative \
                  marking and give it a real name if it conveys information",
@@ -135,11 +135,11 @@ pub fn check_image_button_name(page: &RenderedPage) -> Vec<Finding> {
         .filter(|input| accessible_name(*input).is_empty())
         .map(|input| {
             let src = input.attr("src").unwrap_or("...");
-            Finding::error(
+            Finding::error_at(
+                input,
                 "59796f",
                 format!("<input type=\"image\" src=\"{src}\"> has no accessible name"),
             )
-            .at(input)
             .help(format!(
                 "add alt=\"...\" naming the button's action, e.g. \
                  <input type=\"image\" src=\"{src}\" alt=\"Search\">; the name attribute doesn't count"
@@ -156,11 +156,11 @@ pub fn check_svg_image_name(page: &RenderedPage) -> Vec<Finding> {
         .filter_map(|el| Some((el, svg_image_role(el)?)))
         .filter(|(el, _)| accessible_name(*el).is_empty())
         .map(|(el, role)| {
-            Finding::error(
+            Finding::error_at(
+                el,
                 "7d6734",
                 format!("<{} role=\"{role}\"> has no accessible name", el.tag()),
             )
-            .at(el)
             .help(format!(
                 "add a <title> as the first child of the <{}>, or aria-label=\"...\"",
                 el.tag()
@@ -192,11 +192,11 @@ pub fn check_object_name(page: &RenderedPage) -> Vec<Finding> {
         .filter(|object| accessible_name(*object).is_empty())
         .map(|object| {
             let data = object.attr("data").unwrap_or("...");
-            Finding::error(
+            Finding::error_at(
+                object,
                 "8fc3b6",
                 format!("<object data=\"{data}\"> has no accessible name"),
             )
-            .at(object)
             .help(
                 "add title=\"...\" or aria-label=\"...\" describing the media; \
                  alt and fallback content inside the <object> don't name it",

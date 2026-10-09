@@ -25,14 +25,14 @@ fn contrast_finding(el: ElementRef, options: &CheckOptions) -> Option<Finding> {
     let ratio = color_contrast(foreground, background);
     let threshold = required_threshold(el, options);
     (ratio < threshold).then(|| {
-        Finding::warning(
+        Finding::warning_at(
+            el,
             contrast_rule_id(el),
             format!(
                 "<{}> has a text contrast ratio of {ratio:.2}:1, below the required {threshold:.2}:1",
                 el.tag()
             ),
         )
-        .at(el)
         .help(contrast_help(el, (foreground, background), ratio, options))
     })
 }

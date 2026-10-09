@@ -30,14 +30,14 @@ pub fn check_keyshortcuts_syntax(page: &RenderedPage) -> Vec<Finding> {
                 .split_ascii_whitespace()
                 .filter(|shortcut| !is_valid(shortcut))
                 .map(move |shortcut| {
-                    Finding::error(
+                    Finding::error_at(
+                        el,
                         "ARIA-ATTR007",
                         format!(
                             "\"{shortcut}\" in {} is not a valid key shortcut",
                             quoted("aria-keyshortcuts", value)
                         ),
                     )
-                    .at(el)
                     .help(shortcut_help(shortcut))
                 })
         })

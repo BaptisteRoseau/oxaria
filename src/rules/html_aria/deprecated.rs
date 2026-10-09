@@ -18,14 +18,14 @@ fn deprecated_roles(el: ElementRef<'_>) -> impl Iterator<Item = Finding> + '_ {
         .into_iter()
         .filter(|token| DEPRECATED_ROLES.contains(&token.as_str()))
         .map(move |role| {
-            Finding::error(
+            Finding::error_at(
+                el,
                 "HTMLARIA015",
                 format!(
                     "{} uses the deprecated role \"{role}\"",
                     start_tag(el, &["role"])
                 ),
             )
-            .at(el)
             .help(deprecated_role_help(&role))
         })
 }
@@ -43,14 +43,14 @@ fn deprecated_attributes(el: ElementRef<'_>) -> impl Iterator<Item = Finding> + 
     aria_attributes(el)
         .filter(|(name, _)| attribute(name).is_some_and(|attribute| attribute.is_deprecated))
         .map(move |(name, _)| {
-            Finding::error(
+            Finding::error_at(
+                el,
                 "HTMLARIA015",
                 format!(
                     "{} uses the deprecated attribute {name}",
                     start_tag(el, &[name])
                 ),
             )
-            .at(el)
             .help(format!(
                 "remove {name}: it is deprecated and has no replacement"
             ))

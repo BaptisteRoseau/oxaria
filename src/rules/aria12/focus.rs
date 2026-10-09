@@ -37,7 +37,8 @@ pub fn check_unfocusable_widget(page: &RenderedPage) -> Vec<Finding> {
         .filter(|(el, _)| !is_focusable(*el) && !el.descendants().any(is_focusable))
         .filter(|(el, _)| !has_managed_focus(*el) && !has_presentational_children_ancestor(*el))
         .map(|(el, (role, native))| {
-            Finding::error(
+            Finding::error_at(
+                el,
                 "ARIA-FOCUS001",
                 format!(
                     "<{}> with role=\"{}\" can't receive keyboard focus",
@@ -45,7 +46,6 @@ pub fn check_unfocusable_widget(page: &RenderedPage) -> Vec<Finding> {
                     role.name
                 ),
             )
-            .at(el)
             .help(format!(
                 "use a native {native}, or add tabindex=\"0\" (tabindex=\"-1\" for all but the \
                  active item of a composite widget with arrow-key navigation)"
@@ -78,11 +78,11 @@ pub fn check_dialog_without_focusable(page: &RenderedPage) -> Vec<Finding> {
         .filter(|dialog| !dialog.text().is_empty())
         .filter(|dialog| !is_focusable(*dialog) && !dialog.descendants().any(is_focusable))
         .map(|dialog| {
-            Finding::error(
+            Finding::error_at(
+                dialog,
                 "ARIA-FOCUS006",
                 format!("<{}> dialog has no focusable element", dialog.tag()),
             )
-            .at(dialog)
             .help(
                 "give the dialog a focusable control (e.g. a Close <button>) to move focus to \
                  when it opens, or tabindex=\"-1\" on its first static element",

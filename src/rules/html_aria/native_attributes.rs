@@ -170,8 +170,7 @@ fn pairing_findings(
                 .iter()
                 .filter(move |pairing| (pairing.fails)(el))
                 .map(move |pairing| {
-                    Finding::error(rule_id, pairing_message(el, pairing, verb))
-                        .at(el)
+                    Finding::error_at(el, rule_id, pairing_message(el, pairing, verb))
                         .help((pairing.help)(el))
                 })
         })

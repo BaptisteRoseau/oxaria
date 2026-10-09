@@ -91,14 +91,14 @@ fn role_disallows(el: ElementRef, name: &str, role: Option<&'static Role>) -> Op
 }
 
 fn disallowed_finding(el: ElementRef, name: &str, reason: Disallowed) -> Finding {
-    Finding::error(
+    Finding::error_at(
+        el,
         "HTMLARIA007",
         format!(
             "{} doesn't allow {name}",
             start_tag(el, &["type", "alt", "role", name])
         ),
     )
-    .at(el)
     .help(disallowed_help(el, name, reason))
 }
 
@@ -148,11 +148,11 @@ pub fn check_hidden_focusable(page: &RenderedPage) -> Vec<Finding> {
 }
 
 fn hidden_body_finding(body: ElementRef) -> Finding {
-    Finding::error(
+    Finding::error_at(
+        body,
         "HTMLARIA009",
-        "<body aria-hidden=\"true\"> hides the whole page from assistive technologies".to_string(),
+        "<body aria-hidden=\"true\"> hides the whole page from assistive technologies",
     )
-    .at(body)
     .help(
         "remove aria-hidden from <body>; to hide the page behind a modal dialog, use inert on \
          the content outside the dialog instead",
@@ -170,14 +170,14 @@ fn hidden_focusable_finding(el: ElementRef) -> Finding {
             el.tag()
         ),
     };
-    Finding::error(
+    Finding::error_at(
+        el,
         "HTMLARIA009",
         format!(
             "{} can receive focus but is hidden from assistive technologies",
             start_tag(el, &["type", "tabindex", "aria-hidden"])
         ),
     )
-    .at(el)
     .help(help)
 }
 
@@ -203,14 +203,14 @@ fn hidden_twice_finding(el: ElementRef) -> Finding {
                   from everyone"
         }
     };
-    Finding::error(
+    Finding::error_at(
+        el,
         "HTMLARIA010",
         format!(
             "{} sets aria-hidden on an element that already has the hidden attribute",
             start_tag(el, &["hidden", "aria-hidden"])
         ),
     )
-    .at(el)
     .help(help)
 }
 
@@ -259,7 +259,8 @@ pub fn check_advised_against_aria(page: &RenderedPage) -> Vec<Finding> {
 }
 
 fn advised_against_finding(el: ElementRef, advice: &Advice) -> Finding {
-    Finding::error(
+    Finding::error_at(
+        el,
         "HTMLARIA011",
         format!(
             "{} uses {}, which <{}> should not use",
@@ -268,7 +269,6 @@ fn advised_against_finding(el: ElementRef, advice: &Advice) -> Finding {
             el.tag()
         ),
     )
-    .at(el)
     .help(advice.help)
 }
 

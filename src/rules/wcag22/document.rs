@@ -24,7 +24,7 @@ pub fn check_missing_title(page: &RenderedPage) -> Vec<Finding> {
     match document_title(page).is_some_and(|title| !title.is_empty()) {
         true => Vec::new(),
         false => vec![
-            Finding::error("H25", "page has no non-empty <title> element".to_string()).help(
+            Finding::error("H25", "page has no non-empty <title> element").help(
                 "add a <title> to the <head> saying what the page is about, \
                  e.g. <title>Order summary - Acme</title>",
             ),

@@ -55,9 +55,7 @@ pub fn check_combobox_pattern(page: &RenderedPage) -> Vec<Finding> {
             .into_iter()
             .flatten()
             .map(move |(message, help)| {
-                Finding::error("ARIA-WIDGET001", message)
-                    .at(combobox)
-                    .help(help)
+                Finding::error_at(combobox, "ARIA-WIDGET001", message).help(help)
             })
         })
         .collect()
@@ -146,11 +144,11 @@ fn popup_role(controlled: ElementRef) -> Option<&'static str> {
 
 fn popup_mismatch_finding(trigger: ElementRef, kind: &str, expected: &str) -> Finding {
     let written = trigger.attr("aria-haspopup").unwrap_or_default().trim();
-    Finding::error(
+    Finding::error_at(
+        trigger,
         "ARIA-WIDGET002",
         format!("aria-haspopup=\"{written}\" announces a {kind}, but the popup is a {expected}"),
     )
-    .at(trigger)
     .help(format!(
         "set aria-haspopup=\"{expected}\" to match the popup's role"
     ))
@@ -174,7 +172,7 @@ pub fn check_autocomplete_popup(page: &RenderedPage) -> Vec<Finding> {
             ]
             .into_iter()
             .flatten()
-            .map(move |(message, help)| Finding::error("ARIA-WIDGET003", message).at(el).help(help))
+            .map(move |(message, help)| Finding::error_at(el, "ARIA-WIDGET003", message).help(help))
         })
         .collect()
 }
@@ -214,14 +212,14 @@ pub fn check_unfocusable_popup_trigger(page: &RenderedPage) -> Vec<Finding> {
                 .any(|ancestor| ancestor.has_attr("aria-activedescendant"))
         })
         .map(|el| {
-            Finding::error(
+            Finding::error_at(
+                el,
                 "ARIA-WIDGET006",
                 format!(
                     "<{}> opens a popup but can't receive keyboard focus",
                     el.tag()
                 ),
             )
-            .at(el)
             .help(
                 "use a <button> as the trigger, or add tabindex=\"0\" and open the popup on \
                  Enter and Space too",
@@ -239,11 +237,11 @@ pub fn check_unfocusable_feed_article(page: &RenderedPage) -> Vec<Finding> {
         .flat_map(|feed| tree.owned(feed))
         .filter(|article| has_exposed_role(*article, &["article"]) && !is_focusable(*article))
         .map(|article| {
-            Finding::error(
+            Finding::error_at(
+                article,
                 "ARIA-WIDGET007",
                 format!("<{}> in a feed isn't focusable", article.tag()),
             )
-            .at(article)
             .help("add tabindex=\"0\" to each article of the feed so focus can move between them")
         })
         .collect()

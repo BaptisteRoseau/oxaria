@@ -11,8 +11,7 @@ pub fn check_missing_skip_link(page: &RenderedPage) -> Vec<Finding> {
         None => vec![
             Finding::error(
                 "G1",
-                "no skip link found (an <a href=\"#...\"> whose text mentions \"skip\")"
-                    .to_string(),
+                "no skip link found (an <a href=\"#...\"> whose text mentions \"skip\")",
             )
             .help(
                 "make the first link in <body> <a href=\"#main\">Skip to main content</a>, \
@@ -21,8 +20,7 @@ pub fn check_missing_skip_link(page: &RenderedPage) -> Vec<Finding> {
         ],
         Some(link) if !target_exists(page, link) => {
             vec![
-                Finding::error("G1", dangling_skip_link_message(link))
-                    .at(link)
+                Finding::error_at(link, "G1", dangling_skip_link_message(link))
                     .help(dangling_skip_link_help(link)),
             ]
         }

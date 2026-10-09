@@ -13,7 +13,7 @@ pub fn check_page_title(page: &RenderedPage) -> Vec<Finding> {
         Some(_) => "the page's first <title> element is empty",
         None => "the page has no <title> element",
     };
-    vec![Finding::error("2779a5", message.to_string()).help(
+    vec![Finding::error("2779a5", message).help(
         "put a <title> with text in the <head>, e.g. <title>Order summary - Acme</title>; \
          only the first <title> counts",
     )]
@@ -73,14 +73,14 @@ pub fn check_element_lang_valid(page: &RenderedPage) -> Vec<Finding> {
         .filter(|(el, _)| has_inheriting_text(*el))
         .filter(|(_, lang)| !has_known_primary_language(lang))
         .map(|(el, lang)| {
-            Finding::error(
+            Finding::error_at(
+                el,
                 "de46e4",
                 format!(
                     "{} has no known primary language subtag",
                     start_tag_first(el, &["lang"])
                 ),
             )
-            .at(el)
             .help(unknown_language_help(lang))
         })
         .collect()
