@@ -56,9 +56,44 @@ impl RenderedElement {
         }
     }
 
+    pub fn text(own_text: String, parent: Option<usize>) -> Self {
+        RenderedElement {
+            own_text,
+            ..RenderedElement::new(TEXT_TAG.to_string(), parent)
+        }
+    }
+
     pub fn is_text(&self) -> bool {
         self.tag == TEXT_TAG
     }
+}
+
+/// Flattens a tree into the arena in document order (each node before its
+/// descendants). A node `to_element` maps to `None` is left out with its subtree.
+pub fn build_arena<N, C: IntoIterator<Item = N>>(
+    root: N,
+    children: impl Fn(&N) -> C,
+    to_element: impl Fn(&N, Option<usize>) -> Option<RenderedElement>,
+) -> Vec<RenderedElement> {
+    let mut elements = Vec::new();
+    push_subtree(root, None, &children, &to_element, &mut elements);
+    elements
+}
+
+fn push_subtree<N, C: IntoIterator<Item = N>>(
+    node: N,
+    parent: Option<usize>,
+    children: &impl Fn(&N) -> C,
+    to_element: &impl Fn(&N, Option<usize>) -> Option<RenderedElement>,
+    elements: &mut Vec<RenderedElement>,
+) -> Option<usize> {
+    let index = elements.len();
+    elements.push(to_element(&node, parent)?);
+    elements[index].children = children(&node)
+        .into_iter()
+        .filter_map(|child| push_subtree(child, Some(index), children, to_element, elements))
+        .collect();
+    Some(index)
 }
 
 #[derive(Debug, Clone, Default)]

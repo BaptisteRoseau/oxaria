@@ -8,12 +8,13 @@
 //! `style` attribute (no class/cascade resolution), for the few rules that
 //! need to exercise contrast- or target-size-sensitive logic.
 
-use scraper::{ElementRef, Html, Node};
+use scraper::node::Element;
+use scraper::{Html, Node};
 use url::Url;
 
 use super::model::{
     DEFAULT_COLOR, DEFAULT_FONT_SIZE_PX, DEFAULT_FONT_WEIGHT, Rect, RenderedElement, RenderedPage,
-    TEXT_TAG,
+    build_arena,
 };
 use super::render::extract_stylesheets;
 
@@ -27,18 +28,22 @@ pub fn page_from_html_at(html: &str, url: &str) -> RenderedPage {
 
 fn build(html: &str, url: Option<Url>) -> RenderedPage {
     let document = Html::parse_document(html);
-    let mut elements = Vec::new();
-    walk(document.root_element(), None, &mut elements);
+    let elements = build_arena(
+        *document.root_element(),
+        |node| node.children(),
+        |node, parent| match node.value() {
+            Node::Element(element) => Some(rendered_element(element, parent)),
+            Node::Text(text) => Some(RenderedElement::text(text.text.to_string(), parent)),
+            _ => None,
+        },
+    );
     RenderedPage::new(elements, extract_stylesheets(html), url)
 }
 
-fn walk(element: ElementRef, parent: Option<usize>, elements: &mut Vec<RenderedElement>) -> usize {
-    let index = elements.len();
-    let style = element.value().attr("style");
-
-    elements.push(RenderedElement {
+fn rendered_element(element: &Element, parent: Option<usize>) -> RenderedElement {
+    let style = element.attr("style");
+    RenderedElement {
         attrs: element
-            .value()
             .attrs()
             .map(|(name, value)| (name.to_string(), value.to_string()))
             .collect(),
@@ -51,34 +56,8 @@ fn walk(element: ElementRef, parent: Option<usize>, elements: &mut Vec<RenderedE
             .and_then(declared_font_weight)
             .unwrap_or(DEFAULT_FONT_WEIGHT),
         bounding_box: style.and_then(declared_bounding_box).unwrap_or_default(),
-        ..RenderedElement::new(element.value().name().to_string(), parent)
-    });
-
-    let mut children = Vec::new();
-    for child in element.children() {
-        match child.value() {
-            Node::Element(_) => {
-                let child_ref = ElementRef::wrap(child).expect("Node::Element wraps as ElementRef");
-                children.push(walk(child_ref, Some(index), elements));
-            }
-            Node::Text(text) => {
-                children.push(push_text(&text.text, index, elements));
-            }
-            _ => {}
-        }
+        ..RenderedElement::new(element.name().to_string(), parent)
     }
-    elements[index].children = children;
-
-    index
-}
-
-fn push_text(text: &str, parent: usize, elements: &mut Vec<RenderedElement>) -> usize {
-    let index = elements.len();
-    elements.push(RenderedElement {
-        own_text: text.to_string(),
-        ..RenderedElement::new(TEXT_TAG.to_string(), Some(parent))
-    });
-    index
 }
 
 fn style_property<'a>(style: &'a str, property: &str) -> Option<&'a str> {

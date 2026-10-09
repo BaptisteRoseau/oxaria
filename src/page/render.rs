@@ -15,7 +15,7 @@ use url::Url;
 use crate::error::CheckerError;
 
 use super::model::{
-    DEFAULT_FONT_SIZE_PX, DEFAULT_FONT_WEIGHT, Rect, RenderedElement, RenderedPage, TEXT_TAG,
+    DEFAULT_FONT_SIZE_PX, DEFAULT_FONT_WEIGHT, Rect, RenderedElement, RenderedPage, build_arena,
 };
 
 const MASTER_CSS: &str = include_str!("master.css");
@@ -41,10 +41,15 @@ pub fn render(html: &str, url: Option<Url>) -> Result<RenderedPage, CheckerError
         .map_err(|_| CheckerError::Render)?;
     let _ = document.render(VIEWPORT_WIDTH);
 
-    let mut elements = Vec::new();
-    if let Some(root) = document.root() {
-        walk(root, None, &fonts.borrow(), &mut elements);
-    }
+    let fonts = fonts.borrow();
+    let elements = document.root().map_or_else(Vec::new, |root| {
+        build_arena(root, children, |node, parent| {
+            Some(match node.is_text() {
+                true => RenderedElement::text(node.get_text(), parent),
+                false => rendered_element(node, parent, &fonts),
+            })
+        })
+    });
 
     Ok(RenderedPage::new(elements, extract_stylesheets(html), url))
 }
@@ -128,34 +133,9 @@ impl DocumentContainer for Container {
     }
 }
 
-fn walk(
-    node: Element,
-    parent: Option<usize>,
-    fonts: &HashMap<usize, FontInfo>,
-    elements: &mut Vec<RenderedElement>,
-) -> usize {
-    let index = elements.len();
-    elements.push(match node.is_text() {
-        true => text_element(&node, parent),
-        false => rendered_element(&node, parent, fonts),
-    });
-
-    let mut children = Vec::with_capacity(node.children_count());
-    for i in 0..node.children_count() {
-        if let Some(child) = node.child_at(i) {
-            children.push(walk(child, Some(index), fonts, elements));
-        }
-    }
-    elements[index].children = children;
-
-    index
-}
-
-fn text_element(node: &Element, parent: Option<usize>) -> RenderedElement {
-    RenderedElement {
-        own_text: node.get_text(),
-        ..RenderedElement::new(TEXT_TAG.to_string(), parent)
-    }
+fn children<'a>(node: &Element<'a>) -> impl Iterator<Item = Element<'a>> + use<'a> {
+    let node = *node;
+    (0..node.children_count()).filter_map(move |i| node.child_at(i))
 }
 
 fn rendered_element(
