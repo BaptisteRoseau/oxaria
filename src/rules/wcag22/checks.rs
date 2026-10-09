@@ -6,9 +6,9 @@ use crate::rules::RuleCheck;
 
 pub const RULE_IDS: &[&str] = &[
     "H25", "F25", "H64", "F30", "F65", "F89", "H44", "H90", "F68", "F96", "F107", "H42", "G141",
-    "F92", "H57", "H30", "LNK001", "G18", "H63", "F91", "F46", "F90", "ARIA1", "IDS001", "F59",
-    "G87", "G186", "F93", "F16", "F54", "F42", "F55", "G195", "G1", "F40", "F41", "TGT001",
-    "AUT001",
+    "F92", "H57", "H30", "LNK001", "G18", "G145", "H63", "F91", "F46", "F90", "ARIA16", "ARIA1",
+    "IDS001", "F59", "G87", "G186", "F93", "F16", "F54", "F42", "F55", "G195", "G1", "F40", "F41",
+    "TGT001", "AUT001",
 ];
 
 pub fn rule_checks() -> Vec<RuleCheck> {
@@ -64,7 +64,7 @@ mod tests {
                    <img src="a.png"><img src="b.png" alt="image"><input required>
                    <button aria-describedby="gone"></button><div role="button"></div>
                    <a href="/a">read more</a><a href="/b">read more</a><a href="/c"></a>
-                   <p style="color: #999999">low</p><button style="width: 10px; height: 10px">x</button>
+                   <p style="color: #999999">low</p><p style="color: #999999; font-size: 30px">big</p><button style="width: 10px; height: 10px">x</button>
                    <table><tr><td>1</td></tr></table><table><tr><th>H</th></tr></table>
                    <i id="d"></i><i id="d"></i><video autoplay></video>
                    <meta http-equiv="refresh" content="5"><meta http-equiv="refresh" content="5; url=/x">
@@ -74,7 +74,7 @@ mod tests {
                    <h3 role="presentation">P</h3><span onclick="location.href='/s'">S</span>
                    <div onclick="go()">D</div><img src="n.png" alt="Next" onmousedown="next()">
                    <input type="submit" onfocus="this.blur()"><marquee>M</marquee>
-                   <input type="password" onpaste="return false">"##;
+                   <input type="password" onpaste="return false"><input aria-labelledby="missing">"##;
         assert_every_rule_has_help(Standard::Wcag22, &[page, "<p>No title</p>"]).await;
     }
 }
