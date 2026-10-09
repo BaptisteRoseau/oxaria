@@ -4,8 +4,8 @@
 use crate::page::{ElementRef, RenderedPage};
 use crate::rules::Finding;
 use crate::rules::aria_spec::{
-    AriaValue, Parsed, Role, aria_value, explicit_roles, first_valid_role, implicit_role,
-    is_details_summary, role, roles,
+    AriaValue, Parsed, Role, abstract_roles, aria_value, first_valid_role, implicit_role,
+    is_details_summary, roles,
 };
 
 use crate::rules::markup::start_tag;
@@ -140,10 +140,7 @@ fn generic_role_finding(el: ElementRef, role: &str) -> Finding {
 pub fn check_abstract_role(page: &RenderedPage) -> Vec<Finding> {
     page.all()
         .flat_map(|el| {
-            explicit_roles(el)
-                .into_iter()
-                .filter_map(|token| role(&token).filter(|role| role.is_abstract))
-                .map(move |abstract_role| abstract_role_finding(el, abstract_role))
+            abstract_roles(el).map(move |abstract_role| abstract_role_finding(el, abstract_role))
         })
         .collect()
 }

@@ -6,7 +6,7 @@ use crate::page::ElementRef;
 
 use super::attributes::attribute;
 use super::html::{implicit_role, input_type, is_details_summary};
-use super::roles::{Role, concrete_role};
+use super::roles::{Role, concrete_role, role};
 use super::values::{Parsed, is_aria_true, parse_value};
 
 /// Elements the user agent stylesheet never renders.
@@ -25,6 +25,14 @@ pub fn explicit_roles(el: ElementRef) -> Vec<String> {
                 .collect()
         })
         .unwrap_or_default()
+}
+
+/// The abstract roles the `role` attribute names, in token order. No
+/// synonym resolves to an abstract role, so each one's name is the token.
+pub fn abstract_roles(el: ElementRef) -> impl Iterator<Item = &'static Role> {
+    explicit_roles(el)
+        .into_iter()
+        .filter_map(|token| role(&token).filter(|role| role.is_abstract))
 }
 
 /// The first `role` token naming a non-abstract WAI-ARIA 1.2 role (or the

@@ -3,7 +3,7 @@
 
 use crate::page::{ElementRef, RenderedPage};
 use crate::rules::Finding;
-use crate::rules::aria_spec::{explicit_roles, role};
+use crate::rules::aria_spec::{abstract_roles, explicit_roles};
 
 /// Concrete roles to suggest for each abstract one.
 const CONCRETE_ALTERNATIVES: &[(&str, &str)] = &[
@@ -49,16 +49,15 @@ pub fn check_abstract_role(page: &RenderedPage) -> Vec<Finding> {
 }
 
 fn abstract_role_findings(el: ElementRef) -> Vec<Finding> {
-    explicit_roles(el)
-        .into_iter()
-        .filter(|token| role(token).is_some_and(|role| role.is_abstract))
-        .map(|token| {
+    abstract_roles(el)
+        .map(|role| {
+            let token = role.name;
             Finding::error(
                 "ARIA-ROLE002",
                 format!("role=\"{token}\" is an abstract role, which content must not use"),
             )
             .at(el)
-            .help(abstract_role_help(&token))
+            .help(abstract_role_help(token))
         })
         .collect()
 }

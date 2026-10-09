@@ -12,8 +12,8 @@ mod values;
 
 pub use attributes::{ARIA_1_3_ATTRIBUTES, Attribute, Scope, ValueType, attribute, attributes};
 pub use element::{
-    aria_attributes, effective_role, explicit_roles, first_valid_role, is_aria_hidden, is_disabled,
-    is_focusable, is_hidden, is_not_rendered, is_tabbable, tabindex,
+    abstract_roles, aria_attributes, effective_role, explicit_roles, first_valid_role,
+    is_aria_hidden, is_disabled, is_focusable, is_hidden, is_not_rendered, is_tabbable, tabindex,
 };
 pub use html::{
     AllowedAria, DEPRECATED_ROLES, NATIVE_EQUIVALENTS, allowed_aria, has_author_name,
