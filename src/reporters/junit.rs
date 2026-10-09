@@ -94,17 +94,13 @@ fn testcase(issue: &Issue, name: &str) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::reporters::model::tests::{error, fatal, on_page, warning};
+    use crate::reporters::model::tests::{error, fatal, on_page, render, warning};
     use crate::rules::Finding;
-
-    fn render(source: &str, findings: &[Finding]) -> String {
-        JunitReporter.render(&Report::new(source, findings))
-    }
 
     #[test]
     fn empty_report_is_an_empty_testsuites() {
         assert_eq!(
-            render("a.html", &[]),
+            render(&JunitReporter, "a.html", &[]),
             "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n\
              <testsuites name=\"oxaria\" tests=\"0\" failures=\"0\">\n</testsuites>\n"
         );
@@ -112,7 +108,7 @@ mod tests {
 
     #[test]
     fn error_is_a_failure() {
-        let output = render("a.html", &[error("H57")]);
+        let output = render(&JunitReporter, "a.html", &[error("H57")]);
         assert!(output.contains(
             "<testcase classname=\"a.html\" name=\"WCAG 2.2 H57: boom\" file=\"a.html\">\
              <failure type=\"WCAG 2.2 H57\" message=\"boom\">boom\nsee: https://www.w3.org/WAI/WCAG22/Techniques/html/H57</failure></testcase>"
@@ -126,7 +122,7 @@ mod tests {
             help: Some("add lang".to_string()),
             ..fatal("FETCH")
         };
-        let output = render("a.html", &[finding]);
+        let output = render(&JunitReporter, "a.html", &[finding]);
         assert!(output.contains("name=\"FETCH: boom\""), "{output}");
         assert!(
             output.contains("<system-out>boom\nhelp: add lang</system-out>"),
@@ -136,14 +132,18 @@ mod tests {
 
     #[test]
     fn warning_is_a_passing_testcase() {
-        let output = render("a.html", &[error("H57"), warning("G18")]);
+        let output = render(&JunitReporter, "a.html", &[error("H57"), warning("G18")]);
         assert!(output.contains("<system-out>meh\nsee: "));
         assert!(output.contains("tests=\"2\" failures=\"1\""));
     }
 
     #[test]
     fn identical_findings_get_unique_testcase_names() {
-        let output = render("a.html", &[error("H44"), error("H44"), error("H44")]);
+        let output = render(
+            &JunitReporter,
+            "a.html",
+            &[error("H44"), error("H44"), error("H44")],
+        );
         assert!(output.contains(r#"name="WCAG 2.2 H44: boom""#), "{output}");
         assert!(
             output.contains(r#"name="WCAG 2.2 H44: boom (2)""#),
@@ -158,6 +158,7 @@ mod tests {
     #[test]
     fn crawled_pages_get_one_suite_each() {
         let output = render(
+            &JunitReporter,
             "https://example.com",
             &[
                 on_page(error("H57"), "https://example.com/b"),
@@ -173,7 +174,7 @@ mod tests {
     #[test]
     fn markup_in_messages_is_escaped() {
         let finding = Finding::error("H44", r#"<input name="a&b"> isn't labelled"#);
-        let output = render("a.html", &[finding]);
+        let output = render(&JunitReporter, "a.html", &[finding]);
         assert!(
             output.contains("&lt;input name=&quot;a&amp;b&quot;&gt; isn&apos;t labelled"),
             "{output}"

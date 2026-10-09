@@ -79,17 +79,13 @@ fn counts(errors: usize, warnings: usize) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::reporters::model::tests::{error, fatal, on_page, warning};
+    use crate::reporters::model::tests::{error, fatal, on_page, render, warning};
     use crate::rules::Finding;
-
-    fn render(source: &str, findings: &[Finding]) -> String {
-        TextReporter.render(&Report::new(source, findings))
-    }
 
     #[test]
     fn issue_line_without_page_is_unchanged() {
         assert_eq!(
-            render("a.html", &[fatal("FETCH")]),
+            render(&TextReporter, "a.html", &[fatal("FETCH")]),
             "[ERROR] FETCH: boom\n1 error(s), 0 warning(s)\n"
         );
     }
@@ -101,7 +97,7 @@ mod tests {
             ..error("H57")
         };
         assert_eq!(
-            render("a.html", &[finding]),
+            render(&TextReporter, "a.html", &[finding]),
             "[ERROR] WCAG 2.2 H57: boom\n  \
              = help: add lang=\"en\"\n  \
              = note: see https://www.w3.org/WAI/WCAG22/Techniques/html/H57\n\
@@ -112,6 +108,7 @@ mod tests {
     #[test]
     fn issue_line_includes_page_path() {
         let report = render(
+            &TextReporter,
             "https://example.com",
             &[on_page(error("H57"), "https://example.com/about")],
         );
@@ -123,12 +120,19 @@ mod tests {
 
     #[test]
     fn warnings_are_padded_to_align_with_errors() {
-        assert!(render("a.html", &[warning("G18")]).starts_with("[WARN]  WCAG 2.2 G18: meh\n"));
+        assert!(
+            render(&TextReporter, "a.html", &[warning("G18")])
+                .starts_with("[WARN]  WCAG 2.2 G18: meh\n")
+        );
     }
 
     #[test]
     fn summary_line_counts_each_severity() {
-        let report = render("a.html", &[error("H57"), error("H42"), warning("TGT001")]);
+        let report = render(
+            &TextReporter,
+            "a.html",
+            &[error("H57"), error("H42"), warning("TGT001")],
+        );
         assert!(
             report.ends_with("2 error(s), 1 warning(s) (WCAG 2.2: 2 error(s), 1 warning(s))\n"),
             "{report}"
@@ -142,7 +146,7 @@ mod tests {
             warning("G18"),
             fatal("2779a5").in_standard(Standard::Act),
         ];
-        assert!(render("a.html", &findings).ends_with(
+        assert!(render(&TextReporter, "a.html", &findings).ends_with(
             "2 error(s), 1 warning(s) \
                  (WCAG 2.2: 0 error(s), 1 warning(s); ACT: 1 error(s), 0 warning(s))\n"
         ));
@@ -150,6 +154,9 @@ mod tests {
 
     #[test]
     fn empty_report_prints_only_the_summary() {
-        assert_eq!(render("a.html", &[]), "0 error(s), 0 warning(s)\n");
+        assert_eq!(
+            render(&TextReporter, "a.html", &[]),
+            "0 error(s), 0 warning(s)\n"
+        );
     }
 }

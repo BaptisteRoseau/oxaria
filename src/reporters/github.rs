@@ -129,17 +129,13 @@ fn escape_markdown(text: &str) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::reporters::model::tests::{error, fatal, on_page, warning};
+    use crate::reporters::model::tests::{error, fatal, on_page, render, warning};
     use crate::rules::Finding;
-
-    fn render(source: &str, findings: &[Finding]) -> String {
-        GithubReporter.render(&Report::new(source, findings))
-    }
 
     #[test]
     fn clean_report_is_a_single_heading() {
         assert_eq!(
-            render("a.html", &[]),
+            render(&GithubReporter, "a.html", &[]),
             "## ✅ Accessibility: no issues found\n"
         );
     }
@@ -147,7 +143,7 @@ mod tests {
     #[test]
     fn findings_are_a_table_under_a_heading() {
         assert_eq!(
-            render("./a.html", &[error("H57"), warning("G18")]),
+            render(&GithubReporter, "./a.html", &[error("H57"), warning("G18")]),
             "## ❌ Accessibility: 1 error(s), 1 warning(s)\n\n\
              | Severity | Standard | Rule | Location | Message |\n\
              | --- | --- | --- | --- | --- |\n\
@@ -158,7 +154,10 @@ mod tests {
 
     #[test]
     fn rules_without_a_reference_are_not_linked() {
-        assert!(render("a.html", &[fatal("FETCH")]).contains("| ❌ Error |  | `FETCH` |"));
+        assert!(
+            render(&GithubReporter, "a.html", &[fatal("FETCH")])
+                .contains("| ❌ Error |  | `FETCH` |")
+        );
     }
 
     #[test]
@@ -168,19 +167,27 @@ mod tests {
             ..error("G87")
         };
         assert!(
-            render("a.html", &[finding]).contains("| boom<br>💡 add \\<track\\> |"),
+            render(&GithubReporter, "a.html", &[finding])
+                .contains("| boom<br>💡 add \\<track\\> |"),
             "help missing"
         );
     }
 
     #[test]
     fn warnings_only_heading() {
-        assert!(render("a.html", &[warning("G18")]).starts_with("## ⚠️ Accessibility: 0 error(s)"));
+        assert!(
+            render(&GithubReporter, "a.html", &[warning("G18")])
+                .starts_with("## ⚠️ Accessibility: 0 error(s)")
+        );
     }
 
     #[test]
     fn errors_are_listed_before_warnings() {
-        let output = render("a.html", &[warning("G18"), error("H57"), warning("TGT001")]);
+        let output = render(
+            &GithubReporter,
+            "a.html",
+            &[warning("G18"), error("H57"), warning("TGT001")],
+        );
         let rules: Vec<_> = output
             .lines()
             .skip(4)
@@ -192,6 +199,7 @@ mod tests {
     #[test]
     fn crawled_pages_are_located_by_url() {
         let output = render(
+            &GithubReporter,
             "https://example.com",
             &[on_page(error("H57"), "https://example.com/about")],
         );
@@ -213,7 +221,7 @@ mod tests {
             .map(|_| Finding::error("H57", long_message.clone()))
             .collect();
 
-        let output = render("a.html", &findings);
+        let output = render(&GithubReporter, "a.html", &findings);
 
         assert!(output.len() <= MAX_SUMMARY_BYTES, "{} bytes", output.len());
         assert!(

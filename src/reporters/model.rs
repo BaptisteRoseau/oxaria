@@ -179,6 +179,19 @@ pub(crate) mod tests {
     use rstest::rstest;
 
     use super::*;
+    use crate::reporters::Reporter;
+
+    pub(crate) fn render(reporter: &dyn Reporter, source: &str, findings: &[Finding]) -> String {
+        reporter.render(&Report::new(source, findings))
+    }
+
+    pub(crate) fn render_json(
+        reporter: &dyn Reporter,
+        source: &str,
+        findings: &[Finding],
+    ) -> serde_json::Value {
+        serde_json::from_str(&render(reporter, source, findings)).expect("valid JSON")
+    }
 
     pub(crate) fn error(rule_id: &'static str) -> Finding {
         fatal(rule_id).in_standard(Standard::Wcag22)

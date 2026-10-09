@@ -90,17 +90,12 @@ mod tests {
     use serde_json::{Value, json};
 
     use super::*;
-    use crate::reporters::model::tests::{error, fatal, on_page, warning};
+    use crate::reporters::model::tests::{error, fatal, on_page, render_json, warning};
     use crate::rules::{Finding, Standard};
-
-    fn render(source: &str, findings: &[Finding]) -> Value {
-        let output = GitlabReporter.render(&Report::new(source, findings));
-        serde_json::from_str(&output).expect("valid JSON")
-    }
 
     #[test]
     fn empty_report_is_an_empty_array() {
-        assert_eq!(render("a.html", &[]), json!([]));
+        assert_eq!(render_json(&GitlabReporter, "a.html", &[]), json!([]));
     }
 
     #[test]
@@ -126,7 +121,7 @@ mod tests {
             ..fatal("FETCH")
         };
         assert_eq!(
-            render("a.html", &[finding])[0]["description"],
+            render_json(&GitlabReporter, "a.html", &[finding])[0]["description"],
             "FETCH: boom  \nhelp: add lang"
         );
     }
@@ -139,7 +134,7 @@ mod tests {
                 .in_standard(Standard::Wcag22)
         };
         assert_eq!(
-            render("a.html", &[finding])[0]["description"],
+            render_json(&GitlabReporter, "a.html", &[finding])[0]["description"],
             "WCAG 2.2 G87: `<video>` has no track (at body > video)  \n\
              help: add `<label for=\"a\">`...`</label>`  \n\
              see: https://www.w3.org/WAI/WCAG22/Techniques/general/G87"
@@ -148,18 +143,22 @@ mod tests {
 
     #[test]
     fn warnings_are_minor() {
-        assert_eq!(render("a.html", &[warning("G18")])[0]["severity"], "minor");
+        assert_eq!(
+            render_json(&GitlabReporter, "a.html", &[warning("G18")])[0]["severity"],
+            "minor"
+        );
     }
 
     #[test]
     fn identical_findings_keep_distinct_fingerprints() {
-        let output = render("a.html", &[error("F65"), error("F65")]);
+        let output = render_json(&GitlabReporter, "a.html", &[error("F65"), error("F65")]);
         assert_ne!(output[0]["fingerprint"], output[1]["fingerprint"]);
     }
 
     #[test]
     fn crawled_page_is_located_by_its_url() {
-        let output = render(
+        let output = render_json(
+            &GitlabReporter,
             "https://example.com",
             &[on_page(error("H57"), "https://example.com/about")],
         );

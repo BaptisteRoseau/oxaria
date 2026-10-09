@@ -86,17 +86,15 @@ mod tests {
     use serde_json::{Value, json};
 
     use super::*;
-    use crate::reporters::model::tests::{error, fatal, warning};
+    use crate::reporters::model::tests::{error, fatal, render_json, warning};
     use crate::rules::Finding;
-
-    fn render(source: &str, findings: &[Finding]) -> Value {
-        let output = JenkinsReporter.render(&Report::new(source, findings));
-        serde_json::from_str(&output).expect("valid JSON")
-    }
 
     #[test]
     fn empty_report_has_no_issues() {
-        assert_eq!(render("a.html", &[]), json!({ "issues": [], "size": 0 }));
+        assert_eq!(
+            render_json(&JenkinsReporter, "a.html", &[]),
+            json!({ "issues": [], "size": 0 })
+        );
     }
 
     #[test]
@@ -124,7 +122,7 @@ mod tests {
 
     #[test]
     fn identical_findings_stay_distinct_for_warnings_ng() {
-        let output = render("a.html", &[error("H44"), error("H44")]);
+        let output = render_json(&JenkinsReporter, "a.html", &[error("H44"), error("H44")]);
         assert_ne!(
             output["issues"][0]["additionalProperties"],
             output["issues"][1]["additionalProperties"]
@@ -138,7 +136,7 @@ mod tests {
             ..fatal("FETCH")
         };
         assert_eq!(
-            render("a.html", &[finding])["issues"][0]["description"],
+            render_json(&JenkinsReporter, "a.html", &[finding])["issues"][0]["description"],
             "<p>help: add &lt;track&gt;</p>"
         );
     }
@@ -146,14 +144,14 @@ mod tests {
     #[test]
     fn checker_failures_have_their_own_category() {
         assert_eq!(
-            render("a.html", &[fatal("FETCH")])["issues"][0]["category"],
+            render_json(&JenkinsReporter, "a.html", &[fatal("FETCH")])["issues"][0]["category"],
             "oxaria"
         );
     }
 
     #[test]
     fn warnings_are_normal_severity() {
-        let output = render("a.html", &[error("H57"), warning("G18")]);
+        let output = render_json(&JenkinsReporter, "a.html", &[error("H57"), warning("G18")]);
         assert_eq!(output["issues"][1]["severity"], "NORMAL");
         assert_eq!(output["size"], 2);
     }
