@@ -1,37 +1,23 @@
 use super::{attributes, content_model, deprecated, native_attributes, roles, syntax};
-use crate::rules::RuleCheck;
+use crate::rules::Rule;
 
-pub const RULE_IDS: &[&str] = &[
-    "HTMLARIA002",
-    "HTMLARIA003",
-    "HTMLARIA004",
-    "HTMLARIA007",
-    "HTMLARIA009",
-    "HTMLARIA010",
-    "HTMLARIA011",
-    "HTMLARIA013",
-    "HTMLARIA014",
-    "HTMLARIA015",
-    "HTMLARIA016",
-    "HTMLARIA017",
-];
-
-pub fn rule_checks() -> Vec<RuleCheck> {
-    vec![
-        roles::check_redundant_semantics,
-        roles::check_generic_role,
-        roles::check_abstract_role,
-        attributes::check_disallowed_aria,
-        attributes::check_hidden_focusable,
-        attributes::check_hidden_twice,
-        attributes::check_advised_against_aria,
-        native_attributes::check_conflicting_aria,
-        native_attributes::check_repeated_aria,
-        deprecated::check_deprecated_aria,
-        syntax::check_lowercase_tokens,
+pub const RULES: &[Rule] = &[
+    Rule::new(&["HTMLARIA002"], roles::check_redundant_semantics),
+    Rule::new(&["HTMLARIA003"], roles::check_generic_role),
+    Rule::new(&["HTMLARIA004"], roles::check_abstract_role),
+    Rule::new(&["HTMLARIA007"], attributes::check_disallowed_aria),
+    Rule::new(&["HTMLARIA009"], attributes::check_hidden_focusable),
+    Rule::new(&["HTMLARIA010"], attributes::check_hidden_twice),
+    Rule::new(&["HTMLARIA011"], attributes::check_advised_against_aria),
+    Rule::new(&["HTMLARIA013"], native_attributes::check_conflicting_aria),
+    Rule::new(&["HTMLARIA014"], native_attributes::check_repeated_aria),
+    Rule::new(&["HTMLARIA015"], deprecated::check_deprecated_aria),
+    Rule::new(&["HTMLARIA016"], syntax::check_lowercase_tokens),
+    Rule::new(
+        &["HTMLARIA017"],
         content_model::check_disallowed_descendants,
-    ]
-}
+    ),
+];
 
 #[cfg(test)]
 mod tests {

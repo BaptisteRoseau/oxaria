@@ -2,45 +2,40 @@ use super::{
     aria, autocomplete, contrast, controls, focus, images, language, orientation, refresh, spacing,
     tables, zoom,
 };
-use crate::rules::RuleCheck;
+use crate::rules::Rule;
 
-pub const RULE_IDS: &[&str] = &[
-    "2779a5", "b5c3f8", "bf051a", "de46e4", "23a2a8", "46ca7f", "59796f", "7d6734", "8fc3b6",
-    "97a4e1", "c487ae", "m6b1q3", "2t702h", "e086e5", "73f2c2", "a25f45", "5f99a7", "6a7281",
-    "674b10", "307n5z", "afw4f7", "bc659a", "bisz58", "b4f0c3", "24afc2", "9e45ec", "b33eff",
-];
-
-pub fn rule_checks() -> Vec<RuleCheck> {
-    vec![
-        language::check_page_title,
-        language::check_html_lang,
-        language::check_html_lang_valid,
-        language::check_element_lang_valid,
-        images::check_image_name,
-        images::check_decorative_exposed,
-        images::check_image_button_name,
-        images::check_svg_image_name,
-        images::check_object_name,
-        controls::check_button_name,
-        controls::check_link_name,
-        controls::check_menuitem_name,
-        controls::check_summary_name,
-        controls::check_form_field_name,
-        autocomplete::check_autocomplete_valid,
-        tables::check_headers_refer_to_cells,
-        aria::check_aria_attribute_defined,
-        aria::check_aria_value_valid,
-        aria::check_role_valid,
+pub const RULES: &[Rule] = &[
+    Rule::new(&["2779a5"], language::check_page_title),
+    Rule::new(&["b5c3f8"], language::check_html_lang),
+    Rule::new(&["bf051a"], language::check_html_lang_valid),
+    Rule::new(&["de46e4"], language::check_element_lang_valid),
+    Rule::new(&["23a2a8"], images::check_image_name),
+    Rule::new(&["46ca7f"], images::check_decorative_exposed),
+    Rule::new(&["59796f"], images::check_image_button_name),
+    Rule::new(&["7d6734"], images::check_svg_image_name),
+    Rule::new(&["8fc3b6"], images::check_object_name),
+    Rule::new(&["97a4e1"], controls::check_button_name),
+    Rule::new(&["c487ae"], controls::check_link_name),
+    Rule::new(&["m6b1q3"], controls::check_menuitem_name),
+    Rule::new(&["2t702h"], controls::check_summary_name),
+    Rule::new(&["e086e5"], controls::check_form_field_name),
+    Rule::new(&["73f2c2"], autocomplete::check_autocomplete_valid),
+    Rule::new(&["a25f45"], tables::check_headers_refer_to_cells),
+    Rule::new(&["5f99a7"], aria::check_aria_attribute_defined),
+    Rule::new(&["6a7281"], aria::check_aria_value_valid),
+    Rule::new(&["674b10"], aria::check_role_valid),
+    Rule::new(
+        &["307n5z"],
         focus::check_focusable_in_presentational_children,
-        contrast::check_contrast_minimum,
-        refresh::check_refresh_delay,
-        refresh::check_refresh_instant,
-        zoom::check_viewport_zoom,
-        spacing::check_important_letter_spacing,
-        spacing::check_important_word_spacing,
-        orientation::check_orientation_lock,
-    ]
-}
+    ),
+    Rule::new(&["afw4f7"], contrast::check_contrast_minimum),
+    Rule::new(&["bc659a"], refresh::check_refresh_delay),
+    Rule::new(&["bisz58"], refresh::check_refresh_instant),
+    Rule::new(&["b4f0c3"], zoom::check_viewport_zoom),
+    Rule::new(&["24afc2"], spacing::check_important_letter_spacing),
+    Rule::new(&["9e45ec"], spacing::check_important_word_spacing),
+    Rule::new(&["b33eff"], orientation::check_orientation_lock),
+];
 
 #[cfg(test)]
 mod tests {

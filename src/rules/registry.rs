@@ -8,22 +8,31 @@ use crate::page::RenderedPage;
 
 pub type RuleCheck = fn(&RenderedPage, &CheckOptions) -> Vec<Finding>;
 
-fn rule_checks(standard: Standard) -> Vec<RuleCheck> {
-    match standard {
-        Standard::Wcag22 => wcag22::rule_checks(),
-        Standard::Aria12 => aria12::rule_checks(),
-        Standard::HtmlAria => html_aria::rule_checks(),
-        Standard::Act => act::rule_checks(),
+/// One rule: its check and every rule ID its findings can carry.
+pub struct Rule {
+    pub ids: &'static [&'static str],
+    pub check: RuleCheck,
+}
+
+impl Rule {
+    pub const fn new(ids: &'static [&'static str], check: RuleCheck) -> Self {
+        Self { ids, check }
     }
 }
 
-fn rule_ids(standard: Standard) -> &'static [&'static str] {
+fn rules(standard: Standard) -> &'static [Rule] {
     match standard {
-        Standard::Wcag22 => wcag22::RULE_IDS,
-        Standard::Aria12 => aria12::RULE_IDS,
-        Standard::HtmlAria => html_aria::RULE_IDS,
-        Standard::Act => act::RULE_IDS,
+        Standard::Wcag22 => wcag22::RULES,
+        Standard::Aria12 => aria12::RULES,
+        Standard::HtmlAria => html_aria::RULES,
+        Standard::Act => act::RULES,
     }
+}
+
+fn rule_ids(standard: Standard) -> impl Iterator<Item = &'static str> {
+    rules(standard)
+        .iter()
+        .flat_map(|rule| rule.ids.iter().copied())
 }
 
 fn rules_file(standard: Standard) -> &'static str {
@@ -39,8 +48,7 @@ fn rules_file(standard: Standard) -> &'static str {
 /// `### <ID> - <title>` heading of its rule file under `standards/`.
 pub fn rule_titles(standard: Standard) -> Vec<(&'static str, &'static str)> {
     rule_ids(standard)
-        .iter()
-        .map(|&id| (id, title(rules_file(standard), id).unwrap_or_default()))
+        .map(|id| (id, title(rules_file(standard), id).unwrap_or_default()))
         .collect()
 }
 
@@ -59,9 +67,9 @@ pub async fn run_all(page: Arc<RenderedPage>, options: Arc<CheckOptions>) -> Vec
         .standards
         .iter()
         .flat_map(|&standard| {
-            rule_checks(standard)
-                .into_iter()
-                .map(move |check| (standard, check))
+            rules(standard)
+                .iter()
+                .map(move |rule| (standard, rule.check))
         })
         .map(|(standard, check)| {
             let task = spawn_rule(standard, check, Arc::clone(&page), Arc::clone(&options));
@@ -113,17 +121,26 @@ pub(crate) mod tests {
     }
 
     /// Fails unless the pages make exactly the rule IDs of `standard` fire,
-    /// each finding with a help line.
+    /// each finding with a help line and an ID declared by the rule that produced it.
     pub(crate) async fn assert_every_rule_has_help(standard: Standard, pages: &[&str]) {
+        let options = CheckOptions::default();
         let mut findings = Vec::new();
         for html in pages {
-            findings.extend(run_all(Arc::new(page_from_html(html)), options()).await);
+            let page = page_from_html(html);
+            for rule in rules(standard) {
+                let rule_findings = (rule.check)(&page, &options);
+                let undeclared: Vec<_> = rule_findings
+                    .iter()
+                    .filter(|f| !rule.ids.contains(&f.rule_id))
+                    .collect();
+                assert!(undeclared.is_empty(), "{:?}: {undeclared:?}", rule.ids);
+                findings.extend(rule_findings);
+            }
         }
-        findings.retain(|f| f.standard == Some(standard));
         let rule_ids: BTreeSet<_> = findings.iter().map(|f| f.rule_id).collect();
         assert_eq!(
             rule_ids,
-            super::rule_ids(standard).iter().copied().collect(),
+            super::rule_ids(standard).collect(),
             "not every {standard} rule fired"
         );
         let without_help: Vec<_> = findings.iter().filter(|f| f.help.is_none()).collect();

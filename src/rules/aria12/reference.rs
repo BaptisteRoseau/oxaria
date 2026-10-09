@@ -65,6 +65,6 @@ mod tests {
 
     #[test]
     fn every_rule_has_an_anchor() {
-        assert_eq!(ANCHORS.len(), super::super::rule_checks().len());
+        assert_eq!(ANCHORS.len(), super::super::RULES.len());
     }
 }

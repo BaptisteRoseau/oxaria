@@ -17,5 +17,5 @@ mod spacing;
 mod tables;
 mod zoom;
 
-pub use checks::{RULE_IDS, rule_checks};
+pub use checks::RULES;
 pub use reference::reference_url;

@@ -17,5 +17,7 @@ pub use options::{
     CheckOptions, DEFAULT_CONTRAST_THRESHOLD, DEFAULT_LARGE_TEXT_CONTRAST_THRESHOLD,
     DEFAULT_TARGET_SIZE_THRESHOLD,
 };
-pub use registry::{RuleCheck, rule_titles, run_all};
+#[cfg(test)]
+pub use registry::RuleCheck;
+pub use registry::{Rule, rule_titles, run_all};
 pub use standard::Standard;

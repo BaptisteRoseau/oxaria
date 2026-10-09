@@ -104,7 +104,7 @@ dropped because those flags only express Level AA, so its warnings could never b
 ## Rule scope: what's implemented and why the rest isn't
 
 `standards/wcag2.2-rules.md` lists ~48 rules across 15 categories. Only the ones genuinely verifiable from
-a single static render are implemented (see `rule_checks()` in `src/rules/wcag22/checks.rs` for
+a single static render are implemented (see `RULES` in `src/rules/wcag22/checks.rs` for
 the exact list). Categories deliberately **not** implemented, and why:
 
 - **Timing/motion, dragging, redundant entry, accessible authentication, consistent help**
@@ -184,7 +184,7 @@ heuristic bolted onto `RenderedPage`.
 See [README.md](./README.md#architecture) for the module tree. Notes beyond what's there:
 
 - **One module directory per standard under `src/rules/`** (`wcag22/`, `aria12/`, `html_aria/`,
-  `act/`, plus their shared `aria_spec/` data), each exposing `rule_checks()` and `reference_url()`, so rules of different standards
+  `act/`, plus their shared `aria_spec/` data), each exposing a `RULES` table (every check with the rule IDs it reports) and `reference_url()`, so rules of different standards
   can be added without touching shared files. Rule functions don't know their standard: the
   registry (`rules/registry.rs`) pairs each list with its `Standard` and stamps it on every
   finding. Failures of the checker itself (`FETCH`, `HTTP`, `SCAN`, ...) have no standard. In
