@@ -200,6 +200,7 @@ src/
 ├── cli.rs                  # CLI arguments (clap)
 ├── error.rs                 # CheckerError
 ├── logging.rs                # tracing subscriber setup
+├── http_testutil.rs          # wiremock fixtures for the HTTP unit tests (test-only)
 │
 ├── reporters/               # --report-* and the stdout output
 │   ├── model.rs               # Report / Issue / Location: findings + location + fingerprint, exit code
@@ -224,8 +225,14 @@ src/
 └── rules/                   # one directory per standard, one rule fn per rule
     ├── finding.rs             # Finding / Severity
     ├── options.rs             # CheckOptions (CLI thresholds, selected standards)
-    ├── standard.rs            # Standard: display name, per-standard reference URL
-    ├── registry.rs            # pairs each standard with its rules, parallel dispatch via spawn_blocking
+    ├── standard.rs            # Standard + StandardDef: name, rules, rule file, reference URL
+    ├── registry.rs            # Rule { ids, check }, check_html(): render + parallel dispatch via spawn_blocking
+    ├── color.rs               # contrast math shared by the WCAG and ACT contrast rules
+    ├── css.rs                 # comment stripping and declaration lookup for stylesheet-reading rules
+    ├── markup.rs              # how findings quote an element's start tag
+    ├── meta.rs                # refresh / viewport <meta> lookup
+    ├── spelling.rs            # "did you mean" suggestions
+    ├── testutil.rs            # run/count/help/assert_fires helpers for rule tests (test-only)
     ├── wcag22/                # WCAG 2.2: checks.rs (rule list), reference.rs, one module per rule area
     ├── aria12/                # WAI-ARIA 1.2: checks.rs, reference.rs (spec anchors), one module per rule area
     ├── html_aria/             # ARIA in HTML: checks.rs, reference.rs (spec anchors), one module per rule area
