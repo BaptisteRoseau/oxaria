@@ -5,6 +5,7 @@ mod attribute_data;
 mod attributes;
 mod element;
 mod html;
+mod reference;
 mod role_data;
 mod roles;
 mod values;
@@ -18,6 +19,7 @@ pub use html::{
     AllowedAria, DEPRECATED_ROLES, NATIVE_EQUIVALENTS, allowed_aria, has_author_name,
     implicit_role, input_type,
 };
+pub use reference::anchored_url;
 pub use roles::{NameFrom, Role, concrete_role, role, roles};
 pub use values::{
     AriaValue, Parsed, aria_idrefs, aria_number, aria_value, is_aria_true, parse_value,

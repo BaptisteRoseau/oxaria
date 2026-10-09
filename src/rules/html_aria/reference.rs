@@ -1,3 +1,5 @@
+use crate::rules::aria_spec::anchored_url;
+
 const SPEC_URL: &str = "https://www.w3.org/TR/html-aria/";
 
 /// Rule ID -> anchor of the spec section the rule cites in
@@ -20,10 +22,7 @@ const ANCHORS: &[(&str, &str)] = &[
 
 /// Rules without an entry in [`ANCHORS`] link to the spec itself.
 pub fn reference_url(rule_id: &str) -> Option<String> {
-    Some(match ANCHORS.iter().find(|(id, _)| *id == rule_id) {
-        Some((_, anchor)) => format!("{SPEC_URL}#{anchor}"),
-        None => SPEC_URL.to_string(),
-    })
+    anchored_url(SPEC_URL, ANCHORS, rule_id)
 }
 
 #[cfg(test)]
@@ -36,10 +35,5 @@ mod tests {
             reference_url("HTMLARIA013").as_deref(),
             Some("https://www.w3.org/TR/html-aria/#docconformance-attr")
         );
-    }
-
-    #[test]
-    fn rules_without_an_anchor_link_to_the_spec() {
-        assert_eq!(reference_url("UNKNOWN").as_deref(), Some(SPEC_URL));
     }
 }
