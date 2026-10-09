@@ -44,14 +44,10 @@ const RULES: &[Rule] = &[
     Rule::new(&["b33eff"], orientation::check_orientation_lock),
 ];
 
+/// Pages that, together, make every rule above fire.
 #[cfg(test)]
-mod tests {
-    use crate::rules::Standard;
-    use crate::rules::registry::tests::assert_every_rule_has_help;
-
-    #[tokio::test]
-    async fn every_rule_fires_with_help() {
-        let page = r#"<html lang="eng"><head>
+pub(crate) const HELP_FIXTURES: &[&str] = &[
+    r#"<html lang="eng"><head>
                    <meta http-equiv="refresh" content="30">
                    <meta name="viewport" content="user-scalable=no">
                    <style>@media (orientation: portrait) { html { rotate: 90deg } }</style>
@@ -68,7 +64,6 @@ mod tests {
                    <div aria-labelled="x" aria-expanded="collapsed" role="lnik">x</div>
                    <p role="checkbox" aria-checked="false" tabindex="0">I agree <a href="/t">terms</a></p>
                    <p style="color: #999999; letter-spacing: 0.1em !important; word-spacing: 0 !important">Low contrast</p>
-                   </body></html>"#;
-        assert_every_rule_has_help(Standard::Act, &[page, "<p>No title</p>"]).await;
-    }
-}
+                   </body></html>"#,
+    "<p>No title</p>",
+];

@@ -68,21 +68,17 @@ const RULES: &[Rule] = &[
     ),
 ];
 
+/// Pages that, together, make every rule above fire.
 #[cfg(test)]
-mod tests {
-    use crate::rules::Standard;
-    use crate::rules::registry::tests::assert_every_rule_has_help;
-
-    #[tokio::test]
-    async fn every_rule_fires_with_help() {
-        let roles_and_attributes = r#"<div role="range">r</div><section role="generic">g</section>
+pub(crate) const HELP_FIXTURES: &[&str] = &[
+    r#"<div role="range">r</div><section role="generic">g</section>
             <input aria-labeledby="x"><div role="button" tabindex="0" aria-checked="true">b</div>
             <p aria-label="Warning">w</p><table><tr><td aria-colspan="2">t</td></tr></table>
             <button aria-keyshortcuts="Ctrl+S">s</button><svg aria-roledescription="chart"></svg>
             <nav><a href="/1" aria-current="page">1</a><a href="/2" aria-current="page">2</a></nav>
             <ul role="directory"><li>d</li></ul><li draggable="true" aria-grabbed="false">g</li>
-            <section aria-disabled="true">s</section>"#;
-        let values_and_references = r#"<button aria-expanded="yes">e</button>
+            <section aria-disabled="true">s</section>"#,
+    r#"<button aria-expanded="yes">e</button>
             <h2 aria-level="0">l</h2>
             <div role="meter" aria-label="Disk" aria-valuenow="130">130%</div>
             <div role="grid"><div role="row" aria-rowindex="1"><div role="gridcell">a</div></div>
@@ -91,8 +87,8 @@ mod tests {
             <div role="tree" aria-owns="n7">t</div><div role="group" aria-owns="n7">g</div>
             <div role="treeitem" id="n7">n</div>
             <ul role="listbox" tabindex="0" aria-activedescendant="z"><li role="option">a</li></ul>
-            <li role="option" id="z">z</li>"#;
-        let structure = r#"<div role="tab" tabindex="0">t</div>
+            <li role="option" id="z">z</li>"#,
+    r#"<div role="tab" tabindex="0">t</div>
             <div role="tablist"><button>General</button></div>
             <ul role="listbox"><li role="group"><span role="heading" aria-level="3">H</span>
               <span role="option">L</span></li></ul>
@@ -100,8 +96,8 @@ mod tests {
               <div role="caption">C</div></div>
             <a href="/c" role="presentation">c</a>
             <img src="s.png" role="presentation" alt="Sales grew">
-            <div role="button" tabindex="0"><h3>Pro</h3></div>"#;
-        let widgets = r#"<div role="combobox" aria-expanded="false"><input aria-label="Country"></div>
+            <div role="button" tabindex="0"><h3>Pro</h3></div>"#,
+    r#"<div role="combobox" aria-expanded="false"><input aria-label="Country"></div>
             <button aria-haspopup="true" aria-controls="dlg">Share</button>
             <div role="dialog" id="dlg" aria-label="Share"><button>Close</button></div>
             <input type="search" aria-label="Search" aria-autocomplete="list">
@@ -111,16 +107,5 @@ mod tests {
             <div role="dialog" aria-label="Info"><p>Static</p></div>
             <main>m</main><div role="main">m2</div>
             <span role="time">Sept 27</span>
-            <div role="alertdialog" aria-label="Delete"><button>OK</button></div>"#;
-        assert_every_rule_has_help(
-            Standard::Aria12,
-            &[
-                roles_and_attributes,
-                values_and_references,
-                structure,
-                widgets,
-            ],
-        )
-        .await;
-    }
-}
+            <div role="alertdialog" aria-label="Delete"><button>OK</button></div>"#,
+];

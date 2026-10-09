@@ -51,14 +51,10 @@ const RULES: &[Rule] = &[
     Rule::new(&["AUT001"], authentication::check_paste_blocked),
 ];
 
+/// Pages that, together, make every rule above fire.
 #[cfg(test)]
-mod tests {
-    use crate::rules::Standard;
-    use crate::rules::registry::tests::assert_every_rule_has_help;
-
-    #[tokio::test]
-    async fn every_rule_fires_with_help() {
-        let page = r##"<title>Untitled</title><style>a:focus { outline: none }</style>
+pub(crate) const HELP_FIXTURES: &[&str] = &[
+    r##"<title>Untitled</title><style>a:focus { outline: none }</style>
                    <a href="#nowhere">Skip</a><h2>A</h2><h4>B</h4>
                    <img src="a.png"><img src="b.png" alt="image"><input required>
                    <button aria-describedby="gone"></button><div role="button"></div>
@@ -73,7 +69,6 @@ mod tests {
                    <h3 role="presentation">P</h3><span onclick="location.href='/s'">S</span>
                    <div onclick="go()">D</div><img src="n.png" alt="Next" onmousedown="next()">
                    <input type="submit" onfocus="this.blur()"><marquee>M</marquee>
-                   <input type="password" onpaste="return false"><input aria-labelledby="missing">"##;
-        assert_every_rule_has_help(Standard::Wcag22, &[page, "<p>No title</p>"]).await;
-    }
-}
+                   <input type="password" onpaste="return false"><input aria-labelledby="missing">"##,
+    "<p>No title</p>",
+];

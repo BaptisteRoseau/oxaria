@@ -118,7 +118,7 @@ fn spawn_rule(
 }
 
 #[cfg(test)]
-pub(crate) mod tests {
+mod tests {
     use std::collections::BTreeSet;
 
     use super::*;
@@ -136,31 +136,47 @@ pub(crate) mod tests {
         assert!(findings.iter().any(|f| f.rule_id == "H42"));
     }
 
-    /// Fails unless the pages make exactly the rule IDs of `standard` fire,
-    /// each finding with a help line and an ID declared by the rule that produced it.
-    pub(crate) async fn assert_every_rule_has_help(standard: Standard, pages: &[&str]) {
-        let options = CheckOptions::default();
-        let mut findings = Vec::new();
-        for html in pages {
-            let page = page_from_html(html);
-            for rule in standard.def().rules {
-                let rule_findings = rule.check.run(&page, &options);
-                let undeclared: Vec<_> = rule_findings
-                    .iter()
-                    .filter(|f| !rule.ids.contains(&f.rule_id))
-                    .collect();
-                assert!(undeclared.is_empty(), "{:?}: {undeclared:?}", rule.ids);
-                findings.extend(rule_findings);
-            }
+    fn help_fixtures(standard: Standard) -> &'static [&'static str] {
+        match standard {
+            Standard::Wcag22 => crate::rules::wcag22::HELP_FIXTURES,
+            Standard::Aria12 => crate::rules::aria12::HELP_FIXTURES,
+            Standard::HtmlAria => crate::rules::html_aria::HELP_FIXTURES,
+            Standard::Act => crate::rules::act::HELP_FIXTURES,
         }
-        let rule_ids: BTreeSet<_> = findings.iter().map(|f| f.rule_id).collect();
-        assert_eq!(
-            rule_ids,
-            super::rule_ids(standard).collect(),
-            "not every {standard} rule fired"
-        );
-        let without_help: Vec<_> = findings.iter().filter(|f| f.help.is_none()).collect();
-        assert!(without_help.is_empty(), "{without_help:?}");
+    }
+
+    /// Each standard's fixture pages must make exactly its rule IDs fire,
+    /// each finding with a help line and an ID declared by the rule that produced it.
+    #[test]
+    fn every_rule_fires_with_help() {
+        let options = CheckOptions::default();
+        for standard in Standard::ALL {
+            let mut findings = Vec::new();
+            for html in help_fixtures(standard) {
+                let page = page_from_html(html);
+                for rule in standard.def().rules {
+                    let rule_findings = rule.check.run(&page, &options);
+                    let undeclared: Vec<_> = rule_findings
+                        .iter()
+                        .filter(|f| !rule.ids.contains(&f.rule_id))
+                        .collect();
+                    assert!(
+                        undeclared.is_empty(),
+                        "{standard} {:?}: {undeclared:?}",
+                        rule.ids
+                    );
+                    findings.extend(rule_findings);
+                }
+            }
+            let rule_ids: BTreeSet<_> = findings.iter().map(|f| f.rule_id).collect();
+            assert_eq!(
+                rule_ids,
+                super::rule_ids(standard).collect(),
+                "not every {standard} rule fired"
+            );
+            let without_help: Vec<_> = findings.iter().filter(|f| f.help.is_none()).collect();
+            assert!(without_help.is_empty(), "{standard}: {without_help:?}");
+        }
     }
 
     #[test]

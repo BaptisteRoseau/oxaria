@@ -355,8 +355,8 @@ See [README.md](./README.md#architecture) for the module tree. Notes beyond what
 - **Findings carry a rustc-style `help`** (`Finding::help`), set by the rule itself rather than
   looked up by rule ID: H30 and G1 each report two different problems under one ID, and the
   most useful hints need the finding's context (G18's nearest passing color, TGT001's missing
-  padding, G141's expected level). Each standard's `checks.rs` has an `every_rule_fires_with_help`
-  test (`registry::tests::assert_every_rule_has_help`) that fails if a rule ships without one.
+  padding, G141's expected level). `registry::tests::every_rule_fires_with_help` runs each
+  standard's `HELP_FIXTURES` (in its `checks.rs`) and fails if a rule ships without one.
   The `note: see <url>` link comes from `Standard::reference_url`: for WCAG, from the rule ID's
   prefix (URL shapes taken from the w3c/wcag repo's own cross-links); for WAI-ARIA and ARIA in
   HTML, from the `ANCHORS` table in their `reference.rs`; for ACT, from the ID itself.

@@ -29,14 +29,10 @@ const RULES: &[Rule] = &[
     ),
 ];
 
+/// Pages that, together, make every rule above fire.
 #[cfg(test)]
-mod tests {
-    use crate::rules::Standard;
-    use crate::rules::registry::tests::assert_every_rule_has_help;
-
-    #[tokio::test]
-    async fn every_rule_fires_with_help() {
-        let page = r#"<header role="banner">H</header><article role="generic">A</article>
+pub(crate) const HELP_FIXTURES: &[&str] = &[
+    r#"<header role="banner">H</header><article role="generic">A</article>
                    <div role="select">S</div><br aria-label="line break">
                    <button aria-hidden="true">Close</button>
                    <div hidden="until-found" aria-hidden="true">F</div>
@@ -44,7 +40,5 @@ mod tests {
                    <input type="checkbox" checked aria-checked="false">
                    <button disabled aria-disabled="true">Save</button>
                    <ul role="directory"><li>D</li></ul><div role="MAIN">M</div>
-                   <div role="button"><button>B</button></div>"#;
-        assert_every_rule_has_help(Standard::HtmlAria, &[page]).await;
-    }
-}
+                   <div role="button"><button>B</button></div>"#,
+];

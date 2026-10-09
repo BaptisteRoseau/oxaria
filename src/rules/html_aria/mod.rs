@@ -11,3 +11,5 @@ mod roles;
 mod syntax;
 
 pub use checks::DEF;
+#[cfg(test)]
+pub(crate) use checks::HELP_FIXTURES;
