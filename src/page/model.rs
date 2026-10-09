@@ -188,6 +188,12 @@ impl<'a> ElementRef<'a> {
         std::iter::successors(Some(*self), |el| el.parent())
     }
 
+    /// Each ancestor paired with its child on the path from this element.
+    pub fn ancestors_with_child(&self) -> impl Iterator<Item = (ElementRef<'a>, ElementRef<'a>)> {
+        self.self_and_ancestors()
+            .filter_map(|child| child.parent().map(|ancestor| (child, ancestor)))
+    }
+
     /// The nearest ancestor with this tag, never the element itself.
     pub fn nearest_ancestor(&self, tag: &str) -> Option<ElementRef<'a>> {
         self.ancestors().find(|ancestor| ancestor.tag() == tag)
@@ -466,6 +472,22 @@ mod tests {
             .map(|el| el.tag())
             .collect();
         assert_eq!(tags, vec!["b", "p", "div", "body", "html"]);
+    }
+
+    #[test]
+    fn ancestors_with_child_pairs_each_ancestor_with_the_child_it_was_reached_from() {
+        let p = page_from_html("<div><p><b>x</b></p></div>");
+        let pairs: Vec<(&str, &str)> = p
+            .by_tag("b")
+            .next()
+            .unwrap()
+            .ancestors_with_child()
+            .map(|(child, ancestor)| (child.tag(), ancestor.tag()))
+            .collect();
+        assert_eq!(
+            pairs,
+            vec![("b", "p"), ("p", "div"), ("div", "body"), ("body", "html")]
+        );
     }
 
     #[rstest]

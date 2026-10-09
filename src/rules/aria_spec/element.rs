@@ -156,17 +156,11 @@ fn is_editing_host(el: ElementRef) -> bool {
 }
 
 fn is_in_disabled_fieldset(el: ElementRef) -> bool {
-    let mut child = el;
-    for ancestor in el.ancestors() {
-        if ancestor.tag() == "fieldset"
+    el.ancestors_with_child().any(|(child, ancestor)| {
+        ancestor.tag() == "fieldset"
             && ancestor.has_attr("disabled")
             && !is_first_legend_of(child, ancestor)
-        {
-            return true;
-        }
-        child = ancestor;
-    }
-    false
+    })
 }
 
 fn is_first_legend_of(child: ElementRef, fieldset: ElementRef) -> bool {
@@ -182,14 +176,9 @@ fn is_closed_dialog(el: ElementRef) -> bool {
 
 /// Inside a closed `details` but not in its summary.
 fn is_in_closed_details(el: ElementRef) -> bool {
-    let mut child = el;
-    for ancestor in el.ancestors() {
-        if ancestor.tag() == "details" && !ancestor.has_attr("open") && !is_details_summary(child) {
-            return true;
-        }
-        child = ancestor;
-    }
-    false
+    el.ancestors_with_child().any(|(child, ancestor)| {
+        ancestor.tag() == "details" && !ancestor.has_attr("open") && !is_details_summary(child)
+    })
 }
 
 #[cfg(test)]
