@@ -77,7 +77,7 @@ fn row(issue: &Issue) -> String {
         severity_label(issue.severity),
         issue.standard.map_or("", Standard::name),
         rule_cell(issue),
-        escape(&issue.location.path),
+        escape_markdown(&issue.location.path),
         message_cell(issue),
     )
 }
@@ -91,8 +91,12 @@ fn rule_cell(issue: &Issue) -> String {
 
 fn message_cell(issue: &Issue) -> String {
     match &issue.help {
-        Some(help) => format!("{}<br>💡 {}", escape(&issue.message), escape(help)),
-        None => escape(&issue.message),
+        Some(help) => format!(
+            "{}<br>💡 {}",
+            escape_markdown(&issue.message),
+            escape_markdown(help)
+        ),
+        None => escape_markdown(&issue.message),
     }
 }
 
@@ -106,7 +110,7 @@ fn severity_label(severity: Severity) -> &'static str {
 /// Messages quote markup (`<img src=...>`), which GitHub would otherwise
 /// render as HTML, and may contain `|`, which would split the table cell.
 /// CommonMark lets any ASCII punctuation be backslash-escaped.
-fn escape(text: &str) -> String {
+fn escape_markdown(text: &str) -> String {
     let mut escaped = String::with_capacity(text.len());
     for c in text.chars() {
         match c {
@@ -197,7 +201,7 @@ mod tests {
     #[test]
     fn markup_and_table_syntax_are_escaped() {
         assert_eq!(
-            escape("<img src=\"a|b\"> *x* _y_ [l](u) `c` a&b !\\\r\nz"),
+            escape_markdown("<img src=\"a|b\"> *x* _y_ [l](u) `c` a&b !\\\r\nz"),
             "\\<img src=\"a\\|b\"\\> \\*x\\* \\_y\\_ \\[l\\](u) \\`c\\` a\\&b \\!\\\\<br>z"
         );
     }

@@ -206,6 +206,7 @@ src/
 │   ├── reporter.rs            # Reporter trait: render a Report to one format
 │   ├── text.rs                # default human-readable stdout output
 │   ├── gitlab.rs, github.rs, jenkins.rs, junit.rs   # one Reporter per CI format
+│   ├── escape.rs              # XML/HTML escaping shared by the JUnit and Jenkins reports
 │   └── output.rs              # destinations, up-front conflict check, parallel writes
 │
 ├── site/                    # --full-site-scan

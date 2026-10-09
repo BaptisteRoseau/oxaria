@@ -4,7 +4,7 @@
 
 use serde::Serialize;
 
-use super::junit::escape;
+use super::escape::escape_xml;
 use super::model::LINE;
 use super::{Issue, Report, Reporter};
 use crate::rules::{Severity, Standard};
@@ -65,9 +65,9 @@ fn description(issue: &Issue) -> String {
     let help = issue
         .help
         .iter()
-        .map(|help| format!("<p>help: {}</p>", escape(help)));
+        .map(|help| format!("<p>help: {}</p>", escape_xml(help)));
     let reference = issue.reference.iter().map(|url| {
-        let url = escape(url);
+        let url = escape_xml(url);
         format!("<p>see: <a href=\"{url}\">{url}</a></p>")
     });
     help.chain(reference).collect()

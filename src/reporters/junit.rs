@@ -5,6 +5,7 @@
 
 use std::collections::{BTreeMap, HashMap};
 
+use super::escape::escape_xml;
 use super::{Issue, Report, Reporter};
 use crate::rules::Severity;
 
@@ -46,7 +47,7 @@ fn testsuite(path: &str, issues: &[&Issue]) -> String {
         .collect();
     format!(
         "  <testsuite name=\"{}\" tests=\"{}\" failures=\"{failures}\">\n{cases}  </testsuite>\n",
-        escape(path),
+        escape_xml(path),
         issues.len(),
     )
 }
@@ -74,27 +75,20 @@ fn testcase(issue: &Issue, name: &str) -> String {
     let body = match issue.severity {
         Severity::Error => format!(
             "<failure type=\"{}\" message=\"{}\">{}</failure>",
-            escape(&issue.rule_label()),
-            escape(&issue.message),
-            escape(&issue.full_text()),
+            escape_xml(&issue.rule_label()),
+            escape_xml(&issue.message),
+            escape_xml(&issue.full_text()),
         ),
-        Severity::Warning => format!("<system-out>{}</system-out>", escape(&issue.full_text())),
+        Severity::Warning => format!(
+            "<system-out>{}</system-out>",
+            escape_xml(&issue.full_text())
+        ),
     };
-    let path = escape(&issue.location.path);
+    let path = escape_xml(&issue.location.path);
     format!(
         "    <testcase classname=\"{path}\" name=\"{}\" file=\"{path}\">{body}</testcase>\n",
-        escape(name),
+        escape_xml(name),
     )
-}
-
-/// Escapes for both attribute values and text content.
-pub(super) fn escape(value: &str) -> String {
-    value
-        .replace('&', "&amp;")
-        .replace('<', "&lt;")
-        .replace('>', "&gt;")
-        .replace('"', "&quot;")
-        .replace('\'', "&apos;")
 }
 
 #[cfg(test)]
