@@ -2,6 +2,7 @@ mod escape;
 mod github;
 mod gitlab;
 mod jenkins;
+mod json;
 mod junit;
 mod model;
 mod output;

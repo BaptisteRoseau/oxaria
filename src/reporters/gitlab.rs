@@ -3,6 +3,7 @@
 
 use serde::Serialize;
 
+use super::json::pretty_json;
 use super::model::LINE;
 use super::{Issue, Report, Reporter};
 use crate::rules::Severity;
@@ -32,7 +33,7 @@ struct CodeQualityLines {
 impl Reporter for GitlabReporter {
     fn render(&self, report: &Report) -> String {
         let issues: Vec<_> = report.issues.iter().map(code_quality_issue).collect();
-        serde_json::to_string_pretty(&issues).expect("plain structs always serialize") + "\n"
+        pretty_json(&issues)
     }
 }
 

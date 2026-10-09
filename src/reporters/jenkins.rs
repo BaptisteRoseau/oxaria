@@ -5,6 +5,7 @@
 use serde::Serialize;
 
 use super::escape::escape_xml;
+use super::json::pretty_json;
 use super::model::LINE;
 use super::{Issue, Report, Reporter};
 use crate::rules::{Severity, Standard};
@@ -43,7 +44,7 @@ impl Reporter for JenkinsReporter {
             size: issues.len(),
             issues,
         };
-        serde_json::to_string_pretty(&report).expect("plain structs always serialize") + "\n"
+        pretty_json(&report)
     }
 }
 
