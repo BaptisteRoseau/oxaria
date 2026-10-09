@@ -1,5 +1,7 @@
 mod cli;
 mod error;
+#[cfg(test)]
+mod http_testutil;
 mod logging;
 mod page;
 mod reporters;

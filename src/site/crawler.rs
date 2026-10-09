@@ -282,6 +282,8 @@ mod tests {
     use wiremock::matchers::{method, path};
     use wiremock::{Mock, MockServer, ResponseTemplate};
 
+    use crate::http_testutil::{html, localhost_url, ok, serve};
+
     const CLEAN_BODY: &str = r##"<html lang="en"><head><title>Page</title></head><body>
         <a href="#main">Skip to main content</a><h1 id="main">Title</h1>"##;
 
@@ -299,32 +301,13 @@ mod tests {
             .map(|href| format!(r#"<a href="{href}">Go to {href}</a>"#))
             .collect();
         let body = format!("{CLEAN_BODY}{links}</body></html>");
-        ResponseTemplate::new(200).set_body_raw(body, "text/html")
-    }
-
-    async fn serve(server: &MockServer, route: &str, response: ResponseTemplate, times: u64) {
-        Mock::given(method("GET"))
-            .and(path(route))
-            .respond_with(response)
-            .expect(times)
-            .mount(server)
-            .await;
-    }
-
-    /// Uses `localhost` so a second mock server reached via `127.0.0.1` is a
-    /// genuinely different host.
-    fn start_url(server: &MockServer, route: &str) -> Url {
-        Url::parse(&format!(
-            "http://localhost:{}{route}",
-            server.address().port()
-        ))
-        .unwrap()
+        html(body)
     }
 
     async fn run(server: &MockServer, max_pages: Option<usize>) -> Vec<Finding> {
         let max_pages = max_pages.and_then(NonZeroUsize::new);
         crawl(
-            start_url(server, "/"),
+            localhost_url(server, "/"),
             options(),
             max_pages,
             RequestHeaders::default(),
@@ -382,7 +365,7 @@ mod tests {
         serve(&server, "/", page_linking_to(&["/old"]), 1).await;
         let redirect = ResponseTemplate::new(301).insert_header("location", "/new");
         serve(&server, "/old", redirect, 1).await;
-        let missing_h1 = ResponseTemplate::new(200).set_body_raw("<p>no heading</p>", "text/html");
+        let missing_h1 = html("<p>no heading</p>");
         serve(&server, "/new", missing_h1, 1).await;
 
         let findings = run(&server, None).await;
@@ -438,9 +421,9 @@ mod tests {
             1,
         )
         .await;
-        let json = ResponseTemplate::new(200).set_body_raw(r#"{"a":1}"#, "application/json");
+        let json = ok(r#"{"a":1}"#, "application/json");
         serve(&server, "/api/items", json, 1).await;
-        let xml = ResponseTemplate::new(200).set_body_raw("<rss/>", "application/rss+xml");
+        let xml = ok("<rss/>", "application/rss+xml");
         serve(&server, "/feed.xml", xml, 1).await;
 
         let findings = run(&server, None).await;
@@ -475,9 +458,9 @@ mod tests {
             1,
         )
         .await;
-        let json = ResponseTemplate::new(200).set_body_raw("{}", "application/json");
+        let json = ok("{}", "application/json");
         serve(&server, "/api", json, 1).await;
-        let pdf = ResponseTemplate::new(200).set_body_raw("%PDF", "application/pdf");
+        let pdf = ok("%PDF", "application/pdf");
         serve(&server, "/doc.pdf", pdf, 1).await;
         serve(&server, "/gone", ResponseTemplate::new(410), 1).await;
         serve(&server, "/a", page_linking_to(&["/b"]), 1).await;
@@ -491,7 +474,7 @@ mod tests {
         let server = MockServer::start().await;
         let siblings = ["/a", "/b", "/c", "/d", "/e"];
         serve(&server, "/", page_linking_to(&siblings), 1).await;
-        let unlabelled = ResponseTemplate::new(200).set_body_raw("<p>no lang</p>", "text/html");
+        let unlabelled = html("<p>no lang</p>");
         for sibling in siblings {
             Mock::given(method("GET"))
                 .and(path(sibling))
@@ -511,12 +494,12 @@ mod tests {
         let server = MockServer::start().await;
         let links = ["/api/1", "/api/2", "/api/3", "/gone", "/a", "/b"];
         serve(&server, "/", page_linking_to(&links), 1).await;
-        let json = ResponseTemplate::new(200).set_body_raw("{}", "application/json");
+        let json = ok("{}", "application/json");
         for api in ["/api/1", "/api/2", "/api/3"] {
             serve(&server, api, json.clone(), 1).await;
         }
         serve(&server, "/gone", ResponseTemplate::new(404), 1).await;
-        let unlabelled = ResponseTemplate::new(200).set_body_raw("<p>no lang</p>", "text/html");
+        let unlabelled = html("<p>no lang</p>");
         for sibling in ["/a", "/b"] {
             Mock::given(method("GET"))
                 .and(path(sibling))
@@ -548,7 +531,7 @@ mod tests {
         let redirect =
             ResponseTemplate::new(301).insert_header("location", format!("{}/", moved.uri()));
         serve(&server, "/", redirect, 1).await;
-        let back_to_old_host = start_url(&server, "/old-host-page").to_string();
+        let back_to_old_host = localhost_url(&server, "/old-host-page").to_string();
         serve(&moved, "/", page_linking_to(&["/b", &back_to_old_host]), 1).await;
         serve(&moved, "/b", page_linking_to(&[]), 1).await;
         serve(&server, "/old-host-page", page_linking_to(&[]), 0).await;
@@ -570,10 +553,16 @@ mod tests {
         serve(&server, "/", redirect, 1).await;
         serve(&moved, "/", page_linking_to(&[]), 0).await;
 
-        let result = crawl(start_url(&server, "/"), options(), None, custom_headers()).await;
+        let result = crawl(
+            localhost_url(&server, "/"),
+            options(),
+            None,
+            custom_headers(),
+        )
+        .await;
         match result {
             Err(CheckerError::LeakingRedirect(refused)) => {
-                assert_eq!(refused.from, start_url(&server, "/"));
+                assert_eq!(refused.from, localhost_url(&server, "/"));
                 assert_eq!(refused.to.as_str(), format!("{}/", moved.uri()));
                 assert_eq!(refused.risk, RedirectRisk::OtherHost);
             }
@@ -586,8 +575,8 @@ mod tests {
     }
 
     async fn redirect_to_other_port(server: &MockServer, route: &str, other: &MockServer) {
-        let redirect =
-            ResponseTemplate::new(301).insert_header("location", start_url(other, "/").to_string());
+        let redirect = ResponseTemplate::new(301)
+            .insert_header("location", localhost_url(other, "/").to_string());
         serve(server, route, redirect, 1).await;
     }
 
@@ -600,7 +589,7 @@ mod tests {
         serve(&other_port, "/b", page_linking_to(&[]), 1).await;
 
         let findings = crawl(
-            start_url(&server, "/"),
+            localhost_url(&server, "/"),
             options(),
             None,
             user_agent_header(),
@@ -617,7 +606,13 @@ mod tests {
         redirect_to_other_port(&server, "/", &other_port).await;
         serve(&other_port, "/", page_linking_to(&[]), 0).await;
 
-        let result = crawl(start_url(&server, "/"), options(), None, custom_headers()).await;
+        let result = crawl(
+            localhost_url(&server, "/"),
+            options(),
+            None,
+            custom_headers(),
+        )
+        .await;
         match result {
             Err(CheckerError::LeakingRedirect(refused)) => {
                 assert_eq!(refused.risk, RedirectRisk::DroppedHeaders);
@@ -635,9 +630,14 @@ mod tests {
         serve(&server, "/b", page_linking_to(&[]), 1).await;
         serve(&other_port, "/", page_linking_to(&[]), 0).await;
 
-        let findings = crawl(start_url(&server, "/"), options(), None, custom_headers())
-            .await
-            .unwrap();
+        let findings = crawl(
+            localhost_url(&server, "/"),
+            options(),
+            None,
+            custom_headers(),
+        )
+        .await
+        .unwrap();
         assert_eq!(findings.len(), 1, "{findings:?}");
         assert_eq!(findings[0].rule_id, "REDIRECT");
         assert_eq!(findings[0].page_path(), Some("/moved"));
@@ -646,7 +646,7 @@ mod tests {
     #[tokio::test]
     async fn start_url_that_is_not_html_is_an_error_not_a_clean_pass() {
         let server = MockServer::start().await;
-        let json = ResponseTemplate::new(200).set_body_raw("{}", "application/json");
+        let json = ok("{}", "application/json");
         serve(&server, "/", json, 1).await;
 
         let findings = run(&server, None).await;

@@ -180,6 +180,8 @@ mod tests {
     use wiremock::matchers::{header, headers, method, path};
     use wiremock::{Mock, MockServer, ResponseTemplate};
 
+    use crate::http_testutil::{html, localhost_url, ok};
+
     #[rstest]
     #[case("http://example.com/page.html", true)]
     #[case("https://example.com/page.html", true)]
@@ -196,7 +198,7 @@ mod tests {
             .and(header("user-agent", CHECKER_USER_AGENT))
             // wiremock splits comma-separated header values before matching.
             .and(headers("accept", ACCEPT_HTML.split(',').collect()))
-            .respond_with(ResponseTemplate::new(200).set_body_raw("<p>ok</p>", "text/html"))
+            .respond_with(html("<p>ok</p>"))
             .mount(&server)
             .await;
 
@@ -220,25 +222,20 @@ mod tests {
         server
     }
 
-    // `localhost` and `127.0.0.1` are different hosts.
-    fn localhost(server: &MockServer) -> String {
-        format!("http://localhost:{}/", server.address().port())
-    }
-
     #[tokio::test]
     async fn fetch_url_refuses_a_redirect_to_another_host_with_headers() {
         let external = MockServer::start().await;
         Mock::given(method("GET"))
-            .respond_with(ResponseTemplate::new(200).set_body_raw("<p>ok</p>", "text/html"))
+            .respond_with(html("<p>ok</p>"))
             .expect(0)
             .mount(&external)
             .await;
         let server = redirecting_server(&external.uri()).await;
 
-        let result = fetch_url(&localhost(&server), &custom_headers()).await;
+        let result = fetch_url(localhost_url(&server, "/").as_str(), &custom_headers()).await;
         match result {
             Err(CheckerError::LeakingRedirect(refused)) => {
-                assert_eq!(refused.from.as_str(), localhost(&server));
+                assert_eq!(refused.from, localhost_url(&server, "/"));
                 assert_eq!(refused.to.host_str(), Some("127.0.0.1"));
                 assert_eq!(refused.risk, RedirectRisk::OtherHost);
             }
@@ -286,13 +283,13 @@ mod tests {
     async fn fetch_url_refuses_a_port_change_that_would_drop_credentials() {
         let other_port = MockServer::start().await;
         Mock::given(method("GET"))
-            .respond_with(ResponseTemplate::new(200).set_body_raw("<p>ok</p>", "text/html"))
+            .respond_with(html("<p>ok</p>"))
             .expect(0)
             .mount(&other_port)
             .await;
-        let server = redirecting_server(&localhost(&other_port)).await;
+        let server = redirecting_server(localhost_url(&other_port, "/").as_str()).await;
 
-        let result = fetch_url(&localhost(&server), &custom_headers()).await;
+        let result = fetch_url(localhost_url(&server, "/").as_str(), &custom_headers()).await;
         match result {
             Err(CheckerError::LeakingRedirect(refused)) => {
                 assert_eq!(refused.risk, RedirectRisk::DroppedHeaders)
@@ -306,15 +303,17 @@ mod tests {
         let other_port = MockServer::start().await;
         Mock::given(method("GET"))
             .and(header("user-agent", "custom/1.0"))
-            .respond_with(ResponseTemplate::new(200).set_body_raw("<p>ok</p>", "text/html"))
+            .respond_with(html("<p>ok</p>"))
             .expect(1)
             .mount(&other_port)
             .await;
-        let server = redirecting_server(&localhost(&other_port)).await;
+        let server = redirecting_server(localhost_url(&other_port, "/").as_str()).await;
         let headers =
             RequestHeaders::new(&[crate::page::parse_header("User-Agent: custom/1.0").unwrap()]);
 
-        let loaded = fetch_url(&localhost(&server), &headers).await.unwrap();
+        let loaded = fetch_url(localhost_url(&server, "/").as_str(), &headers)
+            .await
+            .unwrap();
         assert_eq!(loaded.html, "<p>ok</p>");
     }
 
@@ -335,14 +334,17 @@ mod tests {
     async fn fetch_url_follows_a_redirect_to_another_host_without_headers() {
         let external = MockServer::start().await;
         Mock::given(method("GET"))
-            .respond_with(ResponseTemplate::new(200).set_body_raw("<p>ok</p>", "text/html"))
+            .respond_with(html("<p>ok</p>"))
             .mount(&external)
             .await;
         let server = redirecting_server(&external.uri()).await;
 
-        let loaded = fetch_url(&localhost(&server), &RequestHeaders::default())
-            .await
-            .unwrap();
+        let loaded = fetch_url(
+            localhost_url(&server, "/").as_str(),
+            &RequestHeaders::default(),
+        )
+        .await
+        .unwrap();
         assert_eq!(loaded.html, "<p>ok</p>");
     }
 
@@ -356,7 +358,7 @@ mod tests {
             .await;
         Mock::given(method("GET"))
             .and(path("/new"))
-            .respond_with(ResponseTemplate::new(200).set_body_raw("<p>new</p>", "text/html"))
+            .respond_with(html("<p>new</p>"))
             .mount(&server)
             .await;
 
@@ -370,7 +372,7 @@ mod tests {
     async fn fetch_url_rejects_non_html_responses() {
         let server = MockServer::start().await;
         Mock::given(method("GET"))
-            .respond_with(ResponseTemplate::new(200).set_body_raw("%PDF-1.7", "application/pdf"))
+            .respond_with(ok("%PDF-1.7", "application/pdf"))
             .mount(&server)
             .await;
 

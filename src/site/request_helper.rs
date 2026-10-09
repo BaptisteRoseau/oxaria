@@ -269,6 +269,8 @@ mod tests {
     use wiremock::matchers::{headers as header_values, method, path};
     use wiremock::{Mock, MockServer, ResponseTemplate};
 
+    use crate::http_testutil::{localhost_url, ok, serve};
+
     fn headers(pairs: &[(&'static str, &str)]) -> HeaderMap {
         let mut map = HeaderMap::new();
         for (name, value) in pairs {
@@ -278,7 +280,7 @@ mod tests {
     }
 
     fn html(body: &str) -> ResponseTemplate {
-        ResponseTemplate::new(200).set_body_raw(body.to_string(), "text/html; charset=utf-8")
+        ok(body.to_string(), "text/html; charset=utf-8")
     }
 
     fn localhost() -> RedirectScope {
@@ -286,10 +288,9 @@ mod tests {
     }
 
     fn localhost_context(server: &MockServer) -> (RequestContext, Url) {
-        let base = Url::parse(&format!("http://localhost:{}/", server.address().port())).unwrap();
         (
             RequestContext::new(&RequestHeaders::default()).unwrap(),
-            base,
+            localhost_url(server, "/"),
         )
     }
 
@@ -443,7 +444,7 @@ mod tests {
         let server = MockServer::start().await;
         Mock::given(method("GET"))
             .and(path("/api"))
-            .respond_with(ResponseTemplate::new(200).set_body_raw("{}", "application/json"))
+            .respond_with(ok("{}", "application/json"))
             .mount(&server)
             .await;
         let (context, base) = localhost_context(&server);
@@ -525,12 +526,7 @@ mod tests {
             .respond_with(ResponseTemplate::new(301).insert_header("location", external.uri()))
             .mount(&server)
             .await;
-        Mock::given(method("GET"))
-            .and(path("/"))
-            .respond_with(html("<p>elsewhere</p>"))
-            .expect(1)
-            .mount(&external)
-            .await;
+        serve(&external, "/", html("<p>elsewhere</p>"), 1).await;
         let (context, base) = localhost_context(&server);
 
         match request(&context, &base, &RedirectScope::AnyHost).await {
@@ -568,12 +564,7 @@ mod tests {
     #[tokio::test]
     async fn request_never_fetches_a_path_twice() {
         let server = MockServer::start().await;
-        Mock::given(method("GET"))
-            .and(path("/page"))
-            .respond_with(html("<p>hi</p>"))
-            .expect(1)
-            .mount(&server)
-            .await;
+        serve(&server, "/page", html("<p>hi</p>"), 1).await;
         let (context, base) = localhost_context(&server);
 
         let first = request(&context, &base.join("/page?a=1").unwrap(), &localhost()).await;
@@ -589,18 +580,14 @@ mod tests {
     #[tokio::test]
     async fn request_does_not_follow_redirects_to_fetched_paths() {
         let server = MockServer::start().await;
-        Mock::given(method("GET"))
-            .and(path("/"))
-            .respond_with(html("<p>home</p>"))
-            .expect(1)
-            .mount(&server)
-            .await;
-        Mock::given(method("GET"))
-            .and(path("/alias"))
-            .respond_with(ResponseTemplate::new(302).insert_header("location", "/"))
-            .expect(1)
-            .mount(&server)
-            .await;
+        serve(&server, "/", html("<p>home</p>"), 1).await;
+        serve(
+            &server,
+            "/alias",
+            ResponseTemplate::new(302).insert_header("location", "/"),
+            1,
+        )
+        .await;
         let (context, base) = localhost_context(&server);
 
         request(&context, &base, &localhost()).await;
