@@ -77,32 +77,30 @@ mod tests {
     use rstest::rstest;
 
     use super::*;
-    use crate::page::testutil::page_from_html;
+    use crate::rules::testutil::{assert_fires, count, run};
 
     #[test]
     fn missing_title_is_flagged() {
-        let p = page_from_html("<html><head></head><body><p>x</p></body></html>");
-        let findings = check_missing_title(&p);
-        assert_eq!(findings.len(), 1);
-        assert_eq!(findings[0].rule_id, "H25");
+        let html = "<html><head></head><body><p>x</p></body></html>";
+        assert_fires(check_missing_title, html, "H25");
     }
 
     #[test]
     fn empty_title_is_flagged() {
-        let p = page_from_html("<html><head><title>  </title></head></html>");
-        assert_eq!(check_missing_title(&p).len(), 1);
+        let html = "<html><head><title>  </title></head></html>";
+        assert_eq!(count(check_missing_title, html), 1);
     }
 
     #[test]
     fn svg_title_does_not_count_as_the_page_title() {
-        let p = page_from_html("<html><body><svg><title>Icon</title></svg></body></html>");
-        assert_eq!(check_missing_title(&p).len(), 1);
+        let html = "<html><body><svg><title>Icon</title></svg></body></html>";
+        assert_eq!(count(check_missing_title, html), 1);
     }
 
     #[test]
     fn present_title_is_not_flagged() {
-        let p = page_from_html("<html><head><title>Contact us</title></head></html>");
-        assert!(check_missing_title(&p).is_empty());
+        let html = "<html><head><title>Contact us</title></head></html>";
+        assert!(run(check_missing_title, html).is_empty());
     }
 
     #[rstest]
@@ -111,8 +109,8 @@ mod tests {
     #[case("Enter the title of your HTML document here")]
     #[case("spk12.html")]
     fn placeholder_title_is_flagged(#[case] title: &str) {
-        let p = page_from_html(&format!("<html><head><title>{title}</title></head></html>"));
-        let findings = check_placeholder_title(&p);
+        let html = format!("<html><head><title>{title}</title></head></html>");
+        let findings = run(check_placeholder_title, &html);
         assert_eq!(findings.len(), 1, "{title}");
         assert_eq!(findings[0].rule_id, "F25");
     }
@@ -122,7 +120,7 @@ mod tests {
     #[case("Untitled Goose Game")]
     #[case("HTML 5.2 changes")]
     fn descriptive_title_is_not_flagged(#[case] title: &str) {
-        let p = page_from_html(&format!("<html><head><title>{title}</title></head></html>"));
-        assert!(check_placeholder_title(&p).is_empty());
+        let html = format!("<html><head><title>{title}</title></head></html>");
+        assert!(run(check_placeholder_title, &html).is_empty());
     }
 }

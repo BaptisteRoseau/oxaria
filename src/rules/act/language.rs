@@ -142,12 +142,7 @@ mod tests {
     use rstest::rstest;
 
     use super::*;
-    use crate::page::testutil::page_from_html;
-    use crate::rules::RuleCheck;
-
-    fn count(check: RuleCheck, html: &str) -> usize {
-        check(&page_from_html(html)).len()
-    }
+    use crate::rules::testutil::count;
 
     #[rstest]
     #[case("<html><h1>this page has no title</h1></html>", 1)]

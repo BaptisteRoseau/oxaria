@@ -96,19 +96,15 @@ mod tests {
     use rstest::rstest;
 
     use super::*;
-    use crate::page::testutil::page_from_html;
-
-    fn run(check: fn(&RenderedPage) -> Vec<Finding>, html: &str) -> Vec<Finding> {
-        check(&page_from_html(html))
-    }
+    use crate::rules::testutil::{count, run};
 
     #[rstest]
     #[case(r#"<div role="tablist" aria-label="Settings"><div role="tab" aria-selected="true">General</div>
               <div role="tab" aria-selected="false">Privacy</div></div>"#, 2)]
     #[case(r#"<span role="button" onclick="save()">Save</span>"#, 1)]
     #[case(r#"<a role="link">Home</a>"#, 1)]
-    fn unfocusable_widgets_are_flagged(#[case] html: &str, #[case] count: usize) {
-        assert_eq!(run(check_unfocusable_widget, html).len(), count, "{html}");
+    fn unfocusable_widgets_are_flagged(#[case] html: &str, #[case] expected: usize) {
+        assert_eq!(count(check_unfocusable_widget, html), expected, "{html}");
     }
 
     #[rstest]
@@ -130,7 +126,7 @@ mod tests {
         let html = r#"<button onclick="closeDialog()">Close</button>
             <div role="dialog" aria-modal="true" aria-labelledby="dlg-title">
               <h2 id="dlg-title">Photo details</h2><p>Taken on 12 May 2026.</p></div>"#;
-        assert_eq!(run(check_dialog_without_focusable, html).len(), 1);
+        assert_eq!(count(check_dialog_without_focusable, html), 1);
     }
 
     #[rstest]

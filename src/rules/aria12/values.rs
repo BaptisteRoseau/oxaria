@@ -280,11 +280,7 @@ mod tests {
     use rstest::rstest;
 
     use super::*;
-    use crate::page::testutil::page_from_html;
-
-    fn run(check: fn(&RenderedPage) -> Vec<Finding>, html: &str) -> Vec<Finding> {
-        check(&page_from_html(html))
-    }
+    use crate::rules::testutil::{count, run};
 
     #[rstest]
     #[case(
@@ -331,7 +327,7 @@ mod tests {
         let html = r#"<ul role="listbox" aria-label="Available fruit">
             <li role="option" aria-setsize="16" aria-posinset="0">apples</li>
             <li role="option" aria-setsize="16" aria-posinset="17">bananas</li></ul>"#;
-        assert_eq!(run(check_integer_range, html).len(), 2);
+        assert_eq!(count(check_integer_range, html), 2);
     }
 
     #[rstest]
@@ -341,7 +337,7 @@ mod tests {
     #[case(r#"<div role="grid" aria-colcount="3"><div role="row"><div role="gridcell" aria-colindex="4">x</div></div></div>"#)]
     #[case(r#"<div role="cell" aria-rowspan="-1">x</div>"#)]
     fn out_of_range_integers_are_flagged(#[case] html: &str) {
-        assert_eq!(run(check_integer_range, html).len(), 1, "{html}");
+        assert_eq!(count(check_integer_range, html), 1, "{html}");
     }
 
     #[rstest]
@@ -360,7 +356,7 @@ mod tests {
     #[case(r#"<div role="slider" tabindex="0" aria-label="Size" aria-valuetext="medium"></div>"#)]
     #[case(r#"<div role="separator" tabindex="0" aria-valuenow="120"></div>"#)]
     fn inconsistent_ranges_are_flagged(#[case] html: &str) {
-        assert_eq!(run(check_range_consistency, html).len(), 1, "{html}");
+        assert_eq!(count(check_range_consistency, html), 1, "{html}");
     }
 
     #[rstest]
@@ -379,7 +375,7 @@ mod tests {
         let html = r#"<div role="grid" aria-rowcount="2000">
             <div role="row" aria-rowindex="1"><div role="gridcell">a</div></div>
             <div role="row"><div role="gridcell">b</div></div></div>"#;
-        assert_eq!(run(check_missing_row_index, html).len(), 1);
+        assert_eq!(count(check_missing_row_index, html), 1);
     }
 
     #[rstest]

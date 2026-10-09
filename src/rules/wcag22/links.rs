@@ -168,11 +168,12 @@ fn duplicate_text_finding(text: &str, mut distinct_hrefs: Vec<String>) -> Option
 mod tests {
     use super::*;
     use crate::page::testutil::page_from_html;
+    use crate::rules::testutil::{assert_fires, count, help, run};
 
     #[test]
     fn empty_image_link_help_points_at_the_images_alt() {
-        let p = page_from_html(r#"<a href="/"><img src="logo.png"></a><a href="/x"></a>"#);
-        let findings = check_non_descriptive_link_text(&p);
+        let html = r#"<a href="/"><img src="logo.png"></a><a href="/x"></a>"#;
+        let findings = run(check_non_descriptive_link_text, html);
         let help = |index: usize| findings[index].help.as_deref().unwrap();
         assert!(help(0).starts_with("give the image an alt"), "{}", help(0));
         assert!(help(1).starts_with("add text"), "{}", help(1));
@@ -180,82 +181,61 @@ mod tests {
 
     #[test]
     fn image_only_link_without_alt_is_reported_as_f89() {
-        let p = page_from_html(
-            r#"<a href="scores.html"><img src="football.gif" alt=""></a>
-               <a href="scores.html">Football Scoreboard</a>"#,
-        );
-        let findings = check_non_descriptive_link_text(&p);
-        assert_eq!(findings.len(), 1);
-        assert_eq!(findings[0].rule_id, "F89");
+        let html = r#"<a href="scores.html"><img src="football.gif" alt=""></a>
+               <a href="scores.html">Football Scoreboard</a>"#;
+        assert_fires(check_non_descriptive_link_text, html, "F89");
     }
 
     #[test]
     fn generic_link_help_quotes_the_text() {
-        let p = page_from_html(r#"<a href="/report.pdf">Click here</a>"#);
-        let findings = check_non_descriptive_link_text(&p);
+        let html = r#"<a href="/report.pdf">Click here</a>"#;
         assert!(
-            findings[0]
-                .help
-                .as_deref()
-                .unwrap()
-                .starts_with(r#"replace "Click here" with"#)
+            help(check_non_descriptive_link_text, html).starts_with(r#"replace "Click here" with"#)
         );
     }
 
     #[test]
     fn empty_link_text_is_flagged() {
-        let p = page_from_html(r#"<a href="/report.pdf"></a>"#);
-        let findings = check_non_descriptive_link_text(&p);
-        assert_eq!(findings.len(), 1);
-        assert_eq!(findings[0].rule_id, "H30");
+        let html = r#"<a href="/report.pdf"></a>"#;
+        assert_fires(check_non_descriptive_link_text, html, "H30");
     }
 
     #[test]
     fn click_here_is_flagged() {
-        let p = page_from_html(r#"<a href="/report.pdf">Click here</a>"#);
-        assert_eq!(check_non_descriptive_link_text(&p).len(), 1);
+        let html = r#"<a href="/report.pdf">Click here</a>"#;
+        assert_eq!(count(check_non_descriptive_link_text, html), 1);
     }
 
     #[test]
     fn descriptive_link_text_is_not_flagged() {
-        let p = page_from_html(r#"<a href="/report.pdf">Download the 2026 Annual Report</a>"#);
-        assert!(check_non_descriptive_link_text(&p).is_empty());
+        let html = r#"<a href="/report.pdf">Download the 2026 Annual Report</a>"#;
+        assert!(run(check_non_descriptive_link_text, html).is_empty());
     }
 
     #[test]
     fn aria_label_overrides_generic_visible_text() {
-        let p = page_from_html(
-            r#"<a href="/report.pdf" aria-label="Download the 2026 report">Click here</a>"#,
-        );
-        assert!(check_non_descriptive_link_text(&p).is_empty());
+        let html = r#"<a href="/report.pdf" aria-label="Download the 2026 report">Click here</a>"#;
+        assert!(run(check_non_descriptive_link_text, html).is_empty());
     }
 
     #[test]
     fn same_text_different_hrefs_is_flagged() {
-        let p = page_from_html(
-            r#"<a href="/products/1">Read more</a><a href="/products/2">Read more</a>"#,
-        );
-        let findings = check_ambiguous_duplicate_link_text(&p);
-        assert_eq!(findings.len(), 1);
-        assert_eq!(findings[0].rule_id, "LNK001");
+        let html = r#"<a href="/products/1">Read more</a><a href="/products/2">Read more</a>"#;
+        assert_fires(check_ambiguous_duplicate_link_text, html, "LNK001");
     }
 
     #[test]
     fn ambiguous_link_texts_are_reported_in_a_stable_order() {
-        let p = page_from_html(
-            r#"<a href="/1">Pricing</a><a href="/2">Pricing</a><a href="/3">About us</a><a href="/4">About us</a>"#,
-        );
-        let findings = check_ambiguous_duplicate_link_text(&p);
+        let html = r#"<a href="/1">Pricing</a><a href="/2">Pricing</a><a href="/3">About us</a><a href="/4">About us</a>"#;
+        let findings = run(check_ambiguous_duplicate_link_text, html);
         assert!(findings[0].message.contains("\"about us\""), "{findings:?}");
         assert!(findings[1].message.contains("\"pricing\""), "{findings:?}");
     }
 
     #[test]
     fn same_text_same_href_is_not_flagged() {
-        let p = page_from_html(
-            r#"<a href="/products/1">Wireless Headphones</a><a href="/products/1">Wireless Headphones</a>"#,
-        );
-        assert!(check_ambiguous_duplicate_link_text(&p).is_empty());
+        let html = r#"<a href="/products/1">Wireless Headphones</a><a href="/products/1">Wireless Headphones</a>"#;
+        assert!(run(check_ambiguous_duplicate_link_text, html).is_empty());
     }
 
     fn page_at(html: &str, url: &str) -> RenderedPage {
@@ -287,10 +267,9 @@ mod tests {
     #[test]
     fn hrefs_differing_only_by_fragment_are_the_same_destination() {
         // nodejs.org API docs: "index" linked as `index.html` and `index.html#index`.
-        let p = page_from_html(
-            r##"<a href="index.html">Index page</a><a href="index.html#index">Index page</a>"##,
-        );
-        assert!(check_ambiguous_duplicate_link_text(&p).is_empty());
+        let html =
+            r##"<a href="index.html">Index page</a><a href="index.html#index">Index page</a>"##;
+        assert!(run(check_ambiguous_duplicate_link_text, html).is_empty());
     }
 
     #[test]
@@ -307,9 +286,8 @@ mod tests {
     #[test]
     fn hrefs_differing_only_by_case_are_the_same_destination() {
         // code.visualstudio.com: "Download" linked as both `/Download` and `/download`.
-        let p =
-            page_from_html(r#"<a href="/Download">Download</a><a href="/download">Download</a>"#);
-        assert!(check_ambiguous_duplicate_link_text(&p).is_empty());
+        let html = r#"<a href="/Download">Download</a><a href="/download">Download</a>"#;
+        assert!(run(check_ambiguous_duplicate_link_text, html).is_empty());
     }
 
     #[test]
@@ -368,7 +346,7 @@ mod tests {
 
     #[test]
     fn short_text_is_ignored_for_duplicate_check() {
-        let p = page_from_html(r#"<a href="/a">Go</a><a href="/b">Go</a>"#);
-        assert!(check_ambiguous_duplicate_link_text(&p).is_empty());
+        let html = r#"<a href="/a">Go</a><a href="/b">Go</a>"#;
+        assert!(run(check_ambiguous_duplicate_link_text, html).is_empty());
     }
 }

@@ -298,11 +298,7 @@ mod tests {
     use rstest::rstest;
 
     use super::*;
-    use crate::page::testutil::page_from_html;
-
-    fn run(check: fn(&RenderedPage) -> Vec<Finding>, html: &str) -> Vec<Finding> {
-        check(&page_from_html(html))
-    }
+    use crate::rules::testutil::{assert_fires, help, run};
 
     #[rstest]
     #[case(r#"<br aria-label="line break">"#)]
@@ -321,9 +317,7 @@ mod tests {
     #[case(r#"<abbr aria-pressed="true">x</abbr>"#)]
     #[case(r#"<details><summary aria-expanded="true">s</summary></details>"#)]
     fn disallowed_attributes_are_flagged(#[case] html: &str) {
-        let findings = run(check_disallowed_aria, html);
-        assert_eq!(findings.len(), 1, "{findings:?}");
-        assert_eq!(findings[0].rule_id, "HTMLARIA007");
+        assert_fires(check_disallowed_aria, html, "HTMLARIA007");
     }
 
     #[rstest]
@@ -367,13 +361,12 @@ mod tests {
 
     #[test]
     fn prohibited_attributes_name_the_prohibiting_role() {
-        let findings = run(
-            check_disallowed_aria,
-            r#"<span aria-roledescription="thing">x</span>"#,
-        );
         assert_eq!(
-            findings[0].help.as_deref(),
-            Some("remove aria-roledescription: the generic role prohibits it")
+            help(
+                check_disallowed_aria,
+                r#"<span aria-roledescription="thing">x</span>"#
+            ),
+            "remove aria-roledescription: the generic role prohibits it"
         );
     }
 
@@ -383,9 +376,7 @@ mod tests {
     #[case(r#"<div tabindex="-1" aria-hidden="true">x</div>"#)]
     #[case(r#"<a href="/" aria-hidden="true">x</a>"#)]
     fn hidden_focusable_elements_are_flagged(#[case] html: &str) {
-        let findings = run(check_hidden_focusable, html);
-        assert_eq!(findings.len(), 1, "{findings:?}");
-        assert_eq!(findings[0].rule_id, "HTMLARIA009");
+        assert_fires(check_hidden_focusable, html, "HTMLARIA009");
     }
 
     #[rstest]
@@ -402,11 +393,13 @@ mod tests {
 
     #[test]
     fn hidden_focusable_help_depends_on_tabindex() {
-        let findings = run(
-            check_hidden_focusable,
-            r#"<div tabindex="-1" aria-hidden="true">x</div>"#,
+        assert!(
+            help(
+                check_hidden_focusable,
+                r#"<div tabindex="-1" aria-hidden="true">x</div>"#
+            )
+            .contains("tabindex")
         );
-        assert!(findings[0].help.as_deref().unwrap().contains("tabindex"));
     }
 
     #[rstest]
@@ -416,10 +409,8 @@ mod tests {
     )]
     #[case(r#"<div hidden aria-hidden="true">x</div>"#, "already hides")]
     fn hidden_twice_is_flagged(#[case] html: &str, #[case] help: &str) {
-        let findings = run(check_hidden_twice, html);
-        assert_eq!(findings.len(), 1, "{findings:?}");
-        assert_eq!(findings[0].rule_id, "HTMLARIA010");
-        assert!(findings[0].help.as_deref().unwrap().contains(help));
+        let finding = assert_fires(check_hidden_twice, html, "HTMLARIA010");
+        assert!(finding.help.as_deref().unwrap().contains(help));
     }
 
     #[rstest]
@@ -437,9 +428,7 @@ mod tests {
     #[case(r#"<input list="l" aria-haspopup="listbox">"#)]
     #[case(r#"<input type="email" list="l" aria-haspopup="true">"#)]
     fn advised_against_attributes_are_flagged(#[case] html: &str) {
-        let findings = run(check_advised_against_aria, html);
-        assert_eq!(findings.len(), 1, "{findings:?}");
-        assert_eq!(findings[0].rule_id, "HTMLARIA011");
+        assert_fires(check_advised_against_aria, html, "HTMLARIA011");
     }
 
     #[rstest]

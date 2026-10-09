@@ -128,11 +128,7 @@ mod tests {
     use rstest::rstest;
 
     use super::*;
-    use crate::page::testutil::page_from_html;
-
-    fn run(html: &str) -> Vec<Finding> {
-        check_multiple_current_or_sorted(&page_from_html(html))
-    }
+    use crate::rules::testutil::{count, run};
 
     #[rstest]
     #[case(
@@ -145,7 +141,7 @@ mod tests {
     )]
     #[case(r#"<table><tr><th aria-sort="ascending">A</th><th aria-sort="descending">B</th></tr></table>"#)]
     fn several_current_or_sorted_are_flagged(#[case] html: &str) {
-        assert_eq!(run(html).len(), 1, "{html}");
+        assert_eq!(count(check_multiple_current_or_sorted, html), 1, "{html}");
     }
 
     #[rstest]
@@ -164,6 +160,9 @@ mod tests {
               <table><tr><th aria-sort="ascending">B</th></tr></table>"#
     )]
     fn single_current_or_sorted_is_not_flagged(#[case] html: &str) {
-        assert!(run(html).is_empty(), "{html}");
+        assert!(
+            run(check_multiple_current_or_sorted, html).is_empty(),
+            "{html}"
+        );
     }
 }

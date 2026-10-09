@@ -112,13 +112,7 @@ mod tests {
     use super::*;
     use crate::page::testutil::page_from_html;
     use crate::rules::Severity;
-
-    fn findings(
-        check: fn(&RenderedPage, &CheckOptions) -> Vec<Finding>,
-        html: &str,
-    ) -> Vec<Finding> {
-        check(&page_from_html(html), &CheckOptions::default())
-    }
+    use crate::rules::testutil::run_with_defaults;
 
     #[rstest]
     #[case(
@@ -161,7 +155,7 @@ mod tests {
     #[case(r#"<div role="button" style="color: #777777; background-color: #EEEEEE" aria-disabled="true">Mine</div>"#, 0)]
     fn contrast_minimum_afw4f7(#[case] html: &str, #[case] expected: usize) {
         assert_eq!(
-            findings(check_contrast_minimum, html).len(),
+            run_with_defaults(check_contrast_minimum, html).len(),
             expected,
             "{html}"
         );
@@ -169,7 +163,7 @@ mod tests {
 
     #[test]
     fn findings_are_warnings_quoting_the_colors() {
-        let found = findings(
+        let found = run_with_defaults(
             check_contrast_minimum,
             r#"<p style="color: #999999; background-color: #ffffff">Body text</p>"#,
         );

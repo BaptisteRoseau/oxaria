@@ -225,12 +225,7 @@ mod tests {
     use rstest::rstest;
 
     use super::*;
-    use crate::page::testutil::page_from_html;
-    use crate::rules::RuleCheck;
-
-    fn findings(check: RuleCheck, html: &str) -> Vec<Finding> {
-        check(&page_from_html(html))
-    }
+    use crate::rules::testutil::{count, help, run};
 
     #[rstest]
     #[case(r#"<div role="checkbox" aria-not-checked="true">All met</div>"#, 1)]
@@ -251,7 +246,7 @@ mod tests {
     #[case("<canvas></canvas>", 0)]
     fn undefined_attributes_5f99a7(#[case] html: &str, #[case] expected: usize) {
         assert_eq!(
-            findings(check_aria_attribute_defined, html).len(),
+            count(check_aria_attribute_defined, html),
             expected,
             "{html}"
         );
@@ -259,13 +254,12 @@ mod tests {
 
     #[test]
     fn typos_get_a_suggestion() {
-        let found = findings(
-            check_aria_attribute_defined,
-            r#"<div aria-labelled="l">x</div>"#,
-        );
         assert_eq!(
-            found[0].help.as_deref(),
-            Some(r#"did you mean aria-labelledby="l"? otherwise remove it"#)
+            help(
+                check_aria_attribute_defined,
+                r#"<div aria-labelled="l">x</div>"#
+            ),
+            r#"did you mean aria-labelledby="l"? otherwise remove it"#
         );
     }
 
@@ -299,16 +293,12 @@ mod tests {
     #[case(r#"<div role="alert" aria-live>Be awesome</div>"#, 0)]
     #[case(r#"<div aria-bogus="nope">x</div>"#, 0)]
     fn values_6a7281(#[case] html: &str, #[case] expected: usize) {
-        assert_eq!(
-            findings(check_aria_value_valid, html).len(),
-            expected,
-            "{html}"
-        );
+        assert_eq!(count(check_aria_value_valid, html), expected, "{html}");
     }
 
     #[test]
     fn value_help_lists_the_allowed_values() {
-        let found = findings(
+        let found = run(
             check_aria_value_valid,
             r#"<div role="button" aria-expanded="collapsed">A</div>"#,
         );
@@ -337,15 +327,14 @@ mod tests {
     #[case(r#"<input type="text" role=" " aria-label="field">"#, 0)]
     #[case(r#"<div aria-hidden="true" role="bannner">Some Content</div>"#, 0)]
     fn roles_674b10(#[case] html: &str, #[case] expected: usize) {
-        assert_eq!(findings(check_role_valid, html).len(), expected, "{html}");
+        assert_eq!(count(check_role_valid, html), expected, "{html}");
     }
 
     #[test]
     fn role_typos_get_a_suggestion() {
-        let found = findings(check_role_valid, r#"<span role="lnik">ACT</span>"#);
         assert_eq!(
-            found[0].help.as_deref(),
-            Some(r#"did you mean role="link"?"#)
+            help(check_role_valid, r#"<span role="lnik">ACT</span>"#),
+            r#"did you mean role="link"?"#
         );
     }
 

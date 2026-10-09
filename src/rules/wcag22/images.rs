@@ -90,20 +90,16 @@ fn non_alternative_message(img: ElementRef, alt: &str) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::page::testutil::page_from_html;
+    use crate::rules::testutil::{assert_fires, count, help, run};
 
     #[test]
     fn missing_alt_is_flagged() {
-        let p = page_from_html(r#"<img src="photo.jpg">"#);
-        let findings = check_missing_alt(&p);
-        assert_eq!(findings.len(), 1);
-        assert_eq!(findings[0].rule_id, "F65");
+        assert_fires(check_missing_alt, r#"<img src="photo.jpg">"#, "F65");
     }
 
     #[test]
     fn missing_alt_help_reuses_the_src() {
-        let p = page_from_html(r#"<img src="photo.jpg">"#);
-        let help = check_missing_alt(&p)[0].help.clone().unwrap();
+        let help = help(check_missing_alt, r#"<img src="photo.jpg">"#);
         assert!(
             help.contains(r#"<img src="photo.jpg" alt="...">"#),
             "{help}"
@@ -112,52 +108,49 @@ mod tests {
 
     #[test]
     fn non_alternative_help_quotes_the_alt() {
-        let p = page_from_html(r#"<img src="a.jpg" alt="chart.jpg">"#);
-        let help = check_non_alternative_alt(&p)[0].help.clone().unwrap();
+        let html = r#"<img src="a.jpg" alt="chart.jpg">"#;
+        let help = help(check_non_alternative_alt, html);
         assert!(help.starts_with(r#"replace "chart.jpg" with"#), "{help}");
     }
 
     #[test]
     fn empty_alt_is_not_flagged_as_missing() {
-        let p = page_from_html(r#"<img src="deco.png" alt="">"#);
-        assert!(check_missing_alt(&p).is_empty());
+        assert!(run(check_missing_alt, r#"<img src="deco.png" alt="">"#).is_empty());
     }
 
     #[test]
     fn descriptive_alt_is_not_flagged_as_missing() {
-        let p = page_from_html(r#"<img src="photo.jpg" alt="A red bicycle">"#);
-        assert!(check_missing_alt(&p).is_empty());
+        let html = r#"<img src="photo.jpg" alt="A red bicycle">"#;
+        assert!(run(check_missing_alt, html).is_empty());
     }
 
     #[test]
     fn placeholder_word_alt_is_flagged() {
-        let p = page_from_html(r#"<img src="a.jpg" alt="image">"#);
-        let findings = check_non_alternative_alt(&p);
-        assert_eq!(findings.len(), 1);
-        assert_eq!(findings[0].rule_id, "F30");
+        let html = r#"<img src="a.jpg" alt="image">"#;
+        assert_fires(check_non_alternative_alt, html, "F30");
     }
 
     #[test]
     fn numbered_placeholder_word_alt_is_flagged() {
-        let p = page_from_html(r#"<img src="a.jpg" alt="picture1">"#);
-        assert_eq!(check_non_alternative_alt(&p).len(), 1);
+        let html = r#"<img src="a.jpg" alt="picture1">"#;
+        assert_eq!(count(check_non_alternative_alt, html), 1);
     }
 
     #[test]
     fn filename_alt_is_flagged() {
-        let p = page_from_html(r#"<img src="a.jpg" alt="Oct.jpg">"#);
-        assert_eq!(check_non_alternative_alt(&p).len(), 1);
+        let html = r#"<img src="a.jpg" alt="Oct.jpg">"#;
+        assert_eq!(count(check_non_alternative_alt, html), 1);
     }
 
     #[test]
     fn descriptive_alt_is_not_flagged_as_non_alternative() {
-        let p = page_from_html(r#"<img src="a.jpg" alt="Quarterly sales rose 12%">"#);
-        assert!(check_non_alternative_alt(&p).is_empty());
+        let html = r#"<img src="a.jpg" alt="Quarterly sales rose 12%">"#;
+        assert!(run(check_non_alternative_alt, html).is_empty());
     }
 
     #[test]
     fn empty_alt_is_not_flagged_as_non_alternative() {
-        let p = page_from_html(r#"<img src="a.jpg" alt="">"#);
-        assert!(check_non_alternative_alt(&p).is_empty());
+        let html = r#"<img src="a.jpg" alt="">"#;
+        assert!(run(check_non_alternative_alt, html).is_empty());
     }
 }

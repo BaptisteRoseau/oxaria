@@ -79,68 +79,55 @@ fn skipped_level_message(previous_level: u8, level: u8) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::page::testutil::page_from_html;
+    use crate::rules::testutil::{assert_fires, help, run};
 
     #[test]
     fn skipped_level_help_names_the_expected_level() {
-        let p = page_from_html("<h1>A</h1><h3>B</h3>");
-        let findings = check_skipped_heading_level(&p);
         assert!(
-            findings[0]
-                .help
-                .as_deref()
-                .unwrap()
+            help(check_skipped_heading_level, "<h1>A</h1><h3>B</h3>")
                 .starts_with("make this an <h2>")
         );
     }
 
     #[test]
     fn missing_h1_is_flagged() {
-        let p = page_from_html("<h2>Section</h2>");
-        let findings = check_missing_h1(&p);
-        assert_eq!(findings.len(), 1);
-        assert_eq!(findings[0].rule_id, "H42");
+        assert_fires(check_missing_h1, "<h2>Section</h2>", "H42");
     }
 
     #[test]
     fn present_h1_is_not_flagged() {
-        let p = page_from_html("<h1>Title</h1>");
-        assert!(check_missing_h1(&p).is_empty());
+        assert!(run(check_missing_h1, "<h1>Title</h1>").is_empty());
     }
 
     #[test]
     fn sequential_headings_are_not_flagged() {
-        let p = page_from_html("<h1>T</h1><h2>A</h2><h2>B</h2><h3>C</h3>");
-        assert!(check_skipped_heading_level(&p).is_empty());
+        let html = "<h1>T</h1><h2>A</h2><h2>B</h2><h3>C</h3>";
+        assert!(run(check_skipped_heading_level, html).is_empty());
     }
 
     #[test]
     fn skipped_heading_level_is_flagged() {
-        let p = page_from_html("<h1>T</h1><h4>Specifications</h4>");
-        let findings = check_skipped_heading_level(&p);
-        assert_eq!(findings.len(), 1);
-        assert_eq!(findings[0].rule_id, "G141");
+        let html = "<h1>T</h1><h4>Specifications</h4>";
+        assert_fires(check_skipped_heading_level, html, "G141");
     }
 
     #[test]
     fn heading_going_backwards_is_not_flagged() {
-        let p = page_from_html("<h1>T</h1><h2>A</h2><h3>B</h3><h2>C</h2>");
-        assert!(check_skipped_heading_level(&p).is_empty());
+        let html = "<h1>T</h1><h2>A</h2><h3>B</h3><h2>C</h2>";
+        assert!(run(check_skipped_heading_level, html).is_empty());
     }
 
     #[test]
     fn presentational_heading_is_flagged() {
-        let p = page_from_html(
-            r#"<h1>T</h1><h2 role="presentation">Reviews</h2><h3 role="none">A</h3>"#,
-        );
-        let findings = check_presentational_heading(&p);
+        let html = r#"<h1>T</h1><h2 role="presentation">Reviews</h2><h3 role="none">A</h3>"#;
+        let findings = run(check_presentational_heading, html);
         assert_eq!(findings.len(), 2);
         assert_eq!(findings[0].rule_id, "F92");
     }
 
     #[test]
     fn heading_with_other_role_is_not_flagged() {
-        let p = page_from_html(r#"<h2 role="heading">Reviews</h2><h3>Specs</h3>"#);
-        assert!(check_presentational_heading(&p).is_empty());
+        let html = r#"<h2 role="heading">Reviews</h2><h3>Specs</h3>"#;
+        assert!(run(check_presentational_heading, html).is_empty());
     }
 }

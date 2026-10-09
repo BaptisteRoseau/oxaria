@@ -189,11 +189,7 @@ mod tests {
     use rstest::rstest;
 
     use super::*;
-    use crate::page::testutil::page_from_html;
-
-    fn run(html: &str) -> Vec<Finding> {
-        check_disallowed_descendants(&page_from_html(html))
-    }
+    use crate::rules::testutil::{assert_fires, help, run};
 
     #[rstest]
     #[case(r#"<button><div role="button">x</div></button>"#)]
@@ -208,9 +204,7 @@ mod tests {
     #[case(r#"<div role="meter"><meter></meter></div>"#)]
     #[case(r#"<a href="/"><input type="checkbox"></a>"#)]
     fn disallowed_descendants_are_flagged(#[case] html: &str) {
-        let findings = run(html);
-        assert_eq!(findings.len(), 1, "{findings:?}");
-        assert_eq!(findings[0].rule_id, "HTMLARIA017");
+        assert_fires(check_disallowed_descendants, html, "HTMLARIA017");
     }
 
     #[rstest]
@@ -226,12 +220,15 @@ mod tests {
     #[case(r#"<div role="navigation"><form>x</form></div>"#)]
     #[case(r#"<nav><a href="/">x</a><button>y</button></nav>"#)]
     fn allowed_descendants_are_not_flagged(#[case] html: &str) {
-        assert!(run(html).is_empty());
+        assert!(run(check_disallowed_descendants, html).is_empty());
     }
 
     #[test]
     fn each_nested_control_is_reported_against_its_nearest_container() {
-        let findings = run(r#"<a href="/"><button><span tabindex="0">x</span></button></a>"#);
+        let findings = run(
+            check_disallowed_descendants,
+            r#"<a href="/"><button><span tabindex="0">x</span></button></a>"#,
+        );
         let messages: Vec<_> = findings.iter().map(|f| f.message.as_str()).collect();
         assert_eq!(
             messages,
@@ -244,13 +241,12 @@ mod tests {
 
     #[test]
     fn interactive_help_names_both_elements() {
-        let findings = run(r#"<div role="button"><button>x</button></div>"#);
         assert!(
-            findings[0]
-                .help
-                .as_deref()
-                .unwrap()
-                .starts_with("move the <button> out of the <div>")
+            help(
+                check_disallowed_descendants,
+                r#"<div role="button"><button>x</button></div>"#
+            )
+            .starts_with("move the <button> out of the <div>")
         );
     }
 }

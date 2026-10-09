@@ -422,7 +422,8 @@ See [README.md](./README.md#architecture) for the module tree. Notes beyond what
   inheritance simulation) for the handful of rules that need it. This keeps unit tests fast and
   independent of the rendering engine -- avoid reaching for the real `page::render()` in a unit
   test unless you're specifically testing the render pipeline itself (`src/page/render.rs`'s own
-  tests do use it, deliberately).
+  tests do use it, deliberately). Rule tests go through the shared helpers in
+  `rules::testutil` (`run`, `count`, `help`, `assert_fires`, ...) rather than per-module copies.
 - Integration tests (`tests/integration.rs`) run the compiled binary against real fixtures under
   `tests/assets/*.html` through the actual embedded engine end-to-end. If you change rendering
   behavior, expect these to need re-verification against real computed output, not just updated

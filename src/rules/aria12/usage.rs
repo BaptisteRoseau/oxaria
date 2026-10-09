@@ -136,18 +136,14 @@ mod tests {
     use rstest::rstest;
 
     use super::*;
-    use crate::page::testutil::page_from_html;
-
-    fn run(check: fn(&RenderedPage) -> Vec<Finding>, html: &str) -> Vec<Finding> {
-        check(&page_from_html(html))
-    }
+    use crate::rules::testutil::{count, run};
 
     #[rstest]
     #[case(r#"<a href="/glossary#api" role="term">API</a>"#)]
     #[case(r#"<span role="time">Sept 27</span>"#)]
     #[case(r#"<div role="time">yesterday at noon</div>"#)]
     fn misused_roles_are_flagged(#[case] html: &str) {
-        assert_eq!(run(check_role_purpose, html).len(), 1, "{html}");
+        assert_eq!(count(check_role_purpose, html), 1, "{html}");
     }
 
     #[rstest]
@@ -165,7 +161,7 @@ mod tests {
     #[case(r#"<div role="alertdialog" aria-labelledby="t"><h2 id="t">Delete?</h2><p>Gone forever.</p><button>OK</button></div>"#)]
     #[case(r#"<button aria-details="d">Chart</button><div id="d" hidden>Details</div>"#)]
     fn wrong_naming_mechanisms_are_flagged(#[case] html: &str) {
-        assert_eq!(run(check_naming_mechanism, html).len(), 1, "{html}");
+        assert_eq!(count(check_naming_mechanism, html), 1, "{html}");
     }
 
     #[rstest]

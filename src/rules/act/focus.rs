@@ -51,11 +51,7 @@ mod tests {
     use rstest::rstest;
 
     use super::*;
-    use crate::page::testutil::page_from_html;
-
-    fn count(html: &str) -> usize {
-        check_focusable_in_presentational_children(&page_from_html(html)).len()
-    }
+    use crate::rules::testutil::count;
 
     #[rstest]
     #[case(
@@ -66,7 +62,11 @@ mod tests {
     #[case(r##"<ul role="tablist"><li role="tab"><a href="#">Tab 1</a></li></ul>"##)]
     #[case(r##"<span role="img" aria-label="ASCII art">*** <a href="#">a link</a></span>"##)]
     fn focusable_descendants_fail(#[case] html: &str) {
-        assert_eq!(count(html), 1, "{html}");
+        assert_eq!(
+            count(check_focusable_in_presentational_children, html),
+            1,
+            "{html}"
+        );
     }
 
     #[rstest]
@@ -78,6 +78,10 @@ mod tests {
     #[case(r##"<table><tr><th><a href="#">header link</a></th></tr><tr><td><a href="#">cell link</a></td></tr></table>"##)]
     #[case(r#"<a href="https://w3.org"><span tabindex="0">W3C</span></a>"#)]
     fn unfocusable_descendants_or_other_roles_pass(#[case] html: &str) {
-        assert_eq!(count(html), 0, "{html}");
+        assert_eq!(
+            count(check_focusable_in_presentational_children, html),
+            0,
+            "{html}"
+        );
     }
 }

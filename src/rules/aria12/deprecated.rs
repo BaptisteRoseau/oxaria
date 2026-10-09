@@ -107,16 +107,12 @@ mod tests {
     use rstest::rstest;
 
     use super::*;
-    use crate::page::testutil::page_from_html;
-
-    fn run(check: fn(&RenderedPage) -> Vec<Finding>, html: &str) -> Vec<Finding> {
-        check(&page_from_html(html))
-    }
+    use crate::rules::testutil::{count, run};
 
     #[test]
     fn directory_role_is_flagged() {
         let html = r##"<ul role="directory"><li><a href="#intro">Introduction</a></li></ul>"##;
-        assert_eq!(run(check_directory_role, html).len(), 1);
+        assert_eq!(count(check_directory_role, html), 1);
         let html = r##"<ul><li><a href="#intro">Introduction</a></li></ul>"##;
         assert!(run(check_directory_role, html).is_empty());
     }
@@ -125,7 +121,7 @@ mod tests {
     fn drag_and_drop_attributes_are_flagged() {
         let html = r#"<li draggable="true" aria-grabbed="false">Task: write report</li>
                       <ul aria-dropeffect="move" aria-label="Done"></ul>"#;
-        assert_eq!(run(check_drag_and_drop_attributes, html).len(), 2);
+        assert_eq!(count(check_drag_and_drop_attributes, html), 2);
         let html = r#"<li draggable="true">Task <button type="button">Move to Done</button></li>"#;
         assert!(run(check_drag_and_drop_attributes, html).is_empty());
     }
@@ -136,11 +132,7 @@ mod tests {
     #[case(r#"<a aria-disabled="true">Export</a>"#)]
     #[case(r#"<h2 aria-invalid="true">Title</h2>"#)]
     fn deprecated_globals_are_flagged(#[case] html: &str) {
-        assert_eq!(
-            run(check_deprecated_global_attributes, html).len(),
-            1,
-            "{html}"
-        );
+        assert_eq!(count(check_deprecated_global_attributes, html), 1, "{html}");
     }
 
     #[rstest]

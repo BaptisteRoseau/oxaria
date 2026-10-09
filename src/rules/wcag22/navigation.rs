@@ -61,39 +61,33 @@ fn dangling_skip_link_message(link: ElementRef) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::page::testutil::page_from_html;
+    use crate::rules::testutil::{assert_fires, help, run};
 
     #[test]
     fn dangling_skip_link_help_names_the_missing_id() {
-        let p = page_from_html(r##"<a href="#content">Skip to content</a><main></main>"##);
-        let findings = check_missing_skip_link(&p);
+        let html = r##"<a href="#content">Skip to content</a><main></main>"##;
         assert_eq!(
-            findings[0].help.as_deref(),
-            Some(r#"add id="content" to the main content, e.g. <main id="content">"#)
+            help(check_missing_skip_link, html),
+            r#"add id="content" to the main content, e.g. <main id="content">"#
         );
     }
 
     #[test]
     fn missing_skip_link_is_flagged() {
-        let p = page_from_html(r#"<body><nav></nav><main id="main"></main></body>"#);
-        let findings = check_missing_skip_link(&p);
-        assert_eq!(findings.len(), 1);
-        assert_eq!(findings[0].rule_id, "G1");
+        let html = r#"<body><nav></nav><main id="main"></main></body>"#;
+        assert_fires(check_missing_skip_link, html, "G1");
     }
 
     #[test]
     fn valid_skip_link_is_not_flagged() {
-        let p = page_from_html(
-            r##"<body><a href="#main">Skip to main content</a><main id="main"></main></body>"##,
-        );
-        assert!(check_missing_skip_link(&p).is_empty());
+        let html =
+            r##"<body><a href="#main">Skip to main content</a><main id="main"></main></body>"##;
+        assert!(run(check_missing_skip_link, html).is_empty());
     }
 
     #[test]
     fn dangling_skip_link_target_is_flagged() {
-        let p = page_from_html(r##"<body><a href="#main">Skip to main content</a></body>"##);
-        let findings = check_missing_skip_link(&p);
-        assert_eq!(findings.len(), 1);
-        assert_eq!(findings[0].rule_id, "G1");
+        let html = r##"<body><a href="#main">Skip to main content</a></body>"##;
+        assert_fires(check_missing_skip_link, html, "G1");
     }
 }

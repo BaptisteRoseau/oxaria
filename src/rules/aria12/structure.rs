@@ -301,11 +301,7 @@ mod tests {
     use rstest::rstest;
 
     use super::*;
-    use crate::page::testutil::page_from_html;
-
-    fn run(check: fn(&RenderedPage) -> Vec<Finding>, html: &str) -> Vec<Finding> {
-        check(&page_from_html(html))
-    }
+    use crate::rules::testutil::{count, run};
 
     #[rstest]
     #[case(r#"<div role="tab" aria-selected="true">General</div>"#)]
@@ -313,7 +309,7 @@ mod tests {
     #[case(r#"<div role="group"><div role="option">Zebra</div></div>"#)]
     #[case(r#"<div role="list"><div role="row"><div role="cell">x</div></div></div>"#)]
     fn roles_outside_their_context_are_flagged(#[case] html: &str) {
-        assert_eq!(run(check_required_context, html).len(), 1, "{html}");
+        assert_eq!(count(check_required_context, html), 1, "{html}");
     }
 
     #[rstest]
@@ -346,7 +342,7 @@ mod tests {
     #[case(r#"<div role="list"><div>Just text</div></div>"#)]
     #[case(r#"<div role="list"><div role="treeitem">Not a listitem</div></div>"#)]
     fn containers_without_their_items_are_flagged(#[case] html: &str) {
-        assert_eq!(run(check_required_owned, html).len(), 1, "{html}");
+        assert_eq!(count(check_required_owned, html), 1, "{html}");
     }
 
     #[rstest]
@@ -367,7 +363,7 @@ mod tests {
         let html = r#"<ul role="listbox" aria-label="Fruit"><li role="group" aria-label="Citrus">
             <span role="heading" aria-level="3">Citrus</span>
             <span role="option" aria-selected="false">Lemon</span></li></ul>"#;
-        assert_eq!(run(check_restricted_children, html).len(), 1);
+        assert_eq!(count(check_restricted_children, html), 1);
     }
 
     #[rstest]
@@ -385,7 +381,7 @@ mod tests {
     #[test]
     fn spinbutton_with_extra_parts_is_flagged() {
         let html = r#"<div role="spinbutton"><input><button>-</button><button>+</button><button>x</button></div>"#;
-        assert_eq!(run(check_restricted_children, html).len(), 1);
+        assert_eq!(count(check_restricted_children, html), 1);
     }
 
     #[test]

@@ -62,11 +62,7 @@ mod tests {
     use rstest::rstest;
 
     use super::*;
-    use crate::page::testutil::page_from_html;
-
-    fn run(html: &str) -> Vec<Finding> {
-        check_deprecated_aria(&page_from_html(html))
-    }
+    use crate::rules::testutil::{assert_fires, run};
 
     #[rstest]
     #[case(r#"<ul role="directory"><li>a</li></ul>"#, "use a native <ul>")]
@@ -75,10 +71,8 @@ mod tests {
     #[case(r#"<div aria-grabbed="false">x</div>"#, "no replacement")]
     #[case(r#"<div aria-dropeffect="move">x</div>"#, "no replacement")]
     fn deprecated_features_are_flagged(#[case] html: &str, #[case] help: &str) {
-        let findings = run(html);
-        assert_eq!(findings.len(), 1, "{findings:?}");
-        assert_eq!(findings[0].rule_id, "HTMLARIA015");
-        assert!(findings[0].help.as_deref().unwrap().contains(help));
+        let finding = assert_fires(check_deprecated_aria, html, "HTMLARIA015");
+        assert!(finding.help.as_deref().unwrap().contains(help));
     }
 
     #[rstest]
@@ -87,6 +81,6 @@ mod tests {
     #[case(r#"<ul role="list"><li>a</li></ul>"#)]
     #[case(r#"<section role="doc-endnotes">x</section>"#)]
     fn current_features_are_not_flagged(#[case] html: &str) {
-        assert!(run(html).is_empty());
+        assert!(run(check_deprecated_aria, html).is_empty());
     }
 }

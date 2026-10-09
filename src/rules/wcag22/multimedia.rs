@@ -85,50 +85,42 @@ pub fn check_marquee(page: &RenderedPage) -> Vec<Finding> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::page::testutil::page_from_html;
+    use crate::rules::testutil::{assert_fires, run};
 
     #[test]
     fn video_without_captions_is_flagged() {
-        let p = page_from_html(r#"<video src="a.mp4" controls></video>"#);
-        let findings = check_video_missing_captions(&p);
-        assert_eq!(findings.len(), 1);
-        assert_eq!(findings[0].rule_id, "G87");
+        let html = r#"<video src="a.mp4" controls></video>"#;
+        assert_fires(check_video_missing_captions, html, "G87");
     }
 
     #[test]
     fn video_with_captions_track_is_not_flagged() {
-        let p = page_from_html(
-            r#"<video src="a.mp4" controls><track kind="captions" src="a.vtt"></video>"#,
-        );
-        assert!(check_video_missing_captions(&p).is_empty());
+        let html = r#"<video src="a.mp4" controls><track kind="captions" src="a.vtt"></video>"#;
+        assert!(run(check_video_missing_captions, html).is_empty());
     }
 
     #[test]
     fn autoplay_without_controls_is_flagged() {
-        let p = page_from_html(r#"<video src="a.mp4" autoplay></video>"#);
-        let findings = check_autoplay_without_controls(&p);
-        assert_eq!(findings.len(), 1);
-        assert_eq!(findings[0].rule_id, "G186");
+        let html = r#"<video src="a.mp4" autoplay></video>"#;
+        assert_fires(check_autoplay_without_controls, html, "G186");
     }
 
     #[test]
     fn autoplay_with_controls_is_not_flagged() {
-        let p = page_from_html(r#"<video src="a.mp4" autoplay controls></video>"#);
-        assert!(check_autoplay_without_controls(&p).is_empty());
+        let html = r#"<video src="a.mp4" autoplay controls></video>"#;
+        assert!(run(check_autoplay_without_controls, html).is_empty());
     }
 
     #[test]
     fn non_autoplay_video_is_not_flagged() {
-        let p = page_from_html(r#"<video src="a.mp4"></video>"#);
-        assert!(check_autoplay_without_controls(&p).is_empty());
+        let html = r#"<video src="a.mp4"></video>"#;
+        assert!(run(check_autoplay_without_controls, html).is_empty());
     }
 
     #[test]
     fn unmuted_autoplay_without_controls_is_flagged() {
-        let p = page_from_html(
-            r#"<video src="ads.cgi?kind=video" autoplay loop></video><audio src="a.mp3" autoplay></audio>"#,
-        );
-        let findings = check_autoplay_audio_without_controls(&p);
+        let html = r#"<video src="ads.cgi?kind=video" autoplay loop></video><audio src="a.mp3" autoplay></audio>"#;
+        let findings = run(check_autoplay_audio_without_controls, html);
         assert_eq!(findings.len(), 2);
         assert_eq!(findings[0].rule_id, "F93");
         assert!(findings[1].message.starts_with("<audio autoplay>"));
@@ -136,17 +128,13 @@ mod tests {
 
     #[test]
     fn muted_or_controlled_autoplay_is_not_flagged_for_sound() {
-        let p = page_from_html(
-            r#"<video src="a.mp4" autoplay muted></video><audio src="a.mp3" autoplay controls></audio>"#,
-        );
-        assert!(check_autoplay_audio_without_controls(&p).is_empty());
+        let html = r#"<video src="a.mp4" autoplay muted></video><audio src="a.mp3" autoplay controls></audio>"#;
+        assert!(run(check_autoplay_audio_without_controls, html).is_empty());
     }
 
     #[test]
     fn marquee_is_flagged() {
-        let p = page_from_html("<marquee>Breaking news: sale ends today!</marquee>");
-        let findings = check_marquee(&p);
-        assert_eq!(findings.len(), 1);
-        assert_eq!(findings[0].rule_id, "F16");
+        let html = "<marquee>Breaking news: sale ends today!</marquee>";
+        assert_fires(check_marquee, html, "F16");
     }
 }

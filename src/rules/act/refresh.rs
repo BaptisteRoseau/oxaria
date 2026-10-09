@@ -84,12 +84,12 @@ mod tests {
     use rstest::rstest;
 
     use super::*;
-    use crate::page::testutil::page_from_html;
     use crate::rules::RuleCheck;
+    use crate::rules::testutil;
 
     fn count(check: RuleCheck, head: &str) -> usize {
         let html = format!("<head>{head}</head><body><p>x</p></body>");
-        check(&page_from_html(&html)).len()
+        testutil::count(check, &html)
     }
 
     const INSTANT_REDIRECT: &str =

@@ -202,11 +202,11 @@ mod tests {
     use rstest::rstest;
 
     use super::*;
-    use crate::page::testutil::page_from_html;
+    use crate::rules::testutil::run;
 
     fn findings(css: &str) -> Vec<Finding> {
         let html = format!("<head><style>{css}</style></head><body>Page Content</body>");
-        check_orientation_lock(&page_from_html(&html))
+        run(check_orientation_lock, &html)
     }
 
     #[rstest]

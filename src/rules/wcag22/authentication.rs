@@ -40,35 +40,32 @@ fn cancels_event(code: &str) -> bool {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::page::testutil::page_from_html;
-
-    fn findings(html: &str) -> Vec<Finding> {
-        check_paste_blocked(&page_from_html(html))
-    }
+    use crate::rules::testutil::{assert_fires, count, run};
 
     #[test]
     fn password_field_blocking_paste_is_flagged() {
-        let findings = findings(
+        assert_fires(
+            check_paste_blocked,
             r#"<label for="pwd">Password</label><input id="pwd" type="password" onpaste="return false">"#,
+            "AUT001",
         );
-        assert_eq!(findings.len(), 1);
-        assert_eq!(findings[0].rule_id, "AUT001");
     }
 
     #[test]
     fn code_field_blocking_paste_is_flagged() {
         let html = r#"<input autocomplete="one-time-code" onpaste="event.preventDefault()">"#;
-        assert_eq!(findings(html).len(), 1);
+        assert_eq!(count(check_paste_blocked, html), 1);
     }
 
     #[test]
     fn password_field_allowing_paste_is_not_flagged() {
         let html = r#"<input type="password" autocomplete="current-password" onpaste="track()">"#;
-        assert!(findings(html).is_empty());
+        assert!(run(check_paste_blocked, html).is_empty());
     }
 
     #[test]
     fn other_fields_blocking_paste_are_not_flagged() {
-        assert!(findings(r#"<input type="email" onpaste="return false">"#).is_empty());
+        let html = r#"<input type="email" onpaste="return false">"#;
+        assert!(run(check_paste_blocked, html).is_empty());
     }
 }

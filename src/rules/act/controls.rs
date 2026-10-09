@@ -200,12 +200,7 @@ mod tests {
     use rstest::rstest;
 
     use super::*;
-    use crate::page::testutil::page_from_html;
-    use crate::rules::RuleCheck;
-
-    fn count(check: RuleCheck, html: &str) -> usize {
-        check(&page_from_html(html)).len()
-    }
+    use crate::rules::testutil::{count, run};
 
     #[rstest]
     #[case("<button></button>", 1)]
@@ -364,8 +359,8 @@ mod tests {
 
     #[test]
     fn messages_quote_the_element() {
-        let page = page_from_html(r#"<input type="date">"#);
-        let findings = check_form_field_name(&page);
+        let html = r#"<input type="date">"#;
+        let findings = run(check_form_field_name, html);
         assert_eq!(
             findings[0].message,
             r#"<input type="date"> has no accessible name"#

@@ -124,14 +124,9 @@ mod tests {
     use rstest::rstest;
 
     use super::*;
-    use crate::page::testutil::page_from_html;
-    use crate::rules::RuleCheck;
+    use crate::rules::testutil::{count, run};
 
     const TEXT: &str = "The toy brought back fond memories.";
-
-    fn count(check: RuleCheck, html: &str) -> usize {
-        check(&page_from_html(html)).len()
-    }
 
     #[rstest]
     #[case("letter-spacing: 0.1em !important", 1)]
@@ -191,8 +186,8 @@ mod tests {
 
     #[test]
     fn message_quotes_the_locked_value() {
-        let page = page_from_html(r#"<p style="letter-spacing: 0.1em !important">Text</p>"#);
-        let findings = check_important_letter_spacing(&page);
+        let html = r#"<p style="letter-spacing: 0.1em !important">Text</p>"#;
+        let findings = run(check_important_letter_spacing, html);
         assert_eq!(
             findings[0].message,
             r#"<p> locks letter-spacing at "0.1em !important" (0.10 times the font size, below 0.12)"#

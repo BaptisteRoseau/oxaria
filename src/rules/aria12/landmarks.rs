@@ -70,18 +70,14 @@ mod tests {
     use rstest::rstest;
 
     use super::*;
-    use crate::page::testutil::page_from_html;
-
-    fn run(html: &str) -> Vec<Finding> {
-        check_duplicate_landmark(&page_from_html(html))
-    }
+    use crate::rules::testutil::{count, run};
 
     #[rstest]
     #[case(r#"<div role="main">article</div><div role="main">related articles</div>"#)]
     #[case("<header>Site</header><main>x</main><header>Again</header>")]
     #[case(r#"<footer>a</footer><div role="contentinfo">b</div>"#)]
     fn duplicate_landmarks_are_flagged(#[case] html: &str) {
-        assert_eq!(run(html).len(), 1, "{html}");
+        assert_eq!(count(check_duplicate_landmark, html), 1, "{html}");
     }
 
     #[rstest]
@@ -91,6 +87,6 @@ mod tests {
     #[case(r#"<main>a</main><div role="application"><div role="main">b</div></div>"#)]
     #[case(r#"<main>a</main><div role="img" aria-label="App window"><main>b</main></div>"#)]
     fn single_landmarks_are_not_flagged(#[case] html: &str) {
-        assert!(run(html).is_empty(), "{html}");
+        assert!(run(check_duplicate_landmark, html).is_empty(), "{html}");
     }
 }

@@ -147,27 +147,22 @@ fn first_attr(el: ElementRef, names: &[&'static str]) -> Option<&'static str> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::page::testutil::page_from_html;
-
-    fn run(check: crate::rules::RuleCheck, html: &str) -> Vec<Finding> {
-        check(&page_from_html(html))
-    }
+    use crate::rules::testutil::{assert_fires, count, run};
 
     #[test]
     fn scripted_span_link_is_flagged() {
-        let findings = run(
+        assert_fires(
             check_emulated_link,
             r#"<span onclick="location.href='newpage.html'">Fake link</span>"#,
+            "F42",
         );
-        assert_eq!(findings.len(), 1);
-        assert_eq!(findings[0].rule_id, "F42");
     }
 
     #[test]
     fn scripted_image_link_is_flagged() {
         let html =
             r#"<img src="go.gif" alt="go to the new page" onclick="location.href='newpage.html'">"#;
-        assert_eq!(run(check_emulated_link, html).len(), 1);
+        assert_eq!(count(check_emulated_link, html), 1);
     }
 
     #[test]
@@ -181,9 +176,7 @@ mod tests {
     fn scripted_span_without_role_is_flagged() {
         let html = r#"<p><span onclick="toggleCheckbox('chkbox')">
                       <img src="unchecked.gif" id="chkbox" alt=""> Include Signature</span></p>"#;
-        let findings = run(check_control_without_role, html);
-        assert_eq!(findings.len(), 1);
-        assert_eq!(findings[0].rule_id, "F59");
+        assert_fires(check_control_without_role, html, "F59");
     }
 
     #[test]
@@ -202,10 +195,8 @@ mod tests {
     fn mousedown_only_image_is_flagged() {
         let html =
             r#"<p><img onmousedown="nextPage();" src="nextarrow.gif" alt="Go to next page"></p>"#;
-        let findings = run(check_pointer_only_handler, html);
-        assert_eq!(findings.len(), 1);
-        assert_eq!(findings[0].rule_id, "F54");
-        assert!(findings[0].message.contains("onmousedown"));
+        let finding = assert_fires(check_pointer_only_handler, html, "F54");
+        assert!(finding.message.contains("onmousedown"));
     }
 
     #[test]

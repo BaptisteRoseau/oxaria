@@ -75,11 +75,7 @@ mod tests {
     use rstest::rstest;
 
     use super::*;
-    use crate::page::testutil::page_from_html;
-
-    fn count(html: &str) -> usize {
-        check_headers_refer_to_cells(&page_from_html(html)).len()
-    }
+    use crate::rules::testutil::{count, run};
 
     #[rstest]
     #[case(
@@ -101,7 +97,11 @@ mod tests {
         1
     )]
     fn references_outside_the_tables_cells_fail(#[case] html: &str, #[case] expected: usize) {
-        assert_eq!(count(html), expected, "{html}");
+        assert_eq!(
+            count(check_headers_refer_to_cells, html),
+            expected,
+            "{html}"
+        );
     }
 
     #[rstest]
@@ -124,15 +124,14 @@ mod tests {
     #[case(r#"<div role="table"><div role="cell" headers="nope">15%</div></div>"#)]
     #[case(r#"<table role="heading" aria-level="1"><tr><td id="s" headers="s">World</td></tr></table>"#)]
     fn references_to_other_cells_pass(#[case] html: &str) {
-        assert_eq!(count(html), 0, "{html}");
+        assert_eq!(count(check_headers_refer_to_cells, html), 0, "{html}");
     }
 
     #[test]
     fn message_quotes_the_dangling_ids() {
-        let page = page_from_html(
-            r#"<table><tr><th id="h1">P</th></tr><tr><td headers="h1 gone">1</td></tr></table>"#,
-        );
-        let findings = check_headers_refer_to_cells(&page);
+        let html =
+            r#"<table><tr><th id="h1">P</th></tr><tr><td headers="h1 gone">1</td></tr></table>"#;
+        let findings = run(check_headers_refer_to_cells, html);
         assert_eq!(
             findings[0].message,
             r#"<td headers="h1 gone"> refers to "gone", not another cell of the same table"#

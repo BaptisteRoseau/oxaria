@@ -229,12 +229,7 @@ mod tests {
     use rstest::rstest;
 
     use super::*;
-    use crate::page::testutil::page_from_html;
-    use crate::rules::RuleCheck;
-
-    fn count(check: RuleCheck, html: &str) -> usize {
-        check(&page_from_html(html)).len()
-    }
+    use crate::rules::testutil::{count, run};
 
     #[rstest]
     #[case(r#"<img src="w3c.png">"#)]
@@ -264,8 +259,7 @@ mod tests {
 
     #[test]
     fn image_message_quotes_the_markup() {
-        let page = page_from_html(r#"<img src="w3c.png">"#);
-        let findings = check_image_name(&page);
+        let findings = run(check_image_name, r#"<img src="w3c.png">"#);
         assert_eq!(
             findings[0].message,
             r#"<img src="w3c.png"> has no accessible name"#
@@ -295,8 +289,8 @@ mod tests {
 
     #[test]
     fn decorative_message_names_the_exposing_attribute() {
-        let page = page_from_html(r#"<svg role="none" aria-label="Yellow circle"></svg>"#);
-        let findings = check_decorative_exposed(&page);
+        let html = r#"<svg role="none" aria-label="Yellow circle"></svg>"#;
+        let findings = run(check_decorative_exposed, html);
         assert_eq!(
             findings[0].message,
             r#"<svg role="none"> is marked decorative but is exposed by aria-label="Yellow circle""#

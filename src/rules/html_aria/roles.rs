@@ -201,11 +201,7 @@ mod tests {
     use rstest::rstest;
 
     use super::*;
-    use crate::page::testutil::page_from_html;
-
-    fn run(check: fn(&RenderedPage) -> Vec<Finding>, html: &str) -> Vec<Finding> {
-        check(&page_from_html(html))
-    }
+    use crate::rules::testutil::{assert_fires, help, run};
 
     #[rstest]
     #[case(r#"<button role="button">x</button>"#)]
@@ -219,9 +215,7 @@ mod tests {
     #[case(r#"<section aria-label="News" role="region">x</section>"#)]
     #[case(r#"<h2 aria-level="2">x</h2>"#)]
     fn redundant_semantics_are_flagged(#[case] html: &str) {
-        let findings = run(check_redundant_semantics, html);
-        assert_eq!(findings.len(), 1, "{findings:?}");
-        assert_eq!(findings[0].rule_id, "HTMLARIA002");
+        assert_fires(check_redundant_semantics, html, "HTMLARIA002");
     }
 
     #[rstest]
@@ -261,9 +255,7 @@ mod tests {
     #[case(r#"<div role="GENERIC">x</div>"#)]
     #[case(r#"<html role="document"><body>x</body></html>"#)]
     fn generic_roles_are_flagged(#[case] html: &str) {
-        let findings = run(check_generic_role, html);
-        assert_eq!(findings.len(), 1, "{findings:?}");
-        assert_eq!(findings[0].rule_id, "HTMLARIA003");
+        assert_fires(check_generic_role, html, "HTMLARIA003");
     }
 
     #[rstest]
@@ -277,12 +269,8 @@ mod tests {
 
     #[test]
     fn generic_help_suggests_a_div() {
-        let findings = run(check_generic_role, r#"<article role="generic">x</article>"#);
         assert!(
-            findings[0]
-                .help
-                .as_deref()
-                .unwrap()
+            help(check_generic_role, r#"<article role="generic">x</article>"#)
                 .starts_with("use a <div>")
         );
     }
@@ -292,9 +280,7 @@ mod tests {
     #[case(r#"<div role="Widget">x</div>"#)]
     #[case(r#"<div role="combobox landmark">x</div>"#)]
     fn abstract_roles_are_flagged(#[case] html: &str) {
-        let findings = run(check_abstract_role, html);
-        assert_eq!(findings.len(), 1, "{findings:?}");
-        assert_eq!(findings[0].rule_id, "HTMLARIA004");
+        assert_fires(check_abstract_role, html, "HTMLARIA004");
     }
 
     #[rstest]
@@ -315,7 +301,8 @@ mod tests {
 
     #[test]
     fn roletype_suggests_concrete_descendants() {
-        let findings = run(check_abstract_role, r#"<div role="roletype">x</div>"#);
-        assert!(findings[0].help.as_deref().unwrap().contains("such as \""));
+        assert!(
+            help(check_abstract_role, r#"<div role="roletype">x</div>"#).contains("such as \"")
+        );
     }
 }

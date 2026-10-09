@@ -81,32 +81,28 @@ mod tests {
     use rstest::rstest;
 
     use super::*;
-    use crate::page::testutil::page_from_html;
+    use crate::rules::testutil::{assert_one, run};
 
     fn findings(content: &str) -> Vec<Finding> {
         let html = format!(r#"<head><meta http-equiv="refresh" content="{content}"></head>"#);
-        check_timed_meta_refresh(&page_from_html(&html))
+        run(check_timed_meta_refresh, &html)
     }
 
     #[test]
     fn timed_redirect_is_flagged() {
-        let findings = findings("5; url=https://www.example.com/newpage");
-        assert_eq!(findings.len(), 1);
-        assert_eq!(findings[0].rule_id, "F40");
+        let finding = assert_one(findings("5; url=https://www.example.com/newpage"), "F40");
         assert!(
-            findings[0]
+            finding
                 .message
                 .contains("\"https://www.example.com/newpage\" after 5s"),
             "{}",
-            findings[0].message
+            finding.message
         );
     }
 
     #[test]
     fn periodic_reload_is_flagged() {
-        let findings = findings("60");
-        assert_eq!(findings.len(), 1);
-        assert_eq!(findings[0].rule_id, "F41");
+        assert_one(findings("60"), "F41");
     }
 
     #[rstest]
@@ -129,7 +125,7 @@ mod tests {
 
     #[test]
     fn other_meta_elements_are_ignored() {
-        let p = page_from_html(r#"<head><meta name="viewport" content="5"></head>"#);
-        assert!(check_timed_meta_refresh(&p).is_empty());
+        let html = r#"<head><meta name="viewport" content="5"></head>"#;
+        assert!(run(check_timed_meta_refresh, html).is_empty());
     }
 }

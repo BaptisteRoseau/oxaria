@@ -96,11 +96,11 @@ mod tests {
     use rstest::rstest;
 
     use super::*;
-    use crate::page::testutil::page_from_html;
+    use crate::rules::testutil::{self, run};
 
     fn count(content: &str) -> usize {
         let html = format!(r#"<head><meta name="viewport" content="{content}"></head>"#);
-        check_viewport_zoom(&page_from_html(&html)).len()
+        testutil::count(check_viewport_zoom, &html)
     }
 
     #[rstest]
@@ -131,10 +131,8 @@ mod tests {
 
     #[test]
     fn meta_without_content_or_other_names_is_ignored() {
-        let page = page_from_html(
-            r#"<head><meta name="viewport"><meta name="description" content="user-scalable=no"></head>"#,
-        );
-        assert!(check_viewport_zoom(&page).is_empty());
+        let html = r#"<head><meta name="viewport"><meta name="description" content="user-scalable=no"></head>"#;
+        assert!(run(check_viewport_zoom, html).is_empty());
     }
 
     #[test]

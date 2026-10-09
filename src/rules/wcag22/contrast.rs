@@ -159,6 +159,7 @@ fn contrast_ratio(l1: f64, l2: f64) -> f64 {
 mod tests {
     use super::*;
     use crate::page::testutil::page_from_html;
+    use crate::rules::testutil::{assert_one, run_with_defaults};
 
     #[test]
     fn relative_luminance_black_is_zero() {
@@ -181,19 +182,15 @@ mod tests {
 
     #[test]
     fn low_contrast_text_is_flagged_as_warning() {
-        let p =
-            page_from_html(r#"<p style="color: #999999; background-color: #ffffff">Body text</p>"#);
-        let findings = check_text_contrast(&p, &CheckOptions::default());
-        assert_eq!(findings.len(), 1);
-        assert_eq!(findings[0].rule_id, "G18");
-        assert_eq!(findings[0].severity, crate::rules::Severity::Warning);
+        let html = r#"<p style="color: #999999; background-color: #ffffff">Body text</p>"#;
+        let finding = assert_one(run_with_defaults(check_text_contrast, html), "G18");
+        assert_eq!(finding.severity, crate::rules::Severity::Warning);
     }
 
     #[test]
     fn help_suggests_the_nearest_passing_color() {
-        let p =
-            page_from_html(r#"<p style="color: #999999; background-color: #ffffff">Body text</p>"#);
-        let findings = check_text_contrast(&p, &CheckOptions::default());
+        let html = r#"<p style="color: #999999; background-color: #ffffff">Body text</p>"#;
+        let findings = run_with_defaults(check_text_contrast, html);
         assert_eq!(
             findings[0].help.as_deref(),
             Some("darken the text to #767676 (4.54:1 on #ffffff)")
@@ -202,9 +199,8 @@ mod tests {
 
     #[test]
     fn help_lightens_text_on_a_dark_background() {
-        let p =
-            page_from_html(r#"<p style="color: #555555; background-color: #000000">Body text</p>"#);
-        let findings = check_text_contrast(&p, &CheckOptions::default());
+        let html = r#"<p style="color: #555555; background-color: #000000">Body text</p>"#;
+        let findings = run_with_defaults(check_text_contrast, html);
         assert!(
             findings[0]
                 .help
@@ -218,9 +214,8 @@ mod tests {
 
     #[test]
     fn help_offers_large_text_when_that_would_pass() {
-        let p =
-            page_from_html(r#"<p style="color: #888888; background-color: #ffffff">Body text</p>"#);
-        let findings = check_text_contrast(&p, &CheckOptions::default());
+        let html = r#"<p style="color: #888888; background-color: #ffffff">Body text</p>"#;
+        let findings = run_with_defaults(check_text_contrast, html);
         assert!(
             findings[0]
                 .help
@@ -254,35 +249,27 @@ mod tests {
 
     #[test]
     fn low_contrast_large_text_is_reported_as_g145() {
-        let p = page_from_html(
-            r#"<h1 style="color: #aaaaaa; background-color: #ffffff; font-size: 28px">Title</h1>"#,
-        );
-        let findings = check_text_contrast(&p, &CheckOptions::default());
-        assert_eq!(findings.len(), 1);
-        assert_eq!(findings[0].rule_id, "G145");
+        let html =
+            r#"<h1 style="color: #aaaaaa; background-color: #ffffff; font-size: 28px">Title</h1>"#;
+        assert_one(run_with_defaults(check_text_contrast, html), "G145");
     }
 
     #[test]
     fn high_contrast_text_is_not_flagged() {
-        let p =
-            page_from_html(r#"<p style="color: #000000; background-color: #ffffff">Body text</p>"#);
-        assert!(check_text_contrast(&p, &CheckOptions::default()).is_empty());
+        let html = r#"<p style="color: #000000; background-color: #ffffff">Body text</p>"#;
+        assert!(run_with_defaults(check_text_contrast, html).is_empty());
     }
 
     #[test]
     fn large_bold_text_uses_lower_threshold() {
-        let p = page_from_html(
-            r#"<h1 style="color: #949494; background-color: #ffffff; font-size: 28px; font-weight: bold">Title</h1>"#,
-        );
-        assert!(check_text_contrast(&p, &CheckOptions::default()).is_empty());
+        let html = r#"<h1 style="color: #949494; background-color: #ffffff; font-size: 28px; font-weight: bold">Title</h1>"#;
+        assert!(run_with_defaults(check_text_contrast, html).is_empty());
     }
 
     #[test]
     fn element_with_no_text_children_is_skipped() {
-        let p = page_from_html(
-            r#"<div style="color: #999999; background-color: #ffffff"><span style="color: #999999; background-color: #ffffff">nested</span></div>"#,
-        );
-        let findings = check_text_contrast(&p, &CheckOptions::default());
+        let html = r#"<div style="color: #999999; background-color: #ffffff"><span style="color: #999999; background-color: #ffffff">nested</span></div>"#;
+        let findings = run_with_defaults(check_text_contrast, html);
         assert_eq!(
             findings.len(),
             1,
@@ -292,8 +279,8 @@ mod tests {
 
     #[test]
     fn missing_background_defaults_to_white_canvas() {
-        let p = page_from_html(r#"<p style="color: #eeeeee">Body text</p>"#);
-        let findings = check_text_contrast(&p, &CheckOptions::default());
+        let html = r#"<p style="color: #eeeeee">Body text</p>"#;
+        let findings = run_with_defaults(check_text_contrast, html);
         assert_eq!(
             findings.len(),
             1,

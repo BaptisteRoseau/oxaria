@@ -61,11 +61,7 @@ mod tests {
     use rstest::rstest;
 
     use super::*;
-    use crate::page::testutil::page_from_html;
-
-    fn count(html: &str) -> usize {
-        check_autocomplete_valid(&page_from_html(html)).len()
-    }
+    use crate::rules::testutil::count;
 
     #[rstest]
     #[case(r#"<label>Username<input autocomplete="badname"></label>"#)]
@@ -80,7 +76,7 @@ mod tests {
     #[case(r#"<label>Email<input autocomplete="email invalid"></label>"#)]
     #[case(r#"<input autocomplete="badname" aria-hidden="true">"#)]
     fn invalid_values_fail(#[case] html: &str) {
-        assert_eq!(count(html), 1, "{html}");
+        assert_eq!(count(check_autocomplete_valid, html), 1, "{html}");
     }
 
     #[rstest]
@@ -102,6 +98,6 @@ mod tests {
     #[case(r#"<input type="hidden" autocomplete="transaction-amount">"#)]
     #[case(r#"<div autocomplete="badname"></div>"#)]
     fn valid_or_inapplicable_values_pass(#[case] html: &str) {
-        assert_eq!(count(html), 0, "{html}");
+        assert_eq!(count(check_autocomplete_valid, html), 0, "{html}");
     }
 }

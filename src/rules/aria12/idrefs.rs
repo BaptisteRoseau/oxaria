@@ -183,11 +183,7 @@ mod tests {
     use rstest::rstest;
 
     use super::*;
-    use crate::page::testutil::page_from_html;
-
-    fn run(check: fn(&RenderedPage) -> Vec<Finding>, html: &str) -> Vec<Finding> {
-        check(&page_from_html(html))
-    }
+    use crate::rules::testutil::{count, help, run};
 
     #[rstest]
     #[case(r#"<input type="text" aria-labelledby="startTime-label">"#, 1)]
@@ -204,8 +200,8 @@ mod tests {
         r#"<div role="tablist"><button role="tab" aria-selected="true" aria-controls="p1">A</button></div>"#,
         1
     )]
-    fn unresolved_references_are_flagged(#[case] html: &str, #[case] count: usize) {
-        assert_eq!(run(check_unresolved_reference, html).len(), count, "{html}");
+    fn unresolved_references_are_flagged(#[case] html: &str, #[case] expected: usize) {
+        assert_eq!(count(check_unresolved_reference, html), expected, "{html}");
     }
 
     #[rstest]
@@ -224,16 +220,12 @@ mod tests {
 
     #[test]
     fn missing_id_help_names_it() {
-        let findings = run(
-            check_unresolved_reference,
-            r#"<input aria-describedby="hint">"#,
-        );
         assert!(
-            findings[0]
-                .help
-                .as_deref()
-                .unwrap()
-                .starts_with("add id=\"hint\"")
+            help(
+                check_unresolved_reference,
+                r#"<input aria-describedby="hint">"#
+            )
+            .starts_with("add id=\"hint\"")
         );
     }
 
@@ -248,7 +240,7 @@ mod tests {
     )]
     #[case(r#"<div id="outer" role="tree"><div role="group" aria-owns="outer">x</div></div>"#)]
     fn ownership_conflicts_are_flagged(#[case] html: &str) {
-        assert_eq!(run(check_aria_owns_conflict, html).len(), 1, "{html}");
+        assert_eq!(count(check_aria_owns_conflict, html), 1, "{html}");
     }
 
     #[rstest]
@@ -266,7 +258,7 @@ mod tests {
         let html = r#"<ul role="listbox" tabindex="0" aria-label="Tags" aria-activedescendant="opt-zoom">
               <li role="option" aria-selected="false">Zebra</li></ul>
             <li role="option" id="opt-zoom" aria-selected="false">Zoom</li>"#;
-        assert_eq!(run(check_active_descendant_ownership, html).len(), 1);
+        assert_eq!(count(check_active_descendant_ownership, html), 1);
     }
 
     #[rstest]

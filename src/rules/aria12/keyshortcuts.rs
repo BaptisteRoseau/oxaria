@@ -105,20 +105,17 @@ mod tests {
     use rstest::rstest;
 
     use super::*;
-    use crate::page::testutil::page_from_html;
-
-    fn run(html: &str) -> Vec<Finding> {
-        check_keyshortcuts_syntax(&page_from_html(html))
-    }
+    use crate::rules::testutil::{count, run};
 
     #[rstest]
     #[case("Ctrl+S", "Control+S")]
     #[case("T+Shift+Alt", "Shift+Alt+T")]
     #[case("Cmd+Option+P", "Meta+Alt+P")]
     fn invalid_shortcuts_get_a_correction(#[case] shortcut: &str, #[case] correction: &str) {
-        let findings = run(&format!(
-            r#"<button aria-keyshortcuts="{shortcut}">x</button>"#
-        ));
+        let findings = run(
+            check_keyshortcuts_syntax,
+            &format!(r#"<button aria-keyshortcuts="{shortcut}">x</button>"#),
+        );
         assert_eq!(findings.len(), 1);
         assert!(
             findings[0]
@@ -135,9 +132,10 @@ mod tests {
     #[case("Control+")]
     #[case("A+B")]
     fn shortcuts_without_one_key_are_flagged(#[case] shortcut: &str) {
-        let findings = run(&format!(
-            r#"<button aria-keyshortcuts="{shortcut}">x</button>"#
-        ));
+        let findings = run(
+            check_keyshortcuts_syntax,
+            &format!(r#"<button aria-keyshortcuts="{shortcut}">x</button>"#),
+        );
         assert_eq!(findings.len(), 1, "{shortcut}");
     }
 
@@ -151,16 +149,20 @@ mod tests {
     #[case("control+s")]
     #[case("")]
     fn valid_shortcuts_are_not_flagged(#[case] shortcut: &str) {
-        let findings = run(&format!(
-            r#"<button aria-keyshortcuts="{shortcut}">x</button>"#
-        ));
+        let findings = run(
+            check_keyshortcuts_syntax,
+            &format!(r#"<button aria-keyshortcuts="{shortcut}">x</button>"#),
+        );
         assert!(findings.is_empty(), "{shortcut}: {findings:?}");
     }
 
     #[test]
     fn each_invalid_shortcut_is_reported() {
         assert_eq!(
-            run(r#"<button aria-keyshortcuts="Ctrl+S Alt+F Win+E">x</button>"#).len(),
+            count(
+                check_keyshortcuts_syntax,
+                r#"<button aria-keyshortcuts="Ctrl+S Alt+F Win+E">x</button>"#
+            ),
             2
         );
     }

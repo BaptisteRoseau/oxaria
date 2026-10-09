@@ -267,11 +267,7 @@ mod tests {
     use rstest::rstest;
 
     use super::*;
-    use crate::page::testutil::page_from_html;
-
-    fn run(check: fn(&RenderedPage) -> Vec<Finding>, html: &str) -> Vec<Finding> {
-        check(&page_from_html(html))
-    }
+    use crate::rules::testutil::{count, run};
 
     const ARIA_12_COMBOBOX: &str = r#"<label for="tag_combo">Tag</label>
         <input type="text" id="tag_combo" role="combobox" aria-autocomplete="list"
@@ -321,7 +317,7 @@ mod tests {
               <div id="w"><ul role="menu"><li role="menuitem">A</li></ul></div>"#
     )]
     fn mismatched_popups_are_flagged(#[case] html: &str) {
-        assert_eq!(run(check_popup_role_match, html).len(), 1, "{html}");
+        assert_eq!(count(check_popup_role_match, html), 1, "{html}");
     }
 
     #[rstest]
@@ -341,7 +337,7 @@ mod tests {
     fn unwired_autocomplete_is_flagged() {
         let html = r#"<input type="search" aria-label="Search products" aria-autocomplete="list">
             <ul role="listbox" id="suggestions"></ul>"#;
-        assert_eq!(run(check_autocomplete_popup, html).len(), 2);
+        assert_eq!(count(check_autocomplete_popup, html), 2);
     }
 
     #[rstest]
@@ -356,7 +352,7 @@ mod tests {
     #[test]
     fn unfocusable_popup_trigger_is_flagged() {
         let html = r#"<span aria-haspopup="menu" onclick="openMenu()">Account</span>"#;
-        assert_eq!(run(check_unfocusable_popup_trigger, html).len(), 1);
+        assert_eq!(count(check_unfocusable_popup_trigger, html), 1);
     }
 
     #[rstest]
@@ -378,7 +374,7 @@ mod tests {
     fn unfocusable_feed_article_is_flagged() {
         let html = r#"<div role="feed" aria-label="News">
             <article aria-labelledby="a1-title"><h2 id="a1-title">Title</h2></article></div>"#;
-        assert_eq!(run(check_unfocusable_feed_article, html).len(), 1);
+        assert_eq!(count(check_unfocusable_feed_article, html), 1);
     }
 
     #[test]

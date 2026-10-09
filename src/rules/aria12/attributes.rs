@@ -289,11 +289,7 @@ mod tests {
     use rstest::rstest;
 
     use super::*;
-    use crate::page::testutil::page_from_html;
-
-    fn run(check: fn(&RenderedPage) -> Vec<Finding>, html: &str) -> Vec<Finding> {
-        check(&page_from_html(html))
-    }
+    use crate::rules::testutil::{count, help, run};
 
     #[rstest]
     #[case(
@@ -328,7 +324,7 @@ mod tests {
     #[case(r#"<div aria-expanded="false">Menu</div>"#)]
     #[case(r#"<ul><li aria-selected="true">x</li></ul>"#)]
     fn unsupported_attributes_are_flagged(#[case] html: &str) {
-        assert_eq!(run(check_unsupported_attribute, html).len(), 1, "{html}");
+        assert_eq!(count(check_unsupported_attribute, html), 1, "{html}");
     }
 
     #[rstest]
@@ -367,7 +363,7 @@ mod tests {
     #[case(r#"<p aria-label="Warning">Your session expires in 5 minutes.</p>"#)]
     #[case(r#"<span role="none" aria-labelledby="x">x</span><i id="x">x</i>"#)]
     fn prohibited_attributes_are_flagged(#[case] html: &str) {
-        assert_eq!(run(check_prohibited_attribute, html).len(), 1, "{html}");
+        assert_eq!(count(check_prohibited_attribute, html), 1, "{html}");
     }
 
     #[rstest]
@@ -388,10 +384,10 @@ mod tests {
     #[case(r#"<table><tr><td aria-colspan="2">Total</td></tr></table>"#, 1)]
     #[case(r#"<table><tr><th aria-readonly="true">Name</th></tr></table>"#, 1)]
     #[case(r#"<div role="grid"><div role="rowgroup"><div role="row" aria-setsize="3">x</div></div></div>"#, 1)]
-    fn static_table_attributes_are_flagged(#[case] html: &str, #[case] count: usize) {
+    fn static_table_attributes_are_flagged(#[case] html: &str, #[case] expected: usize) {
         assert_eq!(
-            run(check_static_table_attribute, html).len(),
-            count,
+            count(check_static_table_attribute, html),
+            expected,
             "{html}"
         );
     }
@@ -409,13 +405,12 @@ mod tests {
 
     #[test]
     fn native_span_help_gives_the_native_attribute() {
-        let findings = run(
-            check_static_table_attribute,
-            r#"<table><tr><td aria-colspan="2">Total</td></tr></table>"#,
-        );
         assert_eq!(
-            findings[0].help.as_deref(),
-            Some("use colspan=\"2\" instead of aria-colspan")
+            help(
+                check_static_table_attribute,
+                r#"<table><tr><td aria-colspan="2">Total</td></tr></table>"#
+            ),
+            "use colspan=\"2\" instead of aria-colspan"
         );
     }
 
@@ -424,7 +419,7 @@ mod tests {
     #[case(r#"<div role="region" aria-roledescription=" " aria-labelledby="h">...</div>"#)]
     #[case(r#"<svg aria-roledescription="chart"></svg>"#)]
     fn misused_role_descriptions_are_flagged(#[case] html: &str) {
-        assert_eq!(run(check_role_description, html).len(), 1, "{html}");
+        assert_eq!(count(check_role_description, html), 1, "{html}");
     }
 
     #[rstest]

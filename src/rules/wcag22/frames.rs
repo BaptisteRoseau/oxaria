@@ -42,43 +42,45 @@ fn has_name(page: &RenderedPage, iframe: ElementRef) -> bool {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::page::testutil::page_from_html;
-
-    fn findings(html: &str) -> Vec<Finding> {
-        check_untitled_iframe(&page_from_html(html))
-    }
+    use crate::rules::testutil::{assert_fires, count, run};
 
     #[test]
     fn untitled_iframe_is_flagged() {
-        let findings = findings(r#"<iframe src="banner-ad.html" name="ad-iframe"></iframe>"#);
-        assert_eq!(findings.len(), 1);
-        assert_eq!(findings[0].rule_id, "H64");
+        assert_fires(
+            check_untitled_iframe,
+            r#"<iframe src="banner-ad.html" name="ad-iframe"></iframe>"#,
+            "H64",
+        );
     }
 
     #[test]
     fn empty_title_is_flagged() {
         assert_eq!(
-            findings(r#"<iframe src="a.html" title=" "></iframe>"#).len(),
+            count(
+                check_untitled_iframe,
+                r#"<iframe src="a.html" title=" "></iframe>"#
+            ),
             1
         );
     }
 
     #[test]
     fn titled_iframe_is_not_flagged() {
-        assert!(findings(r#"<iframe src="a.html" title="Advertisement"></iframe>"#).is_empty());
+        let html = r#"<iframe src="a.html" title="Advertisement"></iframe>"#;
+        assert!(run(check_untitled_iframe, html).is_empty());
     }
 
     #[test]
     fn aria_named_iframe_is_not_flagged() {
         let html = r#"<h2 id="map">Store map</h2><iframe src="m.html" aria-labelledby="map"></iframe>
                       <iframe src="v.html" aria-label="Product video"></iframe>"#;
-        assert!(findings(html).is_empty());
+        assert!(run(check_untitled_iframe, html).is_empty());
     }
 
     #[test]
     fn hidden_iframe_is_not_flagged() {
         let html = r#"<iframe src="t.html" hidden></iframe><iframe src="u.html" aria-hidden="true"></iframe>
                       <noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-X"></iframe></noscript>"#;
-        assert!(findings(html).is_empty());
+        assert!(run(check_untitled_iframe, html).is_empty());
     }
 }

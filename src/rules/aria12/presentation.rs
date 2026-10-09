@@ -177,11 +177,7 @@ mod tests {
     use rstest::rstest;
 
     use super::*;
-    use crate::page::testutil::page_from_html;
-
-    fn run(check: fn(&RenderedPage) -> Vec<Finding>, html: &str) -> Vec<Finding> {
-        check(&page_from_html(html))
-    }
+    use crate::rules::testutil::{count, run};
 
     #[rstest]
     #[case(
@@ -248,10 +244,10 @@ mod tests {
         r#"<div role="button"><div role="button"><a href="/x">x</a></div></div>"#,
         1
     )]
-    fn lost_content_is_flagged(#[case] html: &str, #[case] count: usize) {
+    fn lost_content_is_flagged(#[case] html: &str, #[case] expected: usize) {
         assert_eq!(
-            run(check_content_in_presentational_children, html).len(),
-            count,
+            count(check_content_in_presentational_children, html),
+            expected,
             "{html}"
         );
     }

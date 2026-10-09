@@ -86,35 +86,24 @@ fn dangling_reference_message(attribute: &str, id: &str) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::page::testutil::page_from_html;
+    use crate::rules::testutil::{assert_fires, count, help, run};
 
     #[test]
     fn dangling_reference_help_names_the_missing_id() {
-        let p = page_from_html(r#"<button aria-describedby="hint">Go</button>"#);
-        let findings = check_dangling_aria_reference(&p);
-        assert!(
-            findings[0]
-                .help
-                .as_deref()
-                .unwrap()
-                .starts_with(r#"add id="hint" to"#)
-        );
+        let html = r#"<button aria-describedby="hint">Go</button>"#;
+        assert!(help(check_dangling_aria_reference, html).starts_with(r#"add id="hint" to"#));
     }
 
     #[test]
     fn duplicate_ids_are_flagged() {
-        let p = page_from_html(r#"<input id="search"><input id="search">"#);
-        let findings = check_duplicate_ids(&p);
-        assert_eq!(findings.len(), 1);
-        assert_eq!(findings[0].rule_id, "IDS001");
+        let html = r#"<input id="search"><input id="search">"#;
+        assert_fires(check_duplicate_ids, html, "IDS001");
     }
 
     #[test]
     fn duplicate_ids_are_reported_in_a_stable_order() {
-        let p = page_from_html(
-            r#"<i id="c"></i><i id="c"></i><i id="a"></i><i id="a"></i><i id="b"></i><i id="b"></i>"#,
-        );
-        let messages: Vec<_> = check_duplicate_ids(&p)
+        let html = r#"<i id="c"></i><i id="c"></i><i id="a"></i><i id="a"></i><i id="b"></i><i id="b"></i>"#;
+        let messages: Vec<_> = run(check_duplicate_ids, html)
             .into_iter()
             .map(|f| f.message)
             .collect();
@@ -125,35 +114,30 @@ mod tests {
 
     #[test]
     fn unique_ids_are_not_flagged() {
-        let p = page_from_html(r#"<input id="a"><input id="b">"#);
-        assert!(check_duplicate_ids(&p).is_empty());
+        assert!(run(check_duplicate_ids, r#"<input id="a"><input id="b">"#).is_empty());
     }
 
     #[test]
     fn dangling_aria_labelledby_is_flagged() {
-        let p = page_from_html(r#"<input aria-labelledby="missing">"#);
-        let findings = check_dangling_aria_reference(&p);
-        assert_eq!(findings.len(), 1);
-        assert_eq!(findings[0].rule_id, "ARIA16");
+        let html = r#"<input aria-labelledby="missing">"#;
+        assert_fires(check_dangling_aria_reference, html, "ARIA16");
     }
 
     #[test]
     fn dangling_aria_describedby_is_reported_as_aria1() {
-        let p = page_from_html(r#"<input aria-describedby="missing">"#);
-        let findings = check_dangling_aria_reference(&p);
-        assert_eq!(findings.len(), 1);
-        assert_eq!(findings[0].rule_id, "ARIA1");
+        let html = r#"<input aria-describedby="missing">"#;
+        assert_fires(check_dangling_aria_reference, html, "ARIA1");
     }
 
     #[test]
     fn resolved_aria_labelledby_is_not_flagged() {
-        let p = page_from_html(r#"<span id="lbl">Name</span><input aria-labelledby="lbl">"#);
-        assert!(check_dangling_aria_reference(&p).is_empty());
+        let html = r#"<span id="lbl">Name</span><input aria-labelledby="lbl">"#;
+        assert!(run(check_dangling_aria_reference, html).is_empty());
     }
 
     #[test]
     fn dangling_aria_describedby_is_flagged() {
-        let p = page_from_html(r#"<input aria-describedby="missing">"#);
-        assert_eq!(check_dangling_aria_reference(&p).len(), 1);
+        let html = r#"<input aria-describedby="missing">"#;
+        assert_eq!(count(check_dangling_aria_reference, html), 1);
     }
 }

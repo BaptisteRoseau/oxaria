@@ -10,6 +10,8 @@ mod html_aria;
 mod options;
 mod registry;
 mod standard;
+#[cfg(test)]
+mod testutil;
 mod wcag22;
 
 pub use finding::{Finding, Severity};

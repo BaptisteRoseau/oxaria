@@ -277,11 +277,7 @@ mod tests {
     use rstest::rstest;
 
     use super::*;
-    use crate::page::testutil::page_from_html;
-
-    fn run(check: fn(&RenderedPage) -> Vec<Finding>, html: &str) -> Vec<Finding> {
-        check(&page_from_html(html))
-    }
+    use crate::rules::testutil::{assert_fires, help, run};
 
     #[rstest]
     #[case(r#"<input type="checkbox" checked aria-checked="false">"#)]
@@ -298,9 +294,7 @@ mod tests {
     #[case(r#"<table><tr><td colspan="2" aria-colspan="3">x</td></tr></table>"#)]
     #[case(r#"<table><tr><th rowspan="2" aria-rowspan="1">x</th></tr></table>"#)]
     fn conflicting_attributes_are_flagged(#[case] html: &str) {
-        let findings = run(check_conflicting_aria, html);
-        assert_eq!(findings.len(), 1, "{findings:?}");
-        assert_eq!(findings[0].rule_id, "HTMLARIA013");
+        assert_fires(check_conflicting_aria, html, "HTMLARIA013");
     }
 
     #[rstest]
@@ -332,13 +326,12 @@ mod tests {
 
     #[test]
     fn differing_span_help_keeps_the_native_value() {
-        let findings = run(
-            check_conflicting_aria,
-            r#"<table><tr><td colspan="2" aria-colspan="3">x</td></tr></table>"#,
-        );
         assert_eq!(
-            findings[0].help.as_deref(),
-            Some(r#"remove aria-colspan and keep colspan="2""#)
+            help(
+                check_conflicting_aria,
+                r#"<table><tr><td colspan="2" aria-colspan="3">x</td></tr></table>"#
+            ),
+            r#"remove aria-colspan and keep colspan="2""#
         );
     }
 
@@ -351,9 +344,7 @@ mod tests {
     #[case(r#"<input type="number" aria-valuemax="9">"#)]
     #[case(r#"<table><tr><td rowspan="2" aria-rowspan="2">x</td></tr></table>"#)]
     fn repeated_attributes_are_flagged(#[case] html: &str) {
-        let findings = run(check_repeated_aria, html);
-        assert_eq!(findings.len(), 1, "{findings:?}");
-        assert_eq!(findings[0].rule_id, "HTMLARIA014");
+        assert_fires(check_repeated_aria, html, "HTMLARIA014");
     }
 
     #[rstest]
@@ -370,13 +361,12 @@ mod tests {
 
     #[test]
     fn missing_native_limit_help_suggests_the_native_attribute() {
-        let findings = run(
-            check_repeated_aria,
-            r#"<input type="number" aria-valuemax="9">"#,
-        );
         assert_eq!(
-            findings[0].help.as_deref(),
-            Some(r#"replace aria-valuemax="9" with max="9""#)
+            help(
+                check_repeated_aria,
+                r#"<input type="number" aria-valuemax="9">"#
+            ),
+            r#"replace aria-valuemax="9" with max="9""#
         );
     }
 }

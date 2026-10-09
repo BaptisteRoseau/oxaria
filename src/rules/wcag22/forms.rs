@@ -135,21 +135,21 @@ fn required_not_indicated_message(control: ElementRef) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::page::testutil::page_from_html;
+    use crate::rules::testutil::{assert_fires, help, run};
 
     #[test]
     fn missing_label_message_omits_absent_type_attribute() {
         // debian.org's search box, `<input name="P">`, was reported as `<input type="">`.
-        let p = page_from_html(r#"<input name="P" value="" size="14">"#);
-        let findings = check_missing_label(&p);
+        let html = r#"<input name="P" value="" size="14">"#;
+        let findings = run(check_missing_label, html);
         assert_eq!(findings.len(), 1);
         assert_eq!(findings[0].message, "<input> has no associated label");
     }
 
     #[test]
     fn missing_label_help_uses_the_controls_id() {
-        let p = page_from_html(r#"<input id="email" type="email"><textarea></textarea>"#);
-        let findings = check_missing_label(&p);
+        let html = r#"<input id="email" type="email"><textarea></textarea>"#;
+        let findings = run(check_missing_label, html);
         let help = |index: usize| findings[index].help.clone().unwrap();
         assert!(
             help(0).starts_with(r#"add <label for="email">"#),
@@ -161,97 +161,80 @@ mod tests {
 
     #[test]
     fn missing_label_help_avoids_a_duplicate_id() {
-        let p = page_from_html(r#"<input type="checkbox" id="a"><input type="checkbox" id="a">"#);
-        let findings = check_missing_label(&p);
-        assert!(
-            findings[0]
-                .help
-                .as_deref()
-                .unwrap()
-                .starts_with("wrap it in <label>")
-        );
+        let html = r#"<input type="checkbox" id="a"><input type="checkbox" id="a">"#;
+        assert!(help(check_missing_label, html).starts_with("wrap it in <label>"));
     }
 
     #[test]
     fn unnamed_custom_button_help_suggests_a_native_button() {
-        let p = page_from_html(r#"<div role="button"></div>"#);
-        let help = check_unnamed_control(&p)[0].help.clone().unwrap();
+        let help = help(check_unnamed_control, r#"<div role="button"></div>"#);
         assert!(help.starts_with("use a native <button>"), "{help}");
     }
 
     #[test]
     fn input_without_label_is_flagged() {
-        let p = page_from_html(r#"<input id="email" type="email">"#);
-        let findings = check_missing_label(&p);
-        assert_eq!(findings.len(), 1);
-        assert_eq!(findings[0].rule_id, "H44");
+        assert_fires(
+            check_missing_label,
+            r#"<input id="email" type="email">"#,
+            "H44",
+        );
     }
 
     #[test]
     fn input_with_matching_label_for_is_not_flagged() {
-        let p =
-            page_from_html(r#"<label for="email">Email</label><input id="email" type="email">"#);
-        assert!(check_missing_label(&p).is_empty());
+        let html = r#"<label for="email">Email</label><input id="email" type="email">"#;
+        assert!(run(check_missing_label, html).is_empty());
     }
 
     #[test]
     fn input_wrapped_in_label_is_not_flagged() {
-        let p = page_from_html(r#"<label>Email <input type="email"></label>"#);
-        assert!(check_missing_label(&p).is_empty());
+        let html = r#"<label>Email <input type="email"></label>"#;
+        assert!(run(check_missing_label, html).is_empty());
     }
 
     #[test]
     fn input_with_aria_label_is_not_flagged() {
-        let p = page_from_html(r#"<input type="search" aria-label="Search">"#);
-        assert!(check_missing_label(&p).is_empty());
+        let html = r#"<input type="search" aria-label="Search">"#;
+        assert!(run(check_missing_label, html).is_empty());
     }
 
     #[test]
     fn hidden_input_is_not_flagged() {
-        let p = page_from_html(r#"<input type="hidden" value="1">"#);
-        assert!(check_missing_label(&p).is_empty());
+        assert!(run(check_missing_label, r#"<input type="hidden" value="1">"#).is_empty());
     }
 
     #[test]
     fn icon_button_without_name_is_flagged() {
-        let p = page_from_html("<button><svg></svg></button>");
-        let findings = check_unnamed_control(&p);
-        assert_eq!(findings.len(), 1);
-        assert_eq!(findings[0].rule_id, "F68");
+        assert_fires(check_unnamed_control, "<button><svg></svg></button>", "F68");
     }
 
     #[test]
     fn button_with_text_is_not_flagged() {
-        let p = page_from_html("<button>Submit</button>");
-        assert!(check_unnamed_control(&p).is_empty());
+        assert!(run(check_unnamed_control, "<button>Submit</button>").is_empty());
     }
 
     #[test]
     fn button_with_aria_label_is_not_flagged() {
-        let p = page_from_html(r#"<button aria-label="Close"><svg></svg></button>"#);
-        assert!(check_unnamed_control(&p).is_empty());
+        let html = r#"<button aria-label="Close"><svg></svg></button>"#;
+        assert!(run(check_unnamed_control, html).is_empty());
     }
 
     #[test]
     fn required_field_without_indication_is_flagged() {
-        let p = page_from_html(r#"<label for="n">Last name</label><input id="n" required>"#);
-        let findings = check_required_not_indicated(&p);
-        assert_eq!(findings.len(), 1);
-        assert_eq!(findings[0].rule_id, "H90");
+        let html = r#"<label for="n">Last name</label><input id="n" required>"#;
+        assert_fires(check_required_not_indicated, html, "H90");
     }
 
     #[test]
     fn required_field_with_label_wording_is_not_flagged() {
-        let p =
-            page_from_html(r#"<label for="n">Last name (required)</label><input id="n" required>"#);
-        assert!(check_required_not_indicated(&p).is_empty());
+        let html = r#"<label for="n">Last name (required)</label><input id="n" required>"#;
+        assert!(run(check_required_not_indicated, html).is_empty());
     }
 
     #[test]
     fn required_field_with_aria_required_is_not_flagged() {
-        let p = page_from_html(
-            r#"<label for="n">Last name</label><input id="n" required aria-required="true">"#,
-        );
-        assert!(check_required_not_indicated(&p).is_empty());
+        let html =
+            r#"<label for="n">Last name</label><input id="n" required aria-required="true">"#;
+        assert!(run(check_required_not_indicated, html).is_empty());
     }
 }

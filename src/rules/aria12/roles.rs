@@ -96,15 +96,7 @@ mod tests {
     use rstest::rstest;
 
     use super::*;
-    use crate::page::testutil::page_from_html;
-
-    fn abstract_roles(html: &str) -> Vec<Finding> {
-        check_abstract_role(&page_from_html(html))
-    }
-
-    fn generic_roles(html: &str) -> Vec<Finding> {
-        check_explicit_generic(&page_from_html(html))
-    }
+    use crate::rules::testutil::run;
 
     #[rstest]
     #[case(
@@ -114,7 +106,7 @@ mod tests {
     #[case(r#"<div role="range" aria-valuenow="40">40%</div>"#, "progressbar")]
     #[case(r#"<div role="button Widget">x</div>"#, "concrete widget")]
     fn abstract_roles_are_flagged(#[case] html: &str, #[case] suggestion: &str) {
-        let findings = abstract_roles(html);
+        let findings = run(check_abstract_role, html);
         assert_eq!(findings.len(), 1, "{findings:?}");
         assert!(findings[0].help.as_deref().unwrap().contains(suggestion));
     }
@@ -124,12 +116,15 @@ mod tests {
     #[case(r#"<div role="progressbar" aria-label="Upload" aria-valuenow="40">40%</div>"#)]
     #[case(r#"<div role="doc-toc">x</div>"#)]
     fn concrete_roles_are_not_flagged(#[case] html: &str) {
-        assert!(abstract_roles(html).is_empty());
+        assert!(run(check_abstract_role, html).is_empty());
     }
 
     #[test]
     fn explicit_generic_is_flagged() {
-        let findings = generic_roles(r#"<section role="generic" class="card">...</section>"#);
+        let findings = run(
+            check_explicit_generic,
+            r#"<section role="generic" class="card">...</section>"#,
+        );
         assert_eq!(findings.len(), 1);
         assert_eq!(
             findings[0].message,
@@ -142,6 +137,6 @@ mod tests {
     #[case(r#"<div role="group" aria-label="Shipping options">...</div>"#)]
     #[case("<div>implicitly generic</div>")]
     fn other_roles_are_not_generic(#[case] html: &str) {
-        assert!(generic_roles(html).is_empty());
+        assert!(run(check_explicit_generic, html).is_empty());
     }
 }

@@ -78,11 +78,7 @@ mod tests {
     use rstest::rstest;
 
     use super::*;
-    use crate::page::testutil::page_from_html;
-
-    fn run(html: &str) -> Vec<Finding> {
-        check_lowercase_tokens(&page_from_html(html))
-    }
+    use crate::rules::testutil::{assert_fires, run};
 
     #[rstest]
     #[case(r#"<div role="MAIN">x</div>"#, r#"write role="main""#)]
@@ -99,10 +95,8 @@ mod tests {
         r#"write aria-relevant="additions text""#
     )]
     fn uppercase_tokens_are_flagged(#[case] html: &str, #[case] help: &str) {
-        let findings = run(html);
-        assert_eq!(findings.len(), 1, "{findings:?}");
-        assert_eq!(findings[0].rule_id, "HTMLARIA016");
-        assert!(findings[0].help.as_deref().unwrap().starts_with(help));
+        let finding = assert_fires(check_lowercase_tokens, html, "HTMLARIA016");
+        assert!(finding.help.as_deref().unwrap().starts_with(help));
     }
 
     #[rstest]
@@ -113,6 +107,6 @@ mod tests {
     #[case(r#"<button aria-label="Close Menu">x</button>"#)]
     #[case(r#"<div aria-hidden="True">x</div>"#)]
     fn lowercase_or_non_token_values_are_not_flagged(#[case] html: &str) {
-        assert!(run(html).is_empty());
+        assert!(run(check_lowercase_tokens, html).is_empty());
     }
 }

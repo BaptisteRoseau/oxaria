@@ -105,7 +105,7 @@ fn split_css_rules(css: &str) -> Vec<(String, String)> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::page::testutil::page_from_html;
+    use crate::rules::testutil::{assert_fires, run};
 
     #[test]
     fn split_css_rules_splits_simple_stylesheet() {
@@ -132,38 +132,32 @@ mod tests {
 
     #[test]
     fn braces_in_comments_do_not_hide_later_rules() {
-        let p = page_from_html(
-            "<style>/* legacy } */ a { color: red } a:focus { outline: none; }</style>",
-        );
-        let findings = check_outline_removed_without_alternative(&p);
+        let html = "<style>/* legacy } */ a { color: red } a:focus { outline: none; }</style>";
+        let findings = run(check_outline_removed_without_alternative, html);
         assert_eq!(findings.len(), 1, "{findings:?}");
     }
 
     #[test]
     fn outline_none_without_alternative_is_flagged() {
-        let p = page_from_html("<style>a:focus, button:focus { outline: none; }</style>");
-        let findings = check_outline_removed_without_alternative(&p);
-        assert_eq!(findings.len(), 1);
-        assert_eq!(findings[0].rule_id, "G195");
+        let html = "<style>a:focus, button:focus { outline: none; }</style>";
+        assert_fires(check_outline_removed_without_alternative, html, "G195");
     }
 
     #[test]
     fn outline_none_with_box_shadow_alternative_is_not_flagged() {
-        let p = page_from_html(
-            "<style>a:focus-visible { outline: none; box-shadow: 0 0 0 3px blue; }</style>",
-        );
-        assert!(check_outline_removed_without_alternative(&p).is_empty());
+        let html = "<style>a:focus-visible { outline: none; box-shadow: 0 0 0 3px blue; }</style>";
+        assert!(run(check_outline_removed_without_alternative, html).is_empty());
     }
 
     #[test]
     fn rule_without_focus_selector_is_ignored() {
-        let p = page_from_html("<style>a { outline: none; }</style>");
-        assert!(check_outline_removed_without_alternative(&p).is_empty());
+        let html = "<style>a { outline: none; }</style>";
+        assert!(run(check_outline_removed_without_alternative, html).is_empty());
     }
 
     #[test]
     fn no_style_tag_is_not_flagged() {
-        let p = page_from_html("<body></body>");
-        assert!(check_outline_removed_without_alternative(&p).is_empty());
+        let html = "<body></body>";
+        assert!(run(check_outline_removed_without_alternative, html).is_empty());
     }
 }

@@ -144,25 +144,20 @@ mod tests {
     use rstest::rstest;
 
     use super::*;
-    use crate::page::testutil::page_from_html;
+    use crate::rules::testutil::{assert_fires, run};
 
     #[test]
     fn made_up_value_is_flagged() {
-        let p = page_from_html(
-            r#"<label for="b">Birthday:</label><input autocomplete="birthday" id="b" type="text">"#,
-        );
-        let findings = check_invalid_autocomplete(&p);
-        assert_eq!(findings.len(), 1);
-        assert_eq!(findings[0].rule_id, "F107");
-        assert!(findings[0].message.contains("\"birthday\""));
+        let html =
+            r#"<label for="b">Birthday:</label><input autocomplete="birthday" id="b" type="text">"#;
+        let finding = assert_fires(check_invalid_autocomplete, html, "F107");
+        assert!(finding.message.contains("\"birthday\""));
     }
 
     #[test]
     fn hidden_inputs_and_other_elements_are_ignored() {
-        let p = page_from_html(
-            r#"<input type="hidden" autocomplete="nope"><form autocomplete="nope"></form>"#,
-        );
-        assert!(check_invalid_autocomplete(&p).is_empty());
+        let html = r#"<input type="hidden" autocomplete="nope"><form autocomplete="nope"></form>"#;
+        assert!(run(check_invalid_autocomplete, html).is_empty());
     }
 
     #[rstest]
