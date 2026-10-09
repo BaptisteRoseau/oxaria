@@ -2,9 +2,11 @@ use std::sync::Arc;
 
 use tokio::task::JoinHandle;
 use tracing::error;
+use url::Url;
 
 use super::{CheckOptions, Finding, Standard};
-use crate::page::RenderedPage;
+use crate::error::CheckerError;
+use crate::page::{self, RenderedPage};
 
 pub type RuleCheck = fn(&RenderedPage) -> Vec<Finding>;
 
@@ -73,9 +75,23 @@ fn title(rules_file: &'static str, rule_id: &str) -> Option<&'static str> {
         .map(|(_, title)| title)
 }
 
+/// Renders `html` and runs every selected rule on it, returning the page too
+/// for callers that read more from it.
+pub async fn check_html(
+    html: String,
+    url: Option<Url>,
+    options: Arc<CheckOptions>,
+) -> Result<(Arc<RenderedPage>, Vec<Finding>), CheckerError> {
+    // litehtml rendering is synchronous and CPU-bound; keep it off the async
+    // worker threads that are driving the other pages' requests.
+    let page = Arc::new(tokio::task::spawn_blocking(move || page::render(&html, url)).await??);
+    let findings = run_all(Arc::clone(&page), options).await;
+    Ok((page, findings))
+}
+
 /// Runs every rule of the selected standards in its own blocking task, sharing one
 /// `Arc<RenderedPage>`.
-pub async fn run_all(page: Arc<RenderedPage>, options: Arc<CheckOptions>) -> Vec<Finding> {
+async fn run_all(page: Arc<RenderedPage>, options: Arc<CheckOptions>) -> Vec<Finding> {
     let tasks: Vec<_> = options
         .standards
         .iter()

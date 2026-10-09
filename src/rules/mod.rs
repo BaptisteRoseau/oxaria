@@ -1,6 +1,7 @@
 //! Rule registry and orchestration. Every rule is a plain function taking the
 //! rendered page (and, for threshold-based rules, the CLI-configured
-//! [`CheckOptions`]), returning the [`Finding`]s it detected. [`run_all`] runs them in parallel.
+//! [`CheckOptions`]), returning the [`Finding`]s it detected. [`check_html`]
+//! renders a page and runs them in parallel.
 
 mod act;
 mod aria12;
@@ -21,5 +22,5 @@ pub use options::{
 };
 #[cfg(test)]
 pub use registry::RuleCheck;
-pub use registry::{Rule, rule_titles, run_all};
+pub use registry::{Rule, check_html, rule_titles};
 pub use standard::{Standard, StandardDef};

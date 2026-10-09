@@ -22,7 +22,7 @@ use tracing::{error, info};
 use url::Url;
 
 use crate::error::{CheckerError, LeakingRedirect, RedirectRisk};
-use crate::page::{self, RequestHeaders};
+use crate::page::RequestHeaders;
 use crate::rules::{self, CheckOptions, Finding};
 
 use super::links::{extract_links, is_same_domain, visit_key};
@@ -243,27 +243,16 @@ async fn scan_page(
 }
 
 async fn check_page(options: Arc<CheckOptions>, url: Url, body: String) -> PageScan {
-    // litehtml rendering is synchronous and CPU-bound; keep it off the async
-    // worker threads that are driving the other pages' requests.
-    let page_url = url.clone();
-    let rendered = tokio::task::spawn_blocking(move || page::render(&body, Some(page_url))).await;
-    let page = match rendered {
-        Ok(Ok(page)) => Arc::new(page),
-        Ok(Err(err)) => return failure(Finding::error("RENDER", err.to_string()).on_page(&url)),
-        Err(join_error) => {
-            return failure(Finding::error("RENDER", join_error.to_string()).on_page(&url));
-        }
+    let (page, findings) = match rules::check_html(body, Some(url.clone()), options).await {
+        Ok(checked) => checked,
+        Err(err) => return failure(Finding::error("RENDER", err.to_string()).on_page(&url)),
     };
-
-    let links = extract_links(&page, &url);
-    let findings = rules::run_all(page, options)
-        .await
-        .into_iter()
-        .map(|finding| finding.on_page(&url))
-        .collect();
     PageScan {
-        findings,
-        links,
+        findings: findings
+            .into_iter()
+            .map(|finding| finding.on_page(&url))
+            .collect(),
+        links: extract_links(&page, &url),
         checked_url: Some(url),
         ..PageScan::default()
     }
@@ -286,6 +275,7 @@ fn failure(finding: Finding) -> PageScan {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::page;
     use std::time::Duration;
 
     use crate::rules::Severity;

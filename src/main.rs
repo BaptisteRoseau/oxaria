@@ -93,6 +93,6 @@ async fn check_single_page(
     headers: &page::RequestHeaders,
 ) -> Result<Vec<Finding>, CheckerError> {
     let loaded = page::load_html(path_or_url, headers).await?;
-    let page = Arc::new(page::render(&loaded.html, loaded.url)?);
-    Ok(rules::run_all(page, options).await)
+    let (_, findings) = rules::check_html(loaded.html, loaded.url, options).await?;
+    Ok(findings)
 }

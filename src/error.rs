@@ -19,6 +19,9 @@ pub enum CheckerError {
     Render,
 
     #[error(transparent)]
+    RenderTask(#[from] tokio::task::JoinError),
+
+    #[error(transparent)]
     LeakingRedirect(#[from] Box<LeakingRedirect>),
 }
 
@@ -91,7 +94,7 @@ impl CheckerError {
         match self {
             CheckerError::HttpFetch(_) | CheckerError::NotHtml(_) => "FETCH",
             CheckerError::InvalidUrl(_) | CheckerError::FileRead(_) => "INPUT",
-            CheckerError::Render => "RENDER",
+            CheckerError::Render | CheckerError::RenderTask(_) => "RENDER",
             CheckerError::LeakingRedirect(_) => "REDIRECT",
         }
     }
