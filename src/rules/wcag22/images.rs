@@ -57,7 +57,7 @@ fn non_alternative_finding(img: ElementRef) -> Option<Finding> {
 }
 
 fn is_non_alternative_alt(alt: &str) -> bool {
-    !alt.is_empty() && (is_placeholder_word(alt) || looks_like_filename(alt))
+    !alt.is_empty() && (is_placeholder_word(alt) || looks_like_image_filename(alt))
 }
 
 fn is_placeholder_word(alt: &str) -> bool {
@@ -67,7 +67,7 @@ fn is_placeholder_word(alt: &str) -> bool {
     })
 }
 
-fn looks_like_filename(alt: &str) -> bool {
+fn looks_like_image_filename(alt: &str) -> bool {
     let lower = alt.to_lowercase();
     let has_image_extension = [".jpg", ".jpeg", ".png", ".gif", ".svg", ".webp", ".bmp"]
         .iter()

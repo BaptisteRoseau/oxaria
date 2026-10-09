@@ -9,7 +9,7 @@ use crate::page::{ElementRef, RenderedPage};
 
 use crate::rules::{CheckOptions, Finding};
 
-fn is_interactive(el: ElementRef) -> bool {
+fn is_pointer_target(el: ElementRef) -> bool {
     (el.tag() == "a" && el.has_attr("href"))
         || el.tag() == "button"
         || el.attr("role") == Some("button")
@@ -50,7 +50,7 @@ fn has_unsized_content(element: ElementRef) -> bool {
 
 pub fn check_target_size(page: &RenderedPage, options: &CheckOptions) -> Vec<Finding> {
     page.all()
-        .filter(|el| is_interactive(*el))
+        .filter(|el| is_pointer_target(*el))
         .filter_map(|element| target_size_finding(element, options))
         .collect()
 }

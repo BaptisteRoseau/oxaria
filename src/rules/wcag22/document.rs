@@ -61,10 +61,10 @@ fn document_title(page: &RenderedPage) -> Option<String> {
 fn is_placeholder_title(title: &str) -> bool {
     let lower = title.trim().to_lowercase();
     let without_number = lower.trim_end_matches(|c: char| c.is_ascii_digit() || c == ' ');
-    PLACEHOLDER_TITLES.contains(&without_number) || looks_like_filename(&lower)
+    PLACEHOLDER_TITLES.contains(&without_number) || looks_like_page_filename(&lower)
 }
 
-fn looks_like_filename(title: &str) -> bool {
+fn looks_like_page_filename(title: &str) -> bool {
     !title.contains(' ') && PAGE_EXTENSIONS.iter().any(|ext| title.ends_with(ext))
 }
 
