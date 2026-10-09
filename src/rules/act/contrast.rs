@@ -1,14 +1,14 @@
 //! ACT text contrast rule. A spectrum rule, like G18: findings are warnings.
-//! The contrast computation is WCAG's (`wcag22::contrast`); what ACT adds is
+//! The contrast computation is shared with WCAG's (`rules::color`); what ACT adds is
 //! its applicability, which leaves out text of disabled widgets and their
 //! labels.
 
 use std::collections::HashSet;
 
-use crate::page::{ElementRef, RenderedPage, Rgb};
+use crate::page::{ElementRef, RenderedPage};
 use crate::rules::aria_spec::{effective_role, is_aria_true, is_disabled, is_not_rendered};
-use crate::rules::wcag22::{
-    DEFAULT_CANVAS_BACKGROUND, color_contrast, hex, is_large_text, passing_color,
+use crate::rules::color::{
+    DEFAULT_CANVAS_BACKGROUND, color_contrast, fix_suggestion, hex, required_threshold,
 };
 use crate::rules::{CheckOptions, Finding};
 
@@ -27,10 +27,7 @@ fn contrast_finding(el: ElementRef, options: &CheckOptions) -> Option<Finding> {
     let foreground = el.color();
     let background = el.background_color().unwrap_or(DEFAULT_CANVAS_BACKGROUND);
     let ratio = color_contrast(foreground, background);
-    let threshold = match is_large_text(el) {
-        true => options.large_text_contrast_threshold,
-        false => options.contrast_threshold,
-    };
+    let threshold = required_threshold(el, options);
     (ratio < threshold).then(|| {
         Finding::warning(
             "afw4f7",
@@ -42,23 +39,8 @@ fn contrast_finding(el: ElementRef, options: &CheckOptions) -> Option<Finding> {
             ),
         )
         .at(el)
-        .help(contrast_help(foreground, background, threshold))
+        .help(fix_suggestion(foreground, background, threshold))
     })
-}
-
-fn contrast_help(foreground: Rgb, background: Rgb, threshold: f64) -> String {
-    match passing_color(foreground, background, threshold) {
-        Some((verb, color)) => format!(
-            "{verb} the text to {} ({:.2}:1 on {})",
-            hex(color),
-            color_contrast(color, background),
-            hex(background)
-        ),
-        None => format!(
-            "change the background: no text color reaches {threshold:.2}:1 on {}",
-            hex(background)
-        ),
-    }
 }
 
 /// Inside a disabled `group` or widget: native `disabled`, or

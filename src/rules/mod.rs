@@ -6,6 +6,7 @@
 mod act;
 mod aria12;
 mod aria_spec;
+mod color;
 mod finding;
 mod html_aria;
 mod options;
