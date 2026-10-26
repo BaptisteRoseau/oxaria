@@ -2,6 +2,7 @@ mod cli;
 mod error;
 #[cfg(test)]
 mod http_testutil;
+mod litehtml;
 mod logging;
 mod page;
 mod reporters;

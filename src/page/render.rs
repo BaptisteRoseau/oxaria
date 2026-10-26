@@ -6,7 +6,7 @@ use std::cell::RefCell;
 use std::collections::HashMap;
 use std::rc::Rc;
 
-use litehtml::{
+use crate::litehtml::{
     Color, Document, DocumentContainer, DrawContext, Element, FontDescription, FontHandle,
     FontMetrics, MediaFeatures, MediaType, Position,
 };

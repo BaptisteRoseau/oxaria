@@ -59,15 +59,20 @@ The upstream `litehtml`/`litehtml-sys` crates (`franzos/litehtml-rs`) expose lay
 exactly what every DOM/ARIA-based rule needs. The underlying C++ engine already has all of this
 (`element::get_tagName()`, `element::get_attr()`, `css_properties::get_color()`,
 `element::get_background()`); it just wasn't wired through the thin C wrapper. Rather than fork
-the whole project, `vendor/litehtml-sys` and `vendor/litehtml` are local copies with ~4 small
-C-wrapper functions added, following the exact pattern of the existing wrapper functions. Full
+the whole project, oxaria carries a local copy with ~4 small C-wrapper functions added, following
+the exact pattern of the existing wrapper functions. Full
 details, including a documented dead end (`dump_get_attrs()` looked like an attribute enumerator
 but actually dumps computed CSS properties for the engine's own debug printer -- verified
 empirically, not just by reading the header), are in **[vendor/PATCHES.md](./vendor/PATCHES.md)**.
-Read that file before touching anything under `vendor/`, and update it if you patch further.
+Read that file before touching anything under `vendor/` or `src/litehtml/`, and update it if you
+patch further.
 
-If litehtml-rs upstream ever adds these accessors itself, `vendor/` could be dropped in favor of
-a normal crates.io dependency -- check PATCHES.md against the upstream changelog before doing
+The copy is folded into oxaria itself, not kept as path-dependency crates, because crates.io
+refuses path-only dependencies: the C/C++ sources are under `vendor/` (compiled by the root
+`build.rs`), the bindings are the `src/litehtml/` module. `src/litehtml/engine.rs` stays as close
+to upstream as possible (hence its module-level `allow`s) so it can still be diffed. If
+litehtml-rs upstream ever adds these accessors itself, all of it could be dropped in favor of a
+normal crates.io dependency -- check PATCHES.md against the upstream changelog before doing
 that migration.
 
 ### Why one `RenderedPage`, not a two-tier rule system
@@ -193,7 +198,7 @@ See [README.md](./README.md#architecture) for the module tree. Notes beyond what
   `wai-aria-1.2-rules.md`, `html-aria-rules.md` and `act-rules.md`, a rule with a
   `Prevailing rule:` line is intentionally not implemented.
 
-- **`page/render.rs`** is the only file that touches the `litehtml` crate directly. Everything
+- **`page/render.rs`** is the only file that touches the `litehtml` module directly. Everything
   else (`page/model.rs`, all of `rules/`) only ever sees `RenderedPage`/`RenderedElement`/
   `ElementRef` -- plain data, no engine types leak out. Keep it that way; it's what makes the
   data model renderer-agnostic and the unit tests engine-free.
@@ -393,7 +398,7 @@ See [README.md](./README.md#architecture) for the module tree. Notes beyond what
   ergonomics-only trait on `Element`, adding it to the vendored copy is the established pattern --
   just document it in PATCHES.md.
 - **`master.css`** (`src/page/master.css`) is litehtml's own default user-agent stylesheet,
-  extracted by hand from `vendor/litehtml-sys/vendor/litehtml/include/litehtml/master_css.h`
+  extracted by hand from `vendor/litehtml/include/litehtml/master_css.h`
   (stripping the C++ raw-string wrapper). It's what gives elements realistic default styling
   (headings bold/larger, links blue+underlined, etc.) without it, computed styles for
   un-styled pages would be far less representative of a real browser. If litehtml is ever

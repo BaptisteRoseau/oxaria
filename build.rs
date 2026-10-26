@@ -1,25 +1,20 @@
+//! Compiles the vendored litehtml engine (C++), its gumbo HTML parser (C) and
+//! the C wrapper that `src/litehtml/sys.rs` binds to, into static libraries
+//! linked into oxaria. See vendor/PATCHES.md.
+
 use std::env;
 use std::path::{Path, PathBuf};
 
 fn main() {
     let manifest_dir = PathBuf::from(env::var("CARGO_MANIFEST_DIR").unwrap());
     let out_dir = PathBuf::from(env::var("OUT_DIR").unwrap());
-    let csrc_dir = manifest_dir.join("csrc");
+    let csrc_dir = manifest_dir.join("vendor/litehtml_c");
 
-    let vendored = env::var("CARGO_FEATURE_VENDORED").is_ok();
-
-    if vendored {
-        build_vendored(&manifest_dir, &out_dir, &csrc_dir);
-    } else {
-        build_system(&out_dir, &csrc_dir);
-    }
-
-    write_bindings(&csrc_dir, &out_dir, vendored, &manifest_dir);
+    build_vendored(&manifest_dir, &out_dir, &csrc_dir);
 
     println!("cargo:rerun-if-changed={}", csrc_dir.display());
 }
 
-/// Build from vendored C++ source in vendor/litehtml
 fn build_vendored(manifest_dir: &Path, out_dir: &Path, csrc_dir: &Path) {
     let vendor_dir = manifest_dir.join("vendor/litehtml");
     let gumbo_src = vendor_dir.join("src/gumbo");
@@ -150,45 +145,6 @@ fn build_vendored(manifest_dir: &Path, out_dir: &Path, csrc_dir: &Path) {
     println!("cargo:rerun-if-changed={}", vendor_dir.display());
 }
 
-/// Build against system-installed litehtml
-fn build_system(out_dir: &Path, csrc_dir: &Path) {
-    // Find system litehtml via LITEHTML_DIR or common paths
-    let litehtml_dir = env::var("LITEHTML_DIR").ok().map(PathBuf::from);
-
-    let (include_dir, lib_dir) = if let Some(ref dir) = litehtml_dir {
-        (dir.join("include"), dir.join("lib"))
-    } else {
-        // Search LIBRARY_PATH / C_INCLUDE_PATH (set by GUIX, Nix, etc.)
-        let include_dir = find_header("litehtml.h").expect(
-            "Cannot find litehtml headers. Set LITEHTML_DIR or enable the `vendored` feature.",
-        );
-        let lib_dir = find_library("liblitehtml.a")
-            .expect("Cannot find liblitehtml. Set LITEHTML_DIR or enable the `vendored` feature.");
-        (include_dir, lib_dir)
-    };
-
-    // Compile just the C wrapper against system headers
-    // litehtml installs headers under include/litehtml/, and the C wrapper
-    // does #include <litehtml.h>, so we need include/litehtml/ on the path.
-    let litehtml_subdir = include_dir.join("litehtml");
-    let effective_include = if litehtml_subdir.join("litehtml.h").exists() {
-        &litehtml_subdir
-    } else {
-        &include_dir
-    };
-
-    cpp_build()
-        .file(csrc_dir.join("litehtml_c.cpp"))
-        .include(effective_include)
-        .compile("litehtml_c");
-
-    println!("cargo:rustc-link-search=native={}", out_dir.display());
-    println!("cargo:rustc-link-search=native={}", lib_dir.display());
-    println!("cargo:rustc-link-lib=static=litehtml_c");
-    println!("cargo:rustc-link-lib=static=litehtml");
-    link_cpp_stdlib();
-}
-
 /// A C++17 build. On MSVC, `/utf-8` as litehtml's CMakeLists sets it: without
 /// it, MSVC reads the sources' non-ASCII literals in the system code page.
 fn cpp_build() -> cc::Build {
@@ -219,81 +175,4 @@ fn link_cpp_stdlib() {
         "macos" | "ios" => println!("cargo:rustc-link-lib=c++"),
         _ => println!("cargo:rustc-link-lib=stdc++"),
     }
-}
-
-/// Search include paths for a header file, return the directory containing it
-fn find_header(name: &str) -> Option<PathBuf> {
-    // Check C_INCLUDE_PATH and CPLUS_INCLUDE_PATH
-    for var in &["C_INCLUDE_PATH", "CPLUS_INCLUDE_PATH"] {
-        if let Ok(paths) = env::var(var) {
-            for path in paths.split(':') {
-                let candidate = PathBuf::from(path);
-                if candidate.join("litehtml").join(name).exists() {
-                    return Some(candidate);
-                }
-            }
-        }
-    }
-    // Check common system paths
-    for prefix in &["/usr", "/usr/local"] {
-        let candidate = PathBuf::from(prefix).join("include");
-        if candidate.join("litehtml").join(name).exists() {
-            return Some(candidate);
-        }
-    }
-    None
-}
-
-/// Search library paths for a library file, return the directory containing it
-fn find_library(name: &str) -> Option<PathBuf> {
-    if let Ok(paths) = env::var("LIBRARY_PATH") {
-        for path in paths.split(':') {
-            let candidate = PathBuf::from(path);
-            if candidate.join(name).exists() {
-                return Some(candidate);
-            }
-        }
-    }
-    for prefix in &["/usr/lib", "/usr/local/lib", "/usr/lib/x86_64-linux-gnu"] {
-        let candidate = PathBuf::from(prefix);
-        if candidate.join(name).exists() {
-            return Some(candidate);
-        }
-    }
-    None
-}
-
-#[cfg(feature = "buildtime-bindgen")]
-fn write_bindings(csrc_dir: &Path, out_dir: &Path, vendored: bool, manifest_dir: &Path) {
-    let out_bindings = out_dir.join("bindings.rs");
-
-    let mut builder = bindgen::Builder::default()
-        .header(csrc_dir.join("litehtml_c.h").to_str().unwrap())
-        .allowlist_function("lh_.*")
-        .allowlist_type("lh_.*")
-        .derive_debug(true)
-        .derive_default(true);
-
-    if vendored {
-        let vendor_dir = manifest_dir.join("vendor/litehtml");
-        let litehtml_include = vendor_dir.join("include");
-        let gumbo_include = vendor_dir.join("src/gumbo/include");
-        builder = builder
-            .clang_arg(format!("-I{}", litehtml_include.to_str().unwrap()))
-            .clang_arg(format!("-I{}", gumbo_include.to_str().unwrap()));
-    }
-
-    let bindings = builder.generate().expect("failed to generate bindings");
-
-    bindings
-        .write_to_file(out_bindings)
-        .expect("failed to write bindings");
-}
-
-#[cfg(not(feature = "buildtime-bindgen"))]
-fn write_bindings(_csrc_dir: &Path, out_dir: &Path, _vendored: bool, manifest_dir: &Path) {
-    let pregenerated = manifest_dir.join("src/bindings.rs");
-    let out_bindings = out_dir.join("bindings.rs");
-    std::fs::copy(&pregenerated, &out_bindings).expect("failed to copy pre-generated bindings");
-    println!("cargo:rerun-if-changed={}", pregenerated.display());
 }

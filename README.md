@@ -203,6 +203,7 @@ src/
 ├── error.rs                 # CheckerError
 ├── logging.rs                # tracing subscriber setup
 ├── http_testutil.rs          # wiremock fixtures for the HTTP unit tests (test-only)
+├── litehtml/                # patched litehtml-rs bindings: sys.rs (raw FFI), engine.rs (safe wrapper)
 │
 ├── reporters/               # --report-* and the stdout output
 │   ├── model.rs               # Report / Issue / Location: findings + location + fingerprint, exit code
@@ -243,9 +244,9 @@ src/
     └── aria_spec/             # shared WAI-ARIA 1.2 / ARIA in HTML data (roles, attributes, implicit
                                #   roles, allowed aria-*) and role/focus/visibility helpers
 
-vendor/
-├── litehtml-sys/            # vendored, patched raw FFI bindings (see vendor/PATCHES.md)
-└── litehtml/                # vendored, patched safe Rust wrapper
+vendor/                      # see vendor/PATCHES.md
+├── litehtml/                # litehtml C++ engine + gumbo HTML parser, compiled by build.rs
+└── litehtml_c/              # patched C wrapper around it
 ```
 
 Every rule has the same shape — `fn(&RenderedPage) -> Vec<Finding>`, plus `&CheckOptions` for the threshold-based contrast and target-size rules — and reads from the same rendered snapshot; there is no distinction between rules that need computed style/layout and rules that only need DOM/attribute data.

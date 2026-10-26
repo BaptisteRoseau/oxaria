@@ -946,21 +946,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "32a66949e030da00e8c7d4434b251670a91556f4144941d37452769c25d58a53"
 
 [[package]]
-name = "litehtml"
-version = "0.2.6"
-dependencies = [
- "litehtml-sys",
- "log",
-]
-
-[[package]]
-name = "litehtml-sys"
-version = "0.2.5"
-dependencies = [
- "cc",
-]
-
-[[package]]
 name = "litemap"
 version = "0.8.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1083,9 +1068,9 @@ checksum = "7c87def4c32ab89d880effc9e097653c8da5d6ef28e6b539d313baaacfbafcbe"
 name = "oxaria"
 version = "0.1.0"
 dependencies = [
+ "cc",
  "clap",
  "httpdate",
- "litehtml",
  "reqwest",
  "rstest",
  "scraper",

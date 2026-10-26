@@ -1,18 +1,24 @@
-//! Safe Rust bindings for the litehtml HTML/CSS rendering engine.
+//! Safe Rust bindings for the litehtml HTML/CSS rendering engine, from
+//! franzos/litehtml-rs (MIT, see vendor/litehtml-rs-LICENSE), patched as
+//! described in vendor/PATCHES.md.
 //!
-//! This crate wraps the raw C FFI provided by `litehtml-sys` with safe,
+//! This module wraps the raw C FFI in [`super::sys`] with safe,
 //! idiomatic Rust types. Users implement the [`DocumentContainer`] trait to
 //! provide font metrics, drawing, and resource loading, then create a
 //! [`Document`] to parse and render HTML.
+// Upstream code is kept whole and unedited where possible, so it stays diffable
+// against litehtml-rs: it's written for edition 2021 (unsafe fn bodies) and
+// oxaria uses only part of its API.
+#![allow(unsafe_op_in_unsafe_fn, dead_code)]
 
 use std::ffi::{CStr, CString};
 use std::marker::PhantomData;
 use std::os::raw::{c_char, c_int, c_void};
-use std::panic::{catch_unwind, AssertUnwindSafe};
+use std::panic::{AssertUnwindSafe, catch_unwind};
 
-use log::warn;
+use tracing::warn;
 
-pub use litehtml_sys as sys;
+use super::sys;
 
 // ---------------------------------------------------------------------------
 // Error types
@@ -1784,11 +1790,11 @@ unsafe extern "C" fn cb_import_css(
             });
             set_fn(result_ctx, c_result.as_ptr());
         }
-        if let Some(new_bu) = new_baseurl {
-            if let Some(set_fn) = set_baseurl {
-                let c_baseurl = CString::new(new_bu).unwrap_or_else(|_| CString::default());
-                set_fn(baseurl_ctx, c_baseurl.as_ptr());
-            }
+        if let Some(new_bu) = new_baseurl
+            && let Some(set_fn) = set_baseurl
+        {
+            let c_baseurl = CString::new(new_bu).unwrap_or_else(|_| CString::default());
+            set_fn(baseurl_ctx, c_baseurl.as_ptr());
         }
     }));
 }
@@ -2482,21 +2488,6 @@ impl Drop for Document<'_> {
 }
 
 // ---------------------------------------------------------------------------
-// Optional pixbuf rendering backend
-// ---------------------------------------------------------------------------
-
-pub mod selection;
-
-#[cfg(feature = "pixbuf")]
-pub mod pixbuf;
-
-#[cfg(feature = "html")]
-pub mod html;
-
-#[cfg(feature = "email")]
-pub mod email;
-
-// ---------------------------------------------------------------------------
 // Tests
 // ---------------------------------------------------------------------------
 
@@ -2771,10 +2762,10 @@ mod tests {
                 return true;
             }
             for i in 0..el.children_count() {
-                if let Some(child) = el.child_at(i) {
-                    if find_text_node(&child) {
-                        return true;
-                    }
+                if let Some(child) = el.child_at(i)
+                    && find_text_node(&child)
+                {
+                    return true;
                 }
             }
             false
@@ -2814,296 +2805,4 @@ mod tests {
     }
 
     // test_not_send_sync is now a compile_fail doc test on the Document struct.
-
-    #[cfg(feature = "pixbuf")]
-    mod pixbuf_tests {
-        #[test]
-        fn test_render_to_rgba_produces_pixels() {
-            let html = r#"<body style="background: white;"><p style="color: black;">Hello world</p></body>"#;
-            let pixels = crate::pixbuf::render_to_rgba(html, 200, 100);
-            assert_eq!(pixels.len(), 200 * 100 * 4);
-            // At least some pixels should be non-transparent (white background)
-            let has_opaque = pixels.chunks(4).any(|px| px[3] > 0);
-            assert!(has_opaque, "render should produce non-transparent pixels");
-        }
-
-        #[test]
-        fn test_pixbuf_container_resize() {
-            let mut c = crate::pixbuf::PixbufContainer::new(100, 100);
-            assert_eq!(c.width(), 100);
-            assert_eq!(c.height(), 100);
-            c.resize(200, 150);
-            assert_eq!(c.width(), 200);
-            assert_eq!(c.height(), 150);
-        }
-
-        #[test]
-        fn test_pixbuf_render_with_borders() {
-            let html = r#"<div style="border: 2px solid red; width: 50px; height: 50px; background: blue;"></div>"#;
-            let pixels = crate::pixbuf::render_to_rgba(html, 200, 200);
-            assert_eq!(pixels.len(), 200 * 200 * 4);
-        }
-
-        // -- Integration tests for real-world email HTML patterns --
-        // These require both the "pixbuf" and "email" features.
-
-        #[cfg(feature = "email")]
-        #[test]
-        fn test_email_render_mailchimp_style() {
-            let html = br##"<html>
-<head>
-    <meta charset="utf-8">
-</head>
-<body bgcolor="#f2f2f2" style="margin: 0; padding: 0;">
-<table width="100%" cellpadding="0" cellspacing="0" border="0">
-<tr><td align="center">
-    <table width="600" cellpadding="10" cellspacing="0" border="0" style="background-color: #ffffff;">
-    <tr>
-        <td style="padding: 20px;">
-            <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/5+hHgAHggJ/PchI7wAAAABJRU5ErkJggg==" width="100" height="20" alt="Logo">
-        </td>
-    </tr>
-    <tr>
-        <td>
-            <table width="100%" cellpadding="5" cellspacing="0">
-            <tr>
-                <td width="50%" style="vertical-align: top; padding: 10px;">
-                    <font face="Arial, sans-serif" size="4" color="#333333"><b>Left Column</b></font>
-                    <p style="font-family: Arial, sans-serif; font-size: 14px; color: #666666;">
-                        Marketing content goes here with <a href="#" style="color: #007bff; text-decoration: underline;">a styled link</a>.
-                    </p>
-                </td>
-                <td width="50%" style="vertical-align: top; padding: 10px;">
-                    <font face="Arial, sans-serif" size="4" color="#333333"><b>Right Column</b></font>
-                    <p style="font-family: Arial, sans-serif; font-size: 14px; color: #666666;">
-                        Second column content with more text to fill the space.
-                    </p>
-                </td>
-            </tr>
-            </table>
-        </td>
-    </tr>
-    <tr>
-        <td style="background-color: #007bff; text-align: center; padding: 15px;">
-            <a href="#" style="color: #ffffff; font-family: Arial, sans-serif; font-size: 16px; text-decoration: none; font-weight: bold;">Call to Action</a>
-        </td>
-    </tr>
-    </table>
-</td></tr>
-</table>
-</body>
-</html>"##;
-
-            let prepared = crate::email::prepare_email_html(html, None, None);
-
-            // Sanitization: no dangerous elements should exist
-            assert!(
-                !prepared.html.contains("<script"),
-                "script tags must be stripped"
-            );
-            assert!(
-                !prepared.html.contains("onclick"),
-                "event handlers must be stripped"
-            );
-
-            // data: URI image should have been resolved
-            assert!(
-                !prepared.images.is_empty(),
-                "data: URI image should be extracted"
-            );
-
-            let pixels = crate::pixbuf::render_to_rgba(&prepared.html, 600, 800);
-            assert_eq!(pixels.len(), 600 * 800 * 4, "pixel buffer size mismatch");
-
-            let has_opaque = pixels.chunks(4).any(|px| px[3] > 0);
-            assert!(has_opaque, "render should produce non-transparent pixels");
-
-            let has_non_white = pixels
-                .chunks(4)
-                .any(|px| px[3] > 0 && (px[0] < 250 || px[1] < 250 || px[2] < 250));
-            assert!(
-                has_non_white,
-                "render should contain non-white pixels from actual content"
-            );
-        }
-
-        #[cfg(feature = "email")]
-        #[test]
-        fn test_email_render_gmail_style() {
-            let html = br##"<html>
-<head>
-    <meta charset="utf-8">
-    <style>
-        .email-body { font-family: Roboto, Arial, sans-serif; color: #202124; }
-        .header { font-size: 24px; font-weight: bold; margin-bottom: 16px; }
-        .content { font-size: 14px; line-height: 1.5; }
-        .footer { color: #5f6368; font-size: 12px; margin-top: 20px; }
-    </style>
-</head>
-<body>
-<div class="email-body" style="max-width: 600px; margin: 0 auto; padding: 20px;">
-    <div class="header">Welcome to the Service</div>
-    <div class="content">
-        <p>Hi there,</p>
-        <p>Thanks for signing up. Here is your confirmation details:</p>
-        <table style="width: 100%; margin: 16px 0;">
-            <tr>
-                <td style="background-color: #f8f9fa; padding: 12px; border: 1px solid #dadce0;">
-                    <strong>Account</strong>
-                </td>
-                <td style="background-color: #f8f9fa; padding: 12px; border: 1px solid #dadce0;">
-                    user@example.com
-                </td>
-            </tr>
-        </table>
-        <h2 style="font-size: 18px; color: #202124;">Next Steps</h2>
-        <p>Complete your profile to get started.</p>
-        <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/5+hHgAHggJ/PchI7wAAAABJRU5ErkJggg==" width="32" height="32" alt="icon" style="display: block; margin: 10px 0;">
-    </div>
-    <div class="footer">
-        <p>This email was sent by Example Service.</p>
-        <p>123 Main St, Anytown, USA</p>
-    </div>
-</div>
-</body>
-</html>"##;
-
-            let prepared = crate::email::prepare_email_html(html, None, None);
-
-            assert!(
-                !prepared.html.contains("<script"),
-                "script tags must be stripped"
-            );
-            assert!(
-                !prepared.html.contains("onerror"),
-                "event handlers must be stripped"
-            );
-
-            // The style block should be preserved
-            assert!(
-                prepared.html.contains("<style>"),
-                "style block should be preserved"
-            );
-
-            let pixels = crate::pixbuf::render_to_rgba(&prepared.html, 600, 800);
-            assert_eq!(pixels.len(), 600 * 800 * 4, "pixel buffer size mismatch");
-
-            let has_opaque = pixels.chunks(4).any(|px| px[3] > 0);
-            assert!(has_opaque, "render should produce non-transparent pixels");
-
-            let has_non_white = pixels
-                .chunks(4)
-                .any(|px| px[3] > 0 && (px[0] < 250 || px[1] < 250 || px[2] < 250));
-            assert!(
-                has_non_white,
-                "render should contain non-white pixels from actual content"
-            );
-        }
-
-        #[cfg(feature = "email")]
-        #[test]
-        fn test_email_render_outlook_style() {
-            let html = br##"<html>
-<head>
-    <meta charset="utf-8">
-</head>
-<body>
-<!--[if mso]>
-<style>table { border-collapse: collapse; }</style>
-<![endif]-->
-<script type="text/javascript">document.write('tracking')</script>
-<table width="600" border="0" cellpadding="0" cellspacing="0" align="center" bgcolor="#ffffff">
-<tr>
-    <td align="center" valign="top" width="600" height="80" bgcolor="#1a3c6e">
-        <font face="Times New Roman, serif" size="5" color="#ffffff"><b>Newsletter Title</b></font>
-    </td>
-</tr>
-<tr>
-    <td>
-        <table width="100%" border="0" cellpadding="0" cellspacing="0">
-        <tr>
-            <td width="300" align="left" valign="top" style="padding: 10px;">
-                <table width="100%" border="0" cellpadding="0" cellspacing="0">
-                <tr>
-                    <td bgcolor="#f5f5f5" style="padding: 15px;">
-                        <font face="Arial" size="3" color="#333333"><b>Article Title</b></font><br>
-                        <font face="Arial" size="2" color="#666666">
-                            Lorem ipsum dolor sit amet, consectetur adipiscing elit.
-                            Sed do eiusmod tempor incididunt ut labore.
-                        </font>
-                    </td>
-                </tr>
-                </table>
-            </td>
-            <td width="300" align="right" valign="top" style="padding: 10px;">
-                <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/5+hHgAHggJ/PchI7wAAAABJRU5ErkJggg==" width="280" height="180" alt="Article Image" onclick="track()" onmouseover="highlight()">
-            </td>
-        </tr>
-        </table>
-    </td>
-</tr>
-<tr>
-    <td align="center" valign="middle" height="50" bgcolor="#eeeeee">
-        <font face="Verdana" size="1" color="#999999">
-            &copy; 2024 Newsletter Corp. All rights reserved.
-        </font>
-    </td>
-</tr>
-</table>
-</body>
-</html>"##;
-
-            let prepared = crate::email::prepare_email_html(html, None, None);
-
-            // Script tag and its contents must be stripped
-            assert!(
-                !prepared.html.contains("<script"),
-                "script tags must be stripped"
-            );
-            assert!(
-                !prepared.html.contains("document.write"),
-                "script contents must be stripped"
-            );
-
-            // Event handler attributes must be stripped
-            assert!(
-                !prepared.html.contains("onclick"),
-                "onclick must be stripped"
-            );
-            assert!(
-                !prepared.html.contains("onmouseover"),
-                "onmouseover must be stripped"
-            );
-
-            // MSO conditional comments should pass through (they're just HTML comments)
-            assert!(
-                prepared.html.contains("<!--[if mso]>"),
-                "MSO comments should be preserved"
-            );
-
-            // Normal content preserved
-            assert!(
-                prepared.html.contains("Newsletter Title"),
-                "heading text must be preserved"
-            );
-            assert!(
-                prepared.html.contains("Article Title"),
-                "article text must be preserved"
-            );
-
-            let pixels = crate::pixbuf::render_to_rgba(&prepared.html, 600, 800);
-            assert_eq!(pixels.len(), 600 * 800 * 4, "pixel buffer size mismatch");
-
-            let has_opaque = pixels.chunks(4).any(|px| px[3] > 0);
-            assert!(has_opaque, "render should produce non-transparent pixels");
-
-            let has_non_white = pixels
-                .chunks(4)
-                .any(|px| px[3] > 0 && (px[0] < 250 || px[1] < 250 || px[2] < 250));
-            assert!(
-                has_non_white,
-                "render should contain non-white pixels from actual content"
-            );
-        }
-    }
 }
