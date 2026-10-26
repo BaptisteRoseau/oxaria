@@ -1,6 +1,6 @@
 [package]
 name = "oxaria"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2024"
 description = "Check a web page against a curated set of accessibility rules such as WCAG 2.2, WAI-ARIA 1.2, ARIA in HTML and ACT."
 # The package bundles litehtml (BSD-3-Clause) and its gumbo parser (Apache-2.0).
