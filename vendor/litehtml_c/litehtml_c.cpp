@@ -1303,8 +1303,11 @@ void lh_document_add_stylesheet(lh_document_t* doc,
             mq = std::make_shared<litehtml::media_query_list_list>();
             mq->add(mq_list);
         }
+        // A std::string, not the raw const char*: the template is only defined in
+        // stylesheet.cpp, which instantiates it for string, so <const char*> is
+        // an unresolved external that MSVC's linker rejects.
         stylesheet.parse_css_stylesheet(
-            css_text,
+            std::string(css_text),
             baseurl ? baseurl : "",
             internal->doc,
             mq);

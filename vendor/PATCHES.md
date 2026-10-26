@@ -92,6 +92,14 @@ cross-compiled with `cross`), which upstream's never targeted:
 - On MSVC it adds what litehtml's own CMakeLists does: gumbo's `visualc/include`
   (a `<strings.h>` shim, MSVC has none) and `/utf-8` for the C++ sources.
 
+`lh_document_add_stylesheet` (`litehtml_c.cpp`) passes the CSS to
+`css::parse_css_stylesheet` as a `std::string` instead of the raw
+`const char*`. That template is defined only in litehtml's `stylesheet.cpp`,
+which instantiates it for `string` and `css_token_vector`, so upstream's call
+referenced an undefined `parse_css_stylesheet<const char*>`. GNU ld never
+noticed (the function is garbage-collected when unused), but MSVC's linker
+fails with `LNK2019`.
+
 ## Known limitation carried into oxaria
 
 litehtml has no `:focus`/`:hover`/`:active` state-simulation API, so nothing
