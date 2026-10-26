@@ -46,11 +46,13 @@ fn build_vendored(manifest_dir: &Path, out_dir: &Path, csrc_dir: &Path) {
         )
         .include(&gumbo_include)
         .include(&gumbo_private_include)
-        .std("c99")
         .warnings(false);
     // MSVC has no <strings.h>; gumbo ships a shim for it, as its CMakeLists does.
+    // It also has no C99 mode (`-std:c99` is ignored with a warning per file).
     if is_msvc() {
         gumbo.include(gumbo_src.join("visualc/include"));
+    } else {
+        gumbo.std("c99");
     }
     gumbo.compile("gumbo");
 
@@ -145,8 +147,11 @@ fn build_vendored(manifest_dir: &Path, out_dir: &Path, csrc_dir: &Path) {
     println!("cargo:rerun-if-changed={}", vendor_dir.display());
 }
 
-/// A C++17 build. On MSVC, `/utf-8` as litehtml's CMakeLists sets it: without
-/// it, MSVC reads the sources' non-ASCII literals in the system code page.
+/// A C++17 build. On MSVC, `/permissive- /utf-8` as litehtml's CMakeLists sets
+/// them: without `/permissive-`, MSVC rejects the sources' `and`/`not`
+/// alternative tokens; without `/utf-8`, it reads their non-ASCII literals in
+/// the system code page. `/EHsc` is CMake's default C++ exception model, which
+/// cc doesn't pass.
 fn cpp_build() -> cc::Build {
     let mut build = cc::Build::new();
     build
@@ -155,7 +160,7 @@ fn cpp_build() -> cc::Build {
         .std("c++17")
         .warnings(false);
     if is_msvc() {
-        build.flag("/utf-8");
+        build.flag("/permissive-").flag("/utf-8").flag("/EHsc");
     }
     build
 }
