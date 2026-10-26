@@ -2,6 +2,12 @@
 name = "oxaria"
 version = "0.1.0"
 edition = "2024"
+description = "Check a web page against a curated set of accessibility rules such as WCAG 2.2, WAI-ARIA 1.2, ARIA in HTML and ACT."
+license-file = "LICENSE"
+repository = "https://github.com/BaptisteRoseau/oxaria"
+readme = "README.md"
+keywords = ["accessibility", "cli", "wcag", "ci", "web-development"]
+categories = ["accessibility", "command-line-utilities", "web-programming", "development-tools::testing"]
 
 [dependencies]
 clap = { version = "4.6.7", features = ["derive", "env"] }
@@ -22,3 +28,7 @@ scraper = "0.27.0"
 tempfile = "3.27.0"
 tokio = { version = "1.53.1", features = ["test-util"] }
 wiremock = "0.6.5"
+
+[[bin]]
+name = "oxaria"
+path = "src/main.rs"
