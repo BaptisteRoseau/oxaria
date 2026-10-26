@@ -26,7 +26,9 @@ The standards overlap: the same markup can fail a rule of each, and every standa
 
 ## Installation
 
-Not published anywhere yet — build from source:
+Prebuilt binaries for Linux (x86_64, arm64, statically linked), macOS (Apple Silicon) and Windows (x86_64) are attached to each [GitHub release](https://github.com/BaptisteRoseau/oxaria/releases).
+
+Or build from source:
 
 ```bash
 cargo build --release

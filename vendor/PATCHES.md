@@ -63,6 +63,16 @@ dereference it. This lets oxaria walk up an element's ancestor chain
 (`while let Some(parent) = el.parent() { el = parent; }`) without threading
 lifetimes through a recursive helper.
 
+`litehtml-sys/build.rs` was fixed for the release builds (Windows, and Linux
+cross-compiled with `cross`), which upstream's never targeted:
+
+- It picks the C++ standard library from `CARGO_CFG_TARGET_*`
+  (`link_cpp_stdlib`). Upstream used `cfg!(target_os = "macos")`, which in a
+  build script reads the host, and linked `stdc++` everywhere else, which
+  doesn't exist on MSVC.
+- On MSVC it adds what litehtml's own CMakeLists does: gumbo's `visualc/include`
+  (a `<strings.h>` shim, MSVC has none) and `/utf-8` for the C++ sources.
+
 ## Known limitation carried into oxaria
 
 litehtml has no `:focus`/`:hover`/`:active` state-simulation API, so nothing
